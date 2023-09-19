@@ -10,5 +10,5 @@ class EncoderCategoricalBernoulli(nn.Module):
     def forward(self, categorical):
 
         bernoulli = categorical # FIXME
-        
+
         return bernoulli

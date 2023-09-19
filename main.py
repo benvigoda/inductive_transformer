@@ -1,11 +1,15 @@
-import torch.nn.functional as F  # type: ignore
-import torch  # type: ignore
 import time
 import copy
+import typing
+import argparse
 import matplotlib.pyplot as plt  # type: ignore
+import torch  # type: ignore
+import torch.nn.functional as F  # type: ignore
+from . import printing
 from input_text_parsing import InputData
 from log_prob_tensors import LogProbTensors
-import printing
+from hyperparameters import Hyperparameters
+from model import Model
 
 
 class L2Loss:
@@ -15,6 +19,23 @@ class L2Loss:
     def __call__(self, pred, truth):
         loss = F.mse_loss(pred, truth, reduction="mean")
         return loss
+
+
+def is_local_minimum(losses: typing.List[float], reached_local_minimum: bool = False) -> bool:
+    if len(losses) > 1 and losses[-1] > losses[-2] and not reached_local_minimum:
+        return True
+    else:
+        return False
+
+
+def plot_convergence(losses: typing.List[float]):
+    font = {"weight": "normal", "size": 22}
+    plt.figure(dpi=80, figsize=(25, 13))
+    plt.plot(list(range(len(losses))), losses)
+    plt.title('loss vs. step', fontdict=font)
+    plt.xlabel('step', fontdict=font)
+    plt.ylabel('loss', rotation=90, fontdict=font)
+    plt.savefig('loss_vs_step.png')
 
 
 def train_model(
@@ -90,70 +111,116 @@ def train_model(
                 )
                 toc = time.time()
                 total_loss = 0
-            # Print the model parameters to a google sheet
-            if output_to_google_sheet:
-                # Save the model parameters for later printing
-                models_parameters.append(
-                    {
-                        "logical_encoder.decision_X1LSE.weights": copy.deepcopy([encoder_layer.decision_X1LSE.weights.detach().tolist() for encoder_layer in model.logical_encoder.layers]),
-                        "logical_encoder.word_X1LSE.weights": copy.deepcopy([encoder_layer.word_X1LSE.weights.detach().tolist() for encoder_layer in model.logical_encoder.layers]),
-                        "logical_decoder.concept_ALLSUM_decode.weights": copy.deepcopy([decoder_layer.concept_ALLSUM_decode.weights.detach().tolist() for decoder_layer in model.logical_decoder.layers]),
-                        "logical_decoder.word_X1LSE_decode_layer.weights": copy.deepcopy([decoder_layer.word_X1LSE_decode_layer.weights.detach().tolist() for decoder_layer in model.logical_decoder.layers]),
-                        "logical_decoder.pred": copy.deepcopy(preds.detach()),
-                        "logical_decoder.truth": copy.deepcopy(truths.detach()),
-                        "logical_decoder.input": copy.deepcopy(token_prob_tensors),
-                        "to_decoder": model.to_decoder,
-                    }
-                )
-                # Only output to the google sheet when we reach a local minimum
-                if len(losses) > 1 and losses[-1] > losses[-2] and not reached_local_minimum:
-                    print("* LOSS went up *")
+            # Print the model parameters to a google sheet only if the boolean is set to true
+            if not output_to_google_sheet:
+                continue
+            # Save the model parameters for later printing
+            #FIXME: All the parameter names are wrong here
+            models_parameters.append(
+                {
+                    "logical_encoder.decision_X1LSE.weights": copy.deepcopy([encoder_layer.decision_X1LSE.weights.detach().tolist() for encoder_layer in model.logical_encoder.layers]),
+                    "logical_encoder.word_X1LSE.weights": copy.deepcopy([encoder_layer.word_X1LSE.weights.detach().tolist() for encoder_layer in model.logical_encoder.layers]),
+                    "logical_decoder.concept_ALLSUM_decode.weights": copy.deepcopy([decoder_layer.concept_ALLSUM_decode.weights.detach().tolist() for decoder_layer in model.logical_decoder.layers]),
+                    "logical_decoder.word_X1LSE_decode_layer.weights": copy.deepcopy([decoder_layer.word_X1LSE_decode_layer.weights.detach().tolist() for decoder_layer in model.logical_decoder.layers]),
+                    "logical_decoder.pred": copy.deepcopy(preds.detach()),
+                    "logical_decoder.truth": copy.deepcopy(truths.detach()),
+                    "logical_decoder.input": copy.deepcopy(token_prob_tensors),
+                    "to_decoder": model.to_decoder,
+                }
+            )
+            # Only output to the google sheet when we reach a local minimum
+            if is_local_minimum(losses=losses, reached_local_minimum=reached_local_minimum):
+                print("* LOSS went up *")
 
-                    reached_local_minimum = True
-                    reached_local_maximum = False
-                    minimum_index = i * epoch + i - 1
-                    minima_models_indices.append(minimum_index)
+                reached_local_minimum = True
+                reached_local_maximum = False
+                minimum_index = i * epoch + i - 1
+                minima_models_indices.append(minimum_index)
+                z_decode = model.logical_decoder.z_decode_for_output
 
-                    model.eval()
-                    z_decode = model.logical_decoder.z_decode_for_output
+                # Set the model to evaluation mode for inference
+                model.eval()
 
-                    if prompt_tensors is not None:
-                        # print(models_parameters[minimum_index]["logical_encoder.word_X1LSE.weights"])
-                        printing.print_to_terminal(
-                            model=model,
-                            iter=i,
-                            epoch=epoch,
-                            start=start,
-                            loss_avg=loss_avg,
-                            toc=toc,
-                            print_every=print_every,
-                        )
-                        printing.send_to_google_sheet(
-                            prompt_tensors=prompt_tensors,
-                            preds=preds,
-                            truths=truths,
-                            word_log_prob_tensors=token_prob_tensors,
-                            model=model,
-                            models_parameters=models_parameters,
-                            attention_input=attention_input,
-                            vocab=vocab,
-                            z_decode=z_decode,
-                            minimum_index=minimum_index,
-                        )
+                if prompt_tensors is not None:
+                    # print(models_parameters[minimum_index]["logical_encoder.word_X1LSE.weights"])
+                    printing.print_to_terminal(
+                        model=model,
+                        iter=i,
+                        epoch=epoch,
+                        start=start,
+                        loss_avg=loss_avg,
+                        toc=toc,
+                        print_every=print_every,
+                    )
+                    printing.send_to_google_sheet(
+                        prompt_tensors=prompt_tensors,
+                        preds=preds,
+                        truths=truths,
+                        word_log_prob_tensors=token_prob_tensors,
+                        model=model,
+                        models_parameters=models_parameters,
+                        attention_input=attention_input,
+                        vocab=vocab,
+                        z_decode=z_decode,
+                        minimum_index=minimum_index,
+                    )
 
+                # safety measure if we failed to specify prompt tensor, we use first sentence in training data
+                else:
+                    y = model(attention_input[0], token_prob_tensors[0])
+                    res = printing.format_into_table(output=y, model=model, vocab=vocab, top_row=z_decode)
+                    print('output to sheet')
+                    printing.output_to_sheet(res, "Sheet1")
 
-                    # safety measure if we failed to specify prompt tensor, we use first sentence in training data
-                    else:
-                        y = model(word_log_prob_tensors[0], attention_input[0])
-                        res = printing.format_into_table(output=y, model=model, vocab=vocab, top_row=z_decode)
-                        print('output to sheet')
-                        printing.output_to_sheet(res, "Sheet1")
+                # Set the model back to training mode
+                model.train()
 
-                    model.train()
+            # If the loss goes back down for the first time, we have reached a local maximum
+            elif len(losses) > 1 and losses[-1] < losses[-2] and not reached_local_maximum:
+                reached_local_maximum = True
+                reached_local_minimum = False
 
-                elif len(losses) > 1 and losses[-1] < losses[-2] and not reached_local_maximum:
-                    reached_local_maximum = True
-                    reached_local_minimum = False
+    # Plot the losses:
+    plot_convergence(losses=losses)
 
-                model.hyperparameters.print_word_weights = False
+    # Return the model
     return model
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Logical Encoder arguments")
+    parser.add_argument("training_text", type=str)  # A text file of sentences to train on
+    parser.add_argument("inference_text", type=str)  # A text file of sentences to run inference on
+    parser.add_argument(
+        "--train", help="Whether to train model or not", action="store_true"
+    )
+    parser.add_argument(
+        "--weight_test", help="Whether to use test weights", action="store_true",
+    )
+    parser.add_argument(
+        "--perturbation_test", help="Whether to use only some weights for perturbation", action="store_true",
+    )
+    parser.add_argument("--layer_width", type=int, default=4)
+    parser.add_argument("--num_data_points", type=int, default=100)
+    parser.add_argument("--num_layers", type=int, default=3)
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    data = InputData(args.training_text, args.inference_text)
+    hyperparams = Hyperparameters(
+        layer_width=args.layer_width,
+        num_data_points=args.num_data_points,
+        num_layers=args.num_layers,
+        weight_test=args.weight_test,
+        perturbation_test=args.perturbation_test,
+    )
+
+
+if __name__ == "__main__":
+    torch.set_default_dtype(torch.float64)
+    torch.set_printoptions(precision=20)
+    tic = time.time()
+    main()
+    print("Total processing time:", time.time() - tic)
