@@ -25,14 +25,14 @@ def format_prob_vocab(log_prob_outputs, vocab):
     return prob_word_pairs_str
 
 
-def print_to_terminal(model, i, epoch, start, loss_avg, toc, print_every):
+def print_to_terminal(model, iter, epoch, start, loss_avg, toc, print_every):
     print(
         "time = %dm, epoch %d, iter = %d, loss = %.10f,\
         %ds per %d iters"
         % (
             (time.time() - start) // 60,
             epoch + 1,
-            i + 1,
+            iter + 1,
             loss_avg,
             time.time() - toc,
             print_every,
