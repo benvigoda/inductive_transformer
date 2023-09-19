@@ -1,16 +1,23 @@
 from torch import nn  # type: ignore
+from encoder_open_closed_universe import EncoderOpenClosedUniverse
+from encoder_bernoulli_categorical import EncoderBernoulliCategorical
+from encoder_token_pi import EncoderTokenPi
+from encoder_attention_pi import EncoderAttentionPi
+from encoder_categorical_bernoulli import EncoderCategoricalBernoulli
+from encoder_and import EncoderAnd
+
 
 class EncoderLayer(nn.Module):
 
-    def __init__(self,):
+    def __init__(self, hyperparams):
         super(EncoderLayer, self).__init__()
 
-        self.encoder_universe = EncoderOpenClosedUniverse()
-        self.encoder_bernoulli_categorical = EncoderBernoulliCategorical()
-        self.encoder_token_pi = EncoderTokenPi()
-        self.encoder_attention_pi = EncoderAttentionPi()
-        self.encoder_categorical_bernoulli = EncoderCategoricalBernoulli()
-        self.encoder_and = EncoderAnd()
+        self.encoder_universe = EncoderOpenClosedUniverse(hyperparams)
+        self.encoder_bernoulli_categorical = EncoderBernoulliCategorical(hyperparams)
+        self.encoder_token_pi = EncoderTokenPi(hyperparams)
+        self.encoder_attention_pi = EncoderAttentionPi(hyperparams)
+        self.encoder_categorical_bernoulli = EncoderCategoricalBernoulli(hyperparams)
+        self.encoder_and = EncoderAnd(hyperparams)
 
     def forward(self, z, t):
         # dim=0 indexes the state of the variable e.g. cat or dog, 0 or 1, etc.
