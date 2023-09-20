@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt  # type: ignore
 import torch  # type: ignore
 import torch.nn.functional as F  # type: ignore
 from . import printing
-from input_text_parsing import InputData
-from log_prob_tensors import LogProbTensors
+from text_parsing import InputData, ProbTensors
 from hyperparameters import Hyperparameters
 from model import Model
 
@@ -210,6 +209,9 @@ def parse_args():
 def main():
     args = parse_args()
     data = InputData(args.training_text, args.inference_text)
+    prob_tensors = ProbTensors(data=data, layer_width=args.layer_width)
+    prompt_tensors = prob_tensors.make_inference_prompt_tensors(num_layers=args.num_layers)
+    training_data = prob_tensors.format_training_data(num_layers=args.num_layers)
     hyperparams = Hyperparameters(
         layer_width=args.layer_width,
         num_data_points=args.num_data_points,
@@ -217,6 +219,49 @@ def main():
         weight_test=args.weight_test,
         perturbation_test=args.perturbation_test,
     )
+    model = Model(hyperparams=hyperparams)
+
+    # Train:
+    if args.train:
+        model = train_model(
+            model=model,
+            input_decision_activations=prob_tensors.decision_input,
+            epochs=3,
+            train_data=training_data,
+            print_every=20,
+            batch_size=2,
+            lr=0.0001,
+            vocab=data.vocab,
+            prompt_tensors=prompt_tensors,
+        )
+    # Inference:
+    elif prompt_tensors is not None:
+        model.eval()  # set the model to inference mode
+        z_decode = model.logical_decoder.z_decode_for_output
+        #FIXME: All the parameter names are wrong here
+        models_parameters = [
+            {
+                "logical_encoder.decision_X1LSE.weights": copy.deepcopy([encoder_layer.decision_X1LSE.weights.detach().tolist() for encoder_layer in model.logical_encoder.layers]),
+                "logical_encoder.word_X1LSE.weights": copy.deepcopy([encoder_layer.word_X1LSE.weights.detach().tolist() for encoder_layer in model.logical_encoder.layers]),
+                "logical_decoder.concept_ALLSUM_decode.weights": copy.deepcopy([decoder_layer.concept_ALLSUM_decode.weights.detach().tolist() for decoder_layer in model.logical_decoder.layers]),
+                "logical_decoder.word_X1LSE_decode_layer.weights": copy.deepcopy([decoder_layer.word_X1LSE_decode_layer.weights.detach().tolist() for decoder_layer in model.logical_decoder.layers]),
+                "to_decoder": copy.deepcopy(model.to_decoder),
+            }
+        ]
+        printing.send_to_google_sheet(
+            prompt_tensors,
+            preds=None,
+            truths=None,
+            word_log_prob_tensors=None,
+            model=model,
+            models_parameters=models_parameters,
+            input_decision_activations=prob_tensors.decision_input,
+            vocab=data.vocab,
+            z_decode=z_decode,
+            minimum_index=0,
+        )
+    else:
+        print("No inference prompt tensors found, so no inference will be run")
 
 
 if __name__ == "__main__":

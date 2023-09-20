@@ -22,6 +22,6 @@ class EncoderTokenPi(nn.Module):
         x = prob_weights * t
 
         # make it an inner product by taking a sum along the token dimension
-        x = torch.sum(x, dim=0) #after summing it is size = (1, layer_width)
+        x = torch.sum(x, dim=0)  # after summing it is size = (1, layer_width)
 
-        return x #x is categorical
+        return x  # x is categorical
