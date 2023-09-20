@@ -1,7 +1,12 @@
-
+import argparse
+import pathlib
 import string
 import re
+import torch  # type: ignore
 from typing import List, Dict
+
+PROBABLE = 1 - 1e-9
+IMPROBABLE = 1e-5
 
 
 class InputData():
@@ -16,23 +21,27 @@ class InputData():
 
         self.raw_training_text = self.clean(raw_training_text)
         self.raw_inference_text = self.clean(raw_inference_text)
+        self.text = self.raw_training_text + self.raw_inference_text
 
         # Builds a vocab
         self.vocab: List[str] = self.get_vocab()
         self.vocab_size: int = len(self.vocab)
         self.tokenizer_dict: Dict = self.get_tokenizer()
-        self.windows = self.stop_token_parsing(stop_token)
+        self.training_windows = self.stop_token_parsing(text=self.raw_training_text, stop_token=self.stop_token)
+        self.inference_windows = self.stop_token_parsing(text=self.raw_inference_text, stop_token=self.stop_token)
+        self.window_size = max(len(w) for w in self.training_windows + self.inference_windows)
 
         # Returns an ordered list of all the words that appear in the file
         if print_vals:
             print('INPUT DATA')
             print(f'vocab_size: {self.vocab_size}')
             print(f'vocab: {self.vocab}')
-            print(f'sentences: {self.windows}')
+            print(f'training sentences: {self.training_windows}')
+            print(f'inference sentences: {self.inference_windows}')
             print(f'tokenizer_dict: {self.tokenizer_dict}')
 
     @staticmethod
-    def clean(text: str):
+    def clean(text: str) -> str:
         # To avoid this:
         # ["the", "dog", "bark\nThe", "cat", "meows"] = "the dog barks\nThe cat meows".split()
         # Pad \n's with a space before and after
@@ -43,7 +52,7 @@ class InputData():
         clean_text = clean_text.strip()
         return clean_text
 
-    def get_vocab(self):
+    def get_vocab(self) -> List[str]:
         words = self.text.split()
         vocab = []
         for w in words:
@@ -53,26 +62,133 @@ class InputData():
         vocab.append("<PADDING>")
         return vocab
 
-    def get_tokenizer(self):
+    def get_tokenizer(self) -> Dict[str, int]:
         tokenizer_dict = {}
         for i, w in enumerate(self.vocab):
             tokenizer_dict[w] = i
         return tokenizer_dict
 
-    def stop_token_parsing(self, stop_token):
-        sentences = self.text.split(stop_token)
-        self.window_size = max(len(s.split()) for s in sentences)  # Warning: overwrite the window_size
+    def stop_token_parsing(self, text, stop_token) -> List[List[int]]:
+        sentences = text.split(stop_token)  # Split on the stop token
+        window_size = max(len(s.split()) for s in sentences)  # Get the max window size as the max number of words in the sentences
         windows = []
         for sentence in sentences:
             if not sentence:
                 continue
             words = sentence.split()
             next_window = [self.tokenizer_dict[w] for w in words]
-            while len(next_window) < self.window_size:
+            # Pad the window with -1's (the padding token)
+            while len(next_window) < window_size:
                 next_window.append(-1)
             windows.append(next_window)
         return windows
 
-    def word_to_word_index(self, word):
-        word_index = self.vocab.index(word)
-        return word_index
+
+class ProbTensors():
+
+    def __init__(self, data: InputData, layer_width: int, print_flag: bool = True):
+        self.data = data
+        self.layer_width = layer_width
+        self.vocab_size = data.vocab_size
+        self.num_positions = data.window_size
+        self.windows = data.training_windows
+        self.improbable = IMPROBABLE
+        self.probable = PROBABLE
+        self.print_flag = print_flag
+
+        self.decision_input = self.make_decision_input()
+
+    def format_training_data(self, num_layers: int = 1):
+        '''
+        EXAMPLE:
+
+        2 sentences "the dog. a cat." in the `text_training.txt` file
+        vocab: ['the', 'dog', '.', 'cat', 'a', '<PADDING>'],
+
+        sentence 1 "the dog":
+        layer 1 left = "the" = (0., -5., -5., -5., -5., -5.)
+        layer 0 left  = "dog" = (-5, 0., -5., -5., -5., -5.)
+        layer 1 right = NA = (-5., -5., -5., -5., -5., -5.)
+        layer 0 right = NA = (-5., -5., -5., -5., -5., -5.)
+
+        sentence 2 "a cat":
+        layer 1 left = NA = (-5., -5., -5., -5., -5., -5.)
+        layer 0 left = NA = (-5., -5., -5., -5., -5., -5.)
+        layer 1 right = "a" = (-5, -5., -5., -5., 0., -5.)
+        layer 0 right  = "cat" = (-5, -5., -5., 0., -5., -5.)
+        '''
+        training_data = []  # A list of tuples of (input, expected_output)
+        # Each window corresponds to a sentence. Each sentence is processed individually and appended to the training data
+        # We put one sentence per "column" across the layer_width
+        for lw, window in enumerate(self.windows):
+            if lw >= self.layer_width:
+                print(f"WARNING: there are more sentences than layer width. Cannot place more than {self.layer_width} sentences.")
+            training_output = torch.full((num_layers, self.layer_width, self.vocab_size), self.improbable)
+            training_input = torch.full((num_layers, self.layer_width, self.vocab_size), self.improbable)
+            # Within a given column, we put one word in each layer
+            for word_position_and_layer_num, vocab_index in enumerate(window):
+                if word_position_and_layer_num >= num_layers:
+                    print(f"WARNING: there are more words in the sentence than num layers. Cannot place more than {num_layers} words.")
+                word_prob_tensor = torch.full((self.vocab_size, ), self.improbable)
+                word_prob_tensor[vocab_index] = self.probable
+                training_input[word_position_and_layer_num, lw] = word_prob_tensor
+                training_output[word_position_and_layer_num, lw] = word_prob_tensor
+            training_input = torch.transpose(training_input, 1, 2)
+            if self.print_flag:
+                print(f"word_prob_tensors/training_input in whole model for sentence #{lw + 1}:\n{training_input}")
+                print(f"training_input.size():\n{training_input.size()}")
+            training_data.append(
+                (training_input, training_output)
+            )
+        return training_data
+
+    def make_decision_input(self):
+        '''
+        For example, in a 2x2 model, we want to make a decision_input that looks like:
+        decision_input{i=0, l=0} = probable
+        decision_input{i=1, l=0} = improbable
+        decision_input{i=0, l=1} = improbable
+        decision_input{i=1, l=1} = probable
+        '''
+        decision_input = torch.full((self.layer_width, self.layer_width), self.improbable)
+        for lw in range(self.layer_width):
+            decision_input[lw][lw] = self.probable
+        return decision_input
+
+    def make_inference_prompt_tensors(self, num_layers: int = 1) -> List[torch.Tensor]:
+        prompt_tensors = []
+        for window in self.data.inference_windows:
+            inference_word_prob_tensor = torch.full((self.vocab_size, 1), self.improbable)
+            for index_of_probable_word in window:
+                inference_word_prob_tensor[index_of_probable_word] = self.probable
+            # Stack up on layer_width
+            inference_word_prob_tensor_stacked_tmp = torch.stack([inference_word_prob_tensor for _ in range(self.layer_width)], dim=1).squeeze(2)
+            # Stack up on num_layers
+            inference_word_prob_tensor_stacked = torch.stack([inference_word_prob_tensor_stacked_tmp for _ in range(num_layers)], dim=0)
+            prompt_tensors.append(inference_word_prob_tensor_stacked)
+        return prompt_tensors
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="input text files")
+    parser.add_argument("training_text", type=pathlib.Path)  # A text file of sentences to train on
+    parser.add_argument("inference_text", type=pathlib.Path)  # A text file of sentences to run inference on
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    data = InputData(
+        training_path=args.training_text,
+        inference_path=args.inference_text,
+    )
+    print(data)
+    prob_tensors = ProbTensors(
+        data=data,
+        layer_width=4,
+    )
+    print(prob_tensors)
+
+
+if __name__ == '__main__':
+    main()
