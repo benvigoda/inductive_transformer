@@ -2,7 +2,10 @@ from torch import nn  # type: ignore
 
 
 class Model(nn.Module):
-
+    """
+    dim=0 is always states of the variable e.g. 0,1 or cat, dog
+    dim=1 is layer_width
+    """
     def __init__(self, hyperparams):
 
         self.layer_width = hyperparams.layer_width
@@ -13,6 +16,10 @@ class Model(nn.Module):
 
         self.decoder_layer_0 = DecoderLayer(hyperparams)
         self.decoder_layer_1 = DecoderLayer(hyperparams)
+
+        # Tuple of variables output by the forward pass
+        # This can then be easily accessed for printing
+        self.forward_output = tuple()
 
     # two layer model
     def forward(self, z_input, t):
@@ -25,7 +32,8 @@ class Model(nn.Module):
         z1_decode, x_decode_layer_1 = self.decoder_layer_1(z2_decode)
         z0_decode, x_decode_layer_0 = self.decoder_layer_0(z1_decode)
 
-        return x_decode_layer_0, x_decode_layer_1, z0_decode
+        self.forward_output = (x_decode_layer_0, x_decode_layer_1, z0_decode)
+        return self.forward_output
 
     # one layer model
     # def forward(self, z0):
