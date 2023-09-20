@@ -2,20 +2,20 @@ import torch  # type: ignore
 from torch import nn  # type: ignore
 
 
-class EncoderTokenPi(nn.Module):
+class EncoderAttentionPi(nn.Module):
 
     def __init__(self, hyperparams):
-        super(EncoderTokenPi, self).__init__()
+        super(EncoderAttentionPi, self).__init__()
         self.hyperparams = hyperparams
         self.vocab_size = self.hyperparams.vocab_size
 
-        self.weights = nn.Parameter(torch.ones(self.vocab_size, self.layer_width), requires_grad=True)
+        self.weights = nn.Parameter(torch.ones(self.layer_width, self.layer_width), requires_grad=True)
         nn.init.normal_(self.weights, mean=1, std=0.1)
         self.relu = nn.ReLU()
 
 
     def forward(self, v):
-        # we expect t to be already normalized
+        # we expect v to be already normalized categorical
 
         prob_weights = self.relu(self.weights) + 1e-9
 

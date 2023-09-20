@@ -1,5 +1,4 @@
 import time
-import copy
 import typing
 import pathlib
 import argparse
@@ -53,7 +52,6 @@ def train_model(
     # Initialize the lists used for storing what we want to print to the terminal and google sheet
     losses = []  # Store all the losses for later printing
     minima_models_indices = []  # Store the indices of the models at the local minima so we can print just those
-    models_parameters = []  # Store the parameters of the models so we can print them to a google sheet
 
     # Initialize the optimizer and the loss function
     optim = torch.optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
@@ -115,19 +113,6 @@ def train_model(
             if not output_to_google_sheet:
                 continue
             # Save the model parameters for later printing
-            #FIXME: All the parameter names are wrong here
-            models_parameters.append(
-                {
-                    "logical_encoder.decision_X1LSE.weights": copy.deepcopy([encoder_layer.decision_X1LSE.weights.detach().tolist() for encoder_layer in model.logical_encoder.layers]),
-                    "logical_encoder.word_X1LSE.weights": copy.deepcopy([encoder_layer.word_X1LSE.weights.detach().tolist() for encoder_layer in model.logical_encoder.layers]),
-                    "logical_decoder.concept_ALLSUM_decode.weights": copy.deepcopy([decoder_layer.concept_ALLSUM_decode.weights.detach().tolist() for decoder_layer in model.logical_decoder.layers]),
-                    "logical_decoder.word_X1LSE_decode_layer.weights": copy.deepcopy([decoder_layer.word_X1LSE_decode_layer.weights.detach().tolist() for decoder_layer in model.logical_decoder.layers]),
-                    "logical_decoder.pred": copy.deepcopy(preds.detach()),
-                    "logical_decoder.truth": copy.deepcopy(truths.detach()),
-                    "logical_decoder.input": copy.deepcopy(token_prob_tensors),
-                    "to_decoder": model.to_decoder,
-                }
-            )
             # Only output to the google sheet when we reach a local minimum
             if is_local_minimum(losses=losses, reached_local_minimum=reached_local_minimum):
                 print("* LOSS went up *")
@@ -136,13 +121,11 @@ def train_model(
                 reached_local_maximum = False
                 minimum_index = i * epoch + i - 1
                 minima_models_indices.append(minimum_index)
-                z_decode = model.logical_decoder.z_decode_for_output
 
                 # Set the model to evaluation mode for inference
                 model.eval()
 
                 if prompt_tensors is not None:
-                    # print(models_parameters[minimum_index]["logical_encoder.word_X1LSE.weights"])
                     printing.print_to_terminal(
                         model=model,
                         iter=i,
@@ -158,19 +141,9 @@ def train_model(
                         truths=truths,
                         word_log_prob_tensors=token_prob_tensors,
                         model=model,
-                        models_parameters=models_parameters,
                         attention_input=attention_input,
                         vocab=vocab,
-                        z_decode=z_decode,
-                        minimum_index=minimum_index,
                     )
-
-                # safety measure if we failed to specify prompt tensor, we use first sentence in training data
-                else:
-                    y = model(attention_input[0], token_prob_tensors[0])
-                    res = printing.format_into_table(output=y, model=model, vocab=vocab, top_row=z_decode)
-                    print('output to sheet')
-                    printing.output_to_sheet(res, "Sheet1")
 
                 # Set the model back to training mode
                 model.train()
@@ -237,28 +210,14 @@ def main():
     # Inference:
     elif prompt_tensors is not None:
         model.eval()  # set the model to inference mode
-        z_decode = model.logical_decoder.z_decode_for_output
-        #FIXME: All the parameter names are wrong here
-        models_parameters = [
-            {
-                "logical_encoder.decision_X1LSE.weights": copy.deepcopy([encoder_layer.decision_X1LSE.weights.detach().tolist() for encoder_layer in model.logical_encoder.layers]),
-                "logical_encoder.word_X1LSE.weights": copy.deepcopy([encoder_layer.word_X1LSE.weights.detach().tolist() for encoder_layer in model.logical_encoder.layers]),
-                "logical_decoder.concept_ALLSUM_decode.weights": copy.deepcopy([decoder_layer.concept_ALLSUM_decode.weights.detach().tolist() for decoder_layer in model.logical_decoder.layers]),
-                "logical_decoder.word_X1LSE_decode_layer.weights": copy.deepcopy([decoder_layer.word_X1LSE_decode_layer.weights.detach().tolist() for decoder_layer in model.logical_decoder.layers]),
-                "to_decoder": copy.deepcopy(model.to_decoder),
-            }
-        ]
         printing.send_to_google_sheet(
             prompt_tensors,
             preds=None,
             truths=None,
             word_log_prob_tensors=None,
             model=model,
-            models_parameters=models_parameters,
             input_decision_activations=prob_tensors.decision_input,
             vocab=data.vocab,
-            z_decode=z_decode,
-            minimum_index=0,
         )
     else:
         print("No inference prompt tensors found, so no inference will be run")

@@ -47,54 +47,44 @@ def print_to_terminal(model, iter, epoch, start, loss_avg, toc, print_every):
     # [decoder_layer.printable() for decoder_layer in model.logical_decoder.layers]
 
 
-def send_to_google_sheet(prompt_tensors, preds, truths, word_log_prob_tensors, model, models_parameters, input_decision_activations, vocab, z_decode, minimum_index):
+def send_to_google_sheet(prompt_tensors, preds, truths, word_log_prob_tensors, model, input_decision_activations, vocab):
     # word_log_prob_tensors are the training inputs
     prompt_preds = []  # Store the predictions from each prompt_tensor
+    encoder_attention_pi_weights = torch.FloatTensor([model.encoder_layer_0.attention.weights, model.encoder_layer_1.attention.weights])
+    encoder_word_pi_weights = torch.FloatTensor([model.encoder_layer_0.word.weights, model.encoder_layer_1.word.weights])
+    decoder_attention_pi_weights = torch.FloatTensor([model.decoder_layer_0.attention.weights, model.decoder_layer_1.attention.weights])
+    decoder_word_pi_weights = torch.FloatTensor([model.decoder_layer_0.word.weights, model.decoder_layer_1.word.weights])
     for sheet_number, prompt_tensor in enumerate(prompt_tensors):
         # write activations
         y = model(prompt_tensor, input_decision_activations)
-        models_parameters[minimum_index]["to_decoder"] = model.to_decoder
-        res = format_into_table(
-            output=y,
-            model=model,
-            vocab=vocab,
-            top_row=z_decode,
-            top_row_label="z_decode",
-            decoder=True,
-        )
-        output_to_sheet(res, f"activations_{sheet_number + 1}")
 
         if sheet_number == 0:
 
             # write decoder weights
             res_decoder_weights = format_into_table(
-                output=torch.FloatTensor(models_parameters[minimum_index]["logical_decoder.word_X1LSE_decode_layer.weights"]),
+                output=decoder_word_pi_weights,
                 model=model,
                 vocab=vocab,
-                top_row=torch.FloatTensor(models_parameters[minimum_index]["logical_decoder.concept_ALLSUM_decode.weights"]),
-                top_row_label="concept_ALLSUM_decode_w",
+                top_row=decoder_attention_pi_weights,
+                top_row_label="decoder attention pi weights",
                 decoder=True,
             )
-            output_to_sheet(res_decoder_weights, "decoder_weights")  # FIXME: comment in or out for rate limit
+            output_to_sheet(res_decoder_weights, "decoder_weights")
 
             # write encoder weights
             # The encoder weights are (vocab_size, layer_width) while the decoder weights are (layer_width, vocab_size)
             # For print consistency in the google sheet, we need to transpose the encoder weights
             res_encoder_weights = format_into_table(
-                # we need to transpose dims 1 & 2 for the encoder word_weights
-                # because they come in size = (num_layers, vocab_size, layer_width),
-                # whereas the decoder word weights are
-                # size = (num_layers, layer_width, vocab_size)
-                output=torch.transpose(torch.FloatTensor(models_parameters[minimum_index]["logical_encoder.word_X1LSE.weights"]), dim0=1, dim1=2),
+                # TODO: We previously had to transpose "encoder_word_pi_weights" and "encoder_attention_pi_weights".
+                # Do we still need to do that?
+                output=encoder_word_pi_weights,
                 model=model,
                 vocab=vocab,
-                top_row=torch.FloatTensor(models_parameters[minimum_index]["logical_encoder.decision_X1LSE.weights"]),
-                top_row_label="decision_X1LSE_w",
+                top_row=encoder_attention_pi_weights,
+                top_row_label="encoder attention pi weights",
+                decoder=False,
             )
             output_to_sheet(res_encoder_weights, "encoder_weights")
-            # write encoder activations, stored in the to_decoder list
-            res_to_decoder = format_to_decoder(model)
-            output_to_sheet(res_to_decoder, "to_decoder")
 
         prompt_preds.append(y)
     # With test data sentences running through inference
@@ -104,6 +94,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, word_log_prob_tensors, m
         vocab=vocab,
         preds=prompt_preds,
         # The input that goes into the encoder is transposed in its last two entries compared to the decoder. For printing purposes here, we need to transpose it back to the same format
+        # TODO: is that still true???
         truths=torch.transpose(prompt_tensors, 2, 3),
         inputs=torch.transpose(prompt_tensors, 2, 3),
         title="test prediction versus truth"
@@ -119,47 +110,11 @@ def send_to_google_sheet(prompt_tensors, preds, truths, word_log_prob_tensors, m
             preds=preds,
             truths=truths,
             # The input that goes into the encoder is transposed in its last two entries compared to the decoder. For printing purposes here, we need to transpose it back to the same format
+            # TODO: is that still true???
             inputs=torch.transpose(word_log_prob_tensors, 2, 3),
             title="training prediction versus truth"
         )
         output_to_sheet(res_pred_truth_input, "training_input_pred_truth")
-
-
-def format_to_decoder(model):
-    # Initialize the table to None
-    # We have 4 tensors, each of width layer_width --> So, we need 4*(layer_width + 1) + 1 columns
-    # We have num_layers*(max(vocab_size, layer_width) + 1) + 1 rows
-    layer_width = model.hyperparameters.layer_width
-    num_layers = model.hyperparameters.num_layers
-    vocab_size = model.hyperparameters.vocab_size
-    column_step = model.hyperparameters.layer_width + 1
-    num_columns = 4 * column_step + 1
-    row_step = max(vocab_size, layer_width) + 1
-    num_rows = num_layers * row_step + 1
-    table = [[None for _ in range(num_columns)] for _ in range(num_rows)]
-    table[0][1] = "layer_decision_X1LSE_input_weighted"
-    table[0][1 + layer_width + 1] = "decision_x1lse_output"
-    table[0][3 + layer_width + 1] = "layer_word_X1LSE_input_weighted"
-    table[0][3 + 2 * (layer_width + 1)] = "word_x1lse_output"
-    for n in range(num_layers):
-        table[1 + n * row_step][0] = f"layer number {n}"
-        layer_decision_X1LSE_input_weighted, decision_x1lse_output, layer_word_X1LSE_input_weighted, word_x1lse_output = model.to_decoder[n]
-        '''
-        Python wants for loops to essentially just do this:
-        table[1 + n * row_step: n * row_step + layer_width][1: layer_width + 1] = layer_decision_X1LSE_input_weighted.tolist()
-        table[1 + n * row_step: n * row_step + layer_width][2 + layer_width: 3 + layer_width] = decision_x1lse_output.tolist()
-        table[1 + n * row_step: n * row_step + vocab_size][4 + layer_width: 4 + 2 * layer_width] = layer_word_X1LSE_input_weighted.tolist()
-        table[1 + n * row_step: n * row_step + layer_width][5 + 2 * layer_width: 5 + 3 * layer_width] = word_x1lse_output.tolist()
-        '''
-        for i, row in enumerate(layer_decision_X1LSE_input_weighted.tolist()):
-            table[1 + n * row_step + i][1: layer_width + 1] = row
-        for i, row in enumerate(decision_x1lse_output.tolist()):
-            table[1 + n * row_step + i][2 + layer_width: 3 + layer_width] = row
-        for i, row in enumerate(layer_word_X1LSE_input_weighted.tolist()):
-            table[1 + n * row_step + i][4 + layer_width: 4 + 2 * layer_width] = row
-        for i, row in enumerate(word_x1lse_output.tolist()):
-            table[1 + n * row_step + i][5 + 2 * layer_width: 5 + 3 * layer_width] = row
-    return table
 
 
 def format_into_pred_truth_table(model, vocab, preds, truths, inputs, title=""):
@@ -199,7 +154,7 @@ def format_into_pred_truth_table(model, vocab, preds, truths, inputs, title=""):
     return table
 
 
-def format_into_table(output, model, vocab, top_row, top_row_label: str = "z_decode", decoder: bool = False):
+def format_into_table(output, model, vocab, top_row, top_row_label: str, decoder: bool = False):
     # Takes in the inference output of a model and formats it into a table
     result = [[None for _ in range(model.hyperparameters.layer_width + 1)] for _ in range(model.hyperparameters.num_layers * 4)]
 
