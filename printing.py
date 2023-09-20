@@ -6,23 +6,23 @@ from google_sheets_api.sheetsstart import Sheet
 from googleapiclient.errors import HttpError  # type: ignore
 
 
-def format_prob_vocab(log_prob_outputs, vocab):
+def format_prob_vocab(prob_outputs, vocab):
     """
-    Takes in a log_prob_outputs tensor and a list of vocab words
+    Takes in a prob_outputs tensor and a list of vocab tokens
     It assumes the two are sorted in corresponding order
-    (meaning) that the first entry in the log_prob_outputs tensors
-    does correspond to the first word in the vocab list
+    (meaning) that the first entry in the prob_outputs tensors
+    does correspond to the first token in the vocab list
 
     Return a string corresponding
     to the list of formatted tuples linking each prob to it's corresponding
-    word, sorted from highest prob to lowest
+    token, sorted from highest prob to lowest
     """
-    # Pair each prob with it's corresponding word string in the vocab
-    prob_word_pairs = [(round(x.item() * 100) / 100, v) for x, v in zip(log_prob_outputs, vocab)]
-    # Sort from highest probability to lowest, so we have the most likely word on top
-    prob_word_pairs.sort(key=lambda x: x[0], reverse=True)
-    prob_word_pairs_str = "\n".join([str(pw) for pw in prob_word_pairs])
-    return prob_word_pairs_str
+    # Pair each prob with it's corresponding token string in the vocab
+    prob_token_pairs = [(round(x.item() * 100) / 100, v) for x, v in zip(prob_outputs, vocab)]
+    # Sort from highest probability to lowest, so we have the most likely token on top
+    prob_token_pairs.sort(key=lambda x: x[0], reverse=True)
+    prob_token_pairs_str = "\n".join([str(pw) for pw in prob_token_pairs])
+    return prob_token_pairs_str
 
 
 def print_to_terminal(model, iter, epoch, start, loss_avg, toc, print_every):
@@ -38,22 +38,15 @@ def print_to_terminal(model, iter, epoch, start, loss_avg, toc, print_every):
             print_every,
         )
     )
-    print('***************')
-    # print("logical_encoder.decision_X1LSE.weights:", [layer.decision_X1LSE.weights for layer in model.logical_encoder.layers])
-    # print("logical_encoder.word_X1LSE.weights:", [layer.word_X1LSE.weights for layer in model.logical_encoder.layers])
-    print("logical_decoder.concept_ALLSUM_decode.weights", [layer.concept_ALLSUM_decode.weights for layer in model.logical_decoder.layers])
-    # print("logical_decoder.word_X1LSE_decode_layer.weights", [decoder_layer.word_X1LSE_decode_layer.weights for decoder_layer in model.logical_decoder.layers])
-    print('---------------')
-    # [decoder_layer.printable() for decoder_layer in model.logical_decoder.layers]
 
 
-def send_to_google_sheet(prompt_tensors, preds, truths, word_log_prob_tensors, model, input_decision_activations, vocab):
-    # word_log_prob_tensors are the training inputs
+def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, model, input_decision_activations, vocab):
+    # token_prob_tensors are the training inputs
     prompt_preds = []  # Store the predictions from each prompt_tensor
-    encoder_attention_pi_weights = torch.FloatTensor([model.encoder_layer_0.attention.weights, model.encoder_layer_1.attention.weights])
-    encoder_word_pi_weights = torch.FloatTensor([model.encoder_layer_0.word.weights, model.encoder_layer_1.word.weights])
-    decoder_attention_pi_weights = torch.FloatTensor([model.decoder_layer_0.attention.weights, model.decoder_layer_1.attention.weights])
-    decoder_word_pi_weights = torch.FloatTensor([model.decoder_layer_0.word.weights, model.decoder_layer_1.word.weights])
+    encoder_attention_pi_weights = torch.FloatTensor([model.encoder_layer_0.encoder_attention_pi.weights, model.encoder_layer_1.encoder_attention_pi.weights])
+    encoder_token_pi_weights = torch.FloatTensor([model.encoder_layer_0.encoder_token_pi.weights, model.encoder_layer_1.encoder_token_pi.weights])
+    decoder_attention_pi_weights = torch.FloatTensor([model.decoder_layer_0.decoder_attention_pi.weights, model.decoder_layer_1.decoder_attention_pi.weights])
+    decoder_token_pi_weights = torch.FloatTensor([model.decoder_layer_0.decoder_token_pi.weights, model.decoder_layer_1.decoder_token_pi.weights])
     for sheet_number, prompt_tensor in enumerate(prompt_tensors):
         # write activations
         y = model(prompt_tensor, input_decision_activations)
@@ -62,7 +55,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, word_log_prob_tensors, m
 
             # write decoder weights
             res_decoder_weights = format_into_table(
-                output=decoder_word_pi_weights,
+                output=decoder_token_pi_weights,
                 model=model,
                 vocab=vocab,
                 top_row=decoder_attention_pi_weights,
@@ -75,9 +68,9 @@ def send_to_google_sheet(prompt_tensors, preds, truths, word_log_prob_tensors, m
             # The encoder weights are (vocab_size, layer_width) while the decoder weights are (layer_width, vocab_size)
             # For print consistency in the google sheet, we need to transpose the encoder weights
             res_encoder_weights = format_into_table(
-                # TODO: We previously had to transpose "encoder_word_pi_weights" and "encoder_attention_pi_weights".
+                # TODO: We previously had to transpose "encoder_token_pi_weights" and "encoder_attention_pi_weights".
                 # Do we still need to do that?
-                output=encoder_word_pi_weights,
+                output=encoder_token_pi_weights,
                 model=model,
                 vocab=vocab,
                 top_row=encoder_attention_pi_weights,
@@ -101,7 +94,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, word_log_prob_tensors, m
     )
     output_to_sheet(res_pred_truth_input, "inference_input_pred")
 
-    if preds is not None and truths is not None and word_log_prob_tensors is not None:
+    if preds is not None and truths is not None and token_prob_tensors is not None:
         # With the last training data sentence running through inference
         # Print the input, pred, and truth to google-sheet
         res_pred_truth_input = format_into_pred_truth_table(
@@ -111,7 +104,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, word_log_prob_tensors, m
             truths=truths,
             # The input that goes into the encoder is transposed in its last two entries compared to the decoder. For printing purposes here, we need to transpose it back to the same format
             # TODO: is that still true???
-            inputs=torch.transpose(word_log_prob_tensors, 2, 3),
+            inputs=torch.transpose(token_prob_tensors, 2, 3),
             title="training prediction versus truth"
         )
         output_to_sheet(res_pred_truth_input, "training_input_pred_truth")
@@ -133,7 +126,7 @@ def format_into_pred_truth_table(model, vocab, preds, truths, inputs, title=""):
         # ...
         table[0][1 + k * (model.hyperparameters.layer_width + 1)] = f"sentence {k}"
 
-    # Fill-in the word-lists
+    # Fill-in the token-lists
     for n in range(model.hyperparameters.num_layers):
         table[1 + n * 4][0] = f"pred layer {n}"
         table[1 + n * 4 + 1][0] = f"truth layer {n}"
@@ -161,34 +154,34 @@ def format_into_table(output, model, vocab, top_row, top_row_label: str, decoder
     for n in range(model.hyperparameters.num_layers):
 
         # Layer numbering in the left most column = 0
-        # Starts at layer number 0 for the decision/all and for the word
+        # Starts at layer number 0 for the decision/all and for the token
         # Runs until n = num_layers - 1
         result[n * 2][0] = f"layer number: {n}"
         result[n * 2 + 1][0] = f"layer number: {n}"
 
         # Now fill-in each column of the table
         for lw in range(model.hyperparameters.layer_width):
-            # Format decoder word weights and activations from the encoder and the decoder
-            # Extract the word_X1LSE_encode's input tensor or the word_X1LSE_decode's output tensor
+            # Format decoder token weights and activations from the encoder and the decoder
+            # Extract the token_pi_encode's input tensor or the token_pi_decode's output tensor
             # We want to look at the n'th num_layer and lw'th column
             # This assumes that the output is of size = (num_layers, layer_width, vocab_size)
-            log_prob_outputs = output[n, lw]
-            prob_word_pairs_str = format_prob_vocab(log_prob_outputs, vocab)
+            prob_outputs = output[n, lw]
+            prob_token_pairs_str = format_prob_vocab(prob_outputs, vocab)
 
             # Format decision weights and activations from the encoder and decoder
-            # For the decoder we print the ALLSUM weights first
+            # For the decoder we print the attention_pi weights first
             # For both the encoder and decoder, we index in a transposed way.
-            # Namely, we print decision_X1LSE_w, z_decode_w or concept_ALLSUM_decode_w[:, lw] in the column lw
+            # Namely, we print encoder_attention_pi_w or decoder_attention_pi_w[:, lw] in the column lw
             if decoder:
-                result[n * 2][lw + 1] = prob_word_pairs_str
+                result[n * 2][lw + 1] = prob_token_pairs_str
                 result[n * 2 + 1][lw + 1] = f"{top_row_label} = {['%.2f' % l.item() for l in top_row[n][:, lw]]}"
             else:
-                result[n * 2 + 1][lw + 1] = prob_word_pairs_str
+                result[n * 2 + 1][lw + 1] = prob_token_pairs_str
                 # here we do top_row[n][:, lw] the same as above in the decoder, because
                 # the decision_weights question we want to answer for ourselves in the google sheet is
-                # "which concept has this encoder X1LSE learned to listen to"
+                # "which concept has this encoder pi learned to listen to"
                 # the decision_activations question we want to answer for ourselves in the google sheet is
-                # "which concept IS this encoder X1LSE listening to when we input a particular sentence"
+                # "which concept IS this encoder pi listening to when we input a particular sentence"
                 result[n * 2][lw + 1] = f"{top_row_label} = {['%.2f' % l.item() for l in top_row[n][:, lw]]}"
 
     # Add comments to the bottom of the table:

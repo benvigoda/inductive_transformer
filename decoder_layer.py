@@ -7,17 +7,18 @@ from decoder_token_pi import DecoderTokenPi
 from decoder_attention_pi import DecoderAttentionPi
 from decoder_and import DecoderAnd
 
+
 class DecoderLayer(nn.Module):
 
-    def __init__(self, hyperparams):
+    def __init__(self, hyperparams, active_layer: int):
         super(DecoderLayer, self).__init__()
-
-        self.decoder_universe = DecoderOpenClosedUniverse(hyperparams)
-        self.decoder_bernoulli_categorical = DecoderBernoulliCategorical(hyperparams)
-        self.decoder_token_pi = DecoderTokenPi(hyperparams)
-        self.decoder_attention_pi = DecoderAttentionPi(hyperparams)
-        self.decoder_categorical_bernoulli = DecoderCategoricalBernoulli(hyperparams)
-        self.decoder_and = DecoderAnd(hyperparams)
+        self.active_layer = active_layer
+        self.decoder_universe = DecoderOpenClosedUniverse(hyperparams=hyperparams, active_layer=active_layer)
+        self.decoder_bernoulli_categorical = DecoderBernoulliCategorical(hyperparams=hyperparams, active_layer=active_layer)
+        self.decoder_token_pi = DecoderTokenPi(hyperparams=hyperparams, active_layer=active_layer)
+        self.decoder_attention_pi = DecoderAttentionPi(hyperparams=hyperparams, active_layer=active_layer)
+        self.decoder_categorical_bernoulli = DecoderCategoricalBernoulli(hyperparams=hyperparams, active_layer=active_layer)
+        self.decoder_and = DecoderAnd(hyperparams=hyperparams, active_layer=active_layer)
 
     def forward(self, z_prime):
         # dim=0 indexes the state of the variable e.g. cat or dog, 0 or 1, etc.
