@@ -13,7 +13,6 @@ class DecoderAttentionPi(nn.Module):
         nn.init.normal_(self.weights, mean=1, std=0.1)
         self.relu = nn.ReLU()
 
-
     def forward(self, y):
         # we expect y to be already normalized categorical
 
@@ -36,4 +35,20 @@ class DecoderAttentionPi(nn.Module):
         # state 1 (in dim=0) from pi in the layer above at location 0 in dim=1
         # state 1 (in dim=0) from pi in the layer above at location 1 in dim=1
 
-        return v #v is categorical
+        return v  # v is categorical
+
+        """
+        I lost a little steam here
+        I am figuring out the final flow from decoder
+        attention pi to coins to closed universe
+        kind of a little tricky
+
+        Sounds good :) I'm going to head to bed as well.
+        yeah probably need to sleep now
+        want to commit?
+        I did (slacked you a few messages and what I think we should do next)
+        thank you for making that list in slack
+        sounds great
+        okay sleep time!
+        Good night!
+        """
