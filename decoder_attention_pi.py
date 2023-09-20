@@ -26,14 +26,20 @@ class DecoderAttentionPi(nn.Module):
         v = torch.normalize(v, p=1, dim=0)
 
         # ANDs in the layer below with layer width indexed by dim=0
-        
+
         # at location 0 we receive a signal from
         # state 0 (in dim=0) from pi in the layer above at location 0 in dim=1
         # state 0 (in dim=0) from pi in the layer above at location 1 in dim=1
 
+        # we will convert both of these to coins and those are the two parents of
+        # the AND at location 0
+
         # at location 1 we receive a signal from
         # state 1 (in dim=0) from pi in the layer above at location 0 in dim=1
         # state 1 (in dim=0) from pi in the layer above at location 1 in dim=1
+
+        # we will convert both of these to coins and those are the two parents of
+        # the AND at location 1
 
         return v  # v is categorical
 
@@ -51,4 +57,13 @@ class DecoderAttentionPi(nn.Module):
         sounds great
         okay sleep time!
         Good night!
+
+        just figured it out!
+        okay now actually going to sleep :-)
+        can you make sure lines 34 and 41 get saved for tomorrow?
+        I'll just put them in slack
+
+        Sure. I'll make one more commit :). nah go to sleep
+        we're good
+
         """
