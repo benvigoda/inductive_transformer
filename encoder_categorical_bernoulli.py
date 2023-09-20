@@ -1,3 +1,4 @@
+import torch  # type: ignore
 from torch import nn  # type: ignore
 
 
