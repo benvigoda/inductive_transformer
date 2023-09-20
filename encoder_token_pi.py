@@ -14,9 +14,14 @@ class EncoderTokenPi(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, t):
+        # we expect t to be already normalized
+
         prob_weights = self.relu(self.weights) + 1e-9
 
-        x[:,1] = prob_weights * t[:,1]
-        p_y1 = torch.sum(x, dim=0)
+        # element-wise product of weight vector and token vector for each column in the layer
+        x = prob_weights * t
 
-        return x
+        # make it an inner product by taking a sum along the token dimension
+        x = torch.sum(x, dim=0) #after summing it is size = (1, layer_width)
+
+        return x #x is categorical

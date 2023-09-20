@@ -1,6 +1,7 @@
 import time
 import copy
 import typing
+import pathlib
 import argparse
 import matplotlib.pyplot as plt  # type: ignore
 import torch  # type: ignore
@@ -188,9 +189,9 @@ def train_model(
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Logical Encoder arguments")
-    parser.add_argument("training_text", type=str)  # A text file of sentences to train on
-    parser.add_argument("inference_text", type=str)  # A text file of sentences to run inference on
+    parser = argparse.ArgumentParser(description="Model arguments")
+    parser.add_argument("training_text", type=pathlib.Path)  # A text file of sentences to train on
+    parser.add_argument("inference_text", type=pathlib.Path)  # A text file of sentences to run inference on
     parser.add_argument(
         "--train", help="Whether to train model or not", action="store_true"
     )
