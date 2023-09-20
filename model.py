@@ -1,4 +1,6 @@
 from torch import nn  # type: ignore
+from encoder_layer import EncoderLayer
+from decoder_layer import DecoderLayer
 
 
 class Model(nn.Module):
@@ -11,11 +13,11 @@ class Model(nn.Module):
         self.layer_width = hyperparams.layer_width
         self.num_layers = hyperparams.num_layers
 
-        self.encoder_layer_0 = EncoderLayer(hyperparams)
-        self.encoder_layer_1 = EncoderLayer(hyperparams)
+        self.encoder_layer_0 = EncoderLayer(hyperparams=hyperparams, active_layer=0)
+        self.encoder_layer_1 = EncoderLayer(hyperparams=hyperparams, active_layer=1)
 
-        self.decoder_layer_0 = DecoderLayer(hyperparams)
-        self.decoder_layer_1 = DecoderLayer(hyperparams)
+        self.decoder_layer_0 = DecoderLayer(hyperparams=hyperparams, active_layer=0)
+        self.decoder_layer_1 = DecoderLayer(hyperparams=hyperparams, active_layer=1)
 
         # Tuple of variables output by the forward pass
         # This can then be easily accessed for printing

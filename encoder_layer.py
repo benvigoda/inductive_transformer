@@ -9,15 +9,15 @@ from encoder_and import EncoderAnd
 
 class EncoderLayer(nn.Module):
 
-    def __init__(self, hyperparams):
+    def __init__(self, hyperparams, active_layer: int):
         super(EncoderLayer, self).__init__()
-
-        self.encoder_universe = EncoderOpenClosedUniverse(hyperparams)
-        self.encoder_bernoulli_categorical = EncoderBernoulliCategorical(hyperparams)
-        self.encoder_token_pi = EncoderTokenPi(hyperparams)
-        self.encoder_attention_pi = EncoderAttentionPi(hyperparams)
-        self.encoder_categorical_bernoulli = EncoderCategoricalBernoulli(hyperparams)
-        self.encoder_and = EncoderAnd(hyperparams)
+        self.active_layer = active_layer
+        self.encoder_universe = EncoderOpenClosedUniverse(hyperparams=hyperparams, active_layer=active_layer)
+        self.encoder_bernoulli_categorical = EncoderBernoulliCategorical(hyperparams=hyperparams, active_layer=active_layer)
+        self.encoder_token_pi = EncoderTokenPi(hyperparams=hyperparams, active_layer=active_layer)
+        self.encoder_attention_pi = EncoderAttentionPi(hyperparams=hyperparams, active_layer=active_layer)
+        self.encoder_categorical_bernoulli = EncoderCategoricalBernoulli(hyperparams=hyperparams, active_layer=active_layer)
+        self.encoder_and = EncoderAnd(hyperparams=hyperparams, active_layer=active_layer)
 
     def forward(self, z, t):
         # dim=0 indexes the state of the variable e.g. cat or dog, 0 or 1, etc.

@@ -4,13 +4,17 @@ from torch import nn  # type: ignore
 
 class EncoderTokenPi(nn.Module):
 
-    def __init__(self, hyperparams):
+    def __init__(self, hyperparams, active_layer: int):
         super(EncoderTokenPi, self).__init__()
         self.hyperparams = hyperparams
         self.vocab_size = self.hyperparams.vocab_size
+        self.active_layer = active_layer
 
-        self.weights = nn.Parameter(torch.ones(self.vocab_size, self.layer_width), requires_grad=True)
-        nn.init.normal_(self.weights, mean=1, std=0.1)
+        if hyperparams.encoder_token_pi_weights is not None:
+            self.weights = hyperparams.encoder_token_pi_weights[active_layer]
+        else:
+            self.weights = nn.Parameter(torch.ones(self.vocab_size, self.layer_width), requires_grad=True)
+            nn.init.normal_(self.weights, mean=1, std=0.1)
         self.relu = nn.ReLU()
 
     def forward(self, t):
