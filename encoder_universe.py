@@ -14,24 +14,92 @@ class EncoderUniverse(nn.Module):
         # FIXME
         u = torch.empty(self.hyperparams.layer_width, self.hyperparams.layer_width)
 
-        # if this parent=1, then child=1, the other_parent can be whatever
-        # child=1 and other_parent=1
-        # child=1 and other_parent=0
+        # we are developing a closed to open universe encoder factor
+        # it's output will go into a bernoulli to categorical encoder factor
 
-        # if this parent=0, then child=other_parent
-        # child=1 and other_parent=1
-        # child=0 and other_parent=0
+        # we are going to think about what output this universe factor needs to produce
+        # in terms of the inputs it receives from below
 
-        # z[1][0] = 1 - z[0][0] is the left child
-        # z[1][1] = 1 - z[0][1] is the right child
+        # the inputs below are z's and they live in a closed universe with a limited layer width
+        # the outputs go to the pi_a's above who live in an open universe of expanded choices
+
+        # in the decoder direction, the pi_a's choose from their own unique children which we then
+        # deduplicate and merge into a closed universe
+
+        # in the encoder direction we start with these merged deduplicated children (z's)
+        # and we open them up into the open-universe choices that the encoder pi_a's want to
+        # see as inputs
+
+        # let's look at the right-side encoder bernoulli-categorical
+        # the left parent of this factor crosses over to the left side pi_a
+        # the right parent goes straight up to the pi_a above
+
+        # let's look at the left-side encoder bernoulli-categorical
+        # the right parent of the this factor crosses over to the right side pi_a
+        # the left parent goes straight up to the pi_a above
+
+        # all of the messages going up to pi_a's need to be categorical at this point where
+        # which means that the two signals going to the left pi_a need to sum to 1
+        # and the two signals going to the right pi_a also need to sum to 1
+
+        # in terms of indexing this means
+        # v[0][0] + v[1][0] = 1 # all the inputs to the left pi_a sum to 1
+        # v[1][1] + v[0][1] = 1 # the inputs to the right pi_a also sum to 1
+
+        # we already have a file for the bernoulli to categorical factor
+        # what we need to figure out now is the universe factor
+
+        # it takes in a z[:][0] Bernoulli on the left and produces two Bernoulli parents
+        # u[:][0][0] bound to go straight up the left (the first index is just the heads/tails)
+        # u[:][0][1] bound to cross over to the right
+
+        # similarly the right-side universe factor takes in a Bernoulli on the right, z[:][1]  
+        # and produces two Bernoulli parents:
+        # u[:][1][0] bound to cross over to the left
+        # u[:][1][1] bound to go straight up the right (the first index is just the heads/tails)
+
+        # in terms of the math that the universe factor performs:
+        # each one has an incoming z and two parents, left and right.
+
+        # if parent_left=1, and child=1, then parent_right can be 1 or 0
+        # as long as one parent=1 to activate the child, it doesn't matter whata the value of the other parent is
+        # Writing a truth table:
+        '''
+        child parent_left parent_right    prob
+        1     1           1               1
+        1     1           0               1
+        1     0           1               1
+        1     0           0               0
+        0     1           1               0
+        0     1           0               0
+        0     0           1               0
+        0     0           0               1
+        '''
 
         # z[heads/tails][below_lw]
         # u[heads/tails][below_lw][above_lw]
         # so when we are considering parent u[a][b][c] we are using child z[][b]
         
         '''
-        # FOUR COINS:
+        The inputs of the universe factor are in terms of the child and the other parent
+        but since the other parent, when we are forward marginalizing the encoder
+        does not yet have any backward information, it is always uniformative, 
+        in other words on the right hand side we always have, u[][][] = 0.5
+        That will save us a lot of work.
+        
+        # p(parent_a = 1) = p(child = 1)p(parent_b = 0) + p(child = 1)p(parent_b = 1)
+        u[1][0][0] = z[1][0] * u[][][] + z[1][0] * u[][][]
+        # p(parent_a = 0) = p(child = 1)p(parent_b = 1) + p(child = 0)p(parent_b = 0)
+        u[0][0][0] = z[][] * u[][][] + z[1][0] * u[][][]
 
+        # p(parent_b = 1) = p(child = 1)p(parent_a = 0) + p(child = 1)p(parent_a = 1)
+        u[1][0][1] = z[][] * u[][][] + z[1][0] * u[][][]
+        # p(parent_b = 0) = p(child = 1)p(parent_a = 1) + p(child = 0)p(parent_a = 0)
+        u[0][0][1] = z[][] * u[][][] + z[1][0] * u[][][]
+
+        We convert all u[][][]'s on the right hand side to 0.5:
+
+        # TODO:
         # p(parent_a = 1) = p(child = 1)p(parent_b = 0) + p(child = 1)p(parent_b = 1)
         u[1][0][0] = z[1][0] * 0.5 + z[1][0] * 0.5
         # p(parent_a = 0) = p(child = 1)p(parent_b = 1) + p(child = 0)p(parent_b = 0)
@@ -131,17 +199,7 @@ class EncoderUniverse(nn.Module):
         u[0][1][1] = z[1][] * 0.5 + z[0][] * 0.5
 
         '''
-        # let's look at the right-side encoder bernoulli-categorical
-        # the left parent of the this factor cross over to the left side
-        # the right parent goes straight up to the pi_a above
 
-        # let's look at the left-side encoder bernoulli-categorical
-        # the right parent of the this factor cross over to the right side
-        # the left parent goes straight up to the pi_a above
-
-        # and they both need to be dice at this point where
-        # all that means is that the two signals goiing to the left pi_a need to sum to 1
-        # and similarly for the two signals going to the right pi_a also need to sum to 1
 
         u = torch.normalize(u, p=1, dim=0)
         return u
