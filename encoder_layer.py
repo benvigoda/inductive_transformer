@@ -12,7 +12,7 @@ class EncoderLayer(nn.Module):
     def __init__(self, hyperparams, active_layer: int):
         super(EncoderLayer, self).__init__()
         self.active_layer = active_layer
-        self.encoder_universe = EncoderOpenClosedUniverse(hyperparams=hyperparams, active_layer=active_layer)
+        self.encoder_universe = EncoderUniverse(hyperparams=hyperparams, active_layer=active_layer)
         self.encoder_bernoulli_categorical = EncoderBernoulliCategorical(hyperparams=hyperparams, active_layer=active_layer)
         self.encoder_token_pi = EncoderTokenPi(hyperparams=hyperparams, active_layer=active_layer)
         self.encoder_attention_pi = EncoderAttentionPi(hyperparams=hyperparams, active_layer=active_layer)
