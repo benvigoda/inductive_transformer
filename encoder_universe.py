@@ -2,10 +2,10 @@ import torch  # type: ignore
 from torch import nn  # type: ignore
 
 
-class EncoderOpenClosedUniverse(nn.Module):
+class EncoderUniverse(nn.Module):
 
     def __init__(self, hyperparams, active_layer: int):
-        super(EncoderOpenClosedUniverse, self).__init__()
+        super(EncoderUniverse, self).__init__()
         self.hyperparams = hyperparams
         self.active_layer = active_layer
 

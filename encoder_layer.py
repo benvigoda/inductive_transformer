@@ -1,5 +1,5 @@
 from torch import nn  # type: ignore
-from encoder_open_closed_universe import EncoderOpenClosedUniverse
+from encoder_universe import EncoderUniverse
 from encoder_bernoulli_categorical import EncoderBernoulliCategorical
 from encoder_token_pi import EncoderTokenPi
 from encoder_attention_pi import EncoderAttentionPi

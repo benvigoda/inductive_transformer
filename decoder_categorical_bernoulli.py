@@ -2,25 +2,54 @@ import torch  # type: ignore
 from torch import nn  # type: ignore
 
 
-class DecoderCategoricalBernoulli(nn.Module):
+class DecoderCategoricalBernoulliY(nn.Module):
 
     def __init__(self, hyperparams, active_layer: int):
-        super(DecoderCategoricalBernoulli, self).__init__()
+        super(DecoderCategoricalBernoulliY, self).__init__()
         self.hyperparams = hyperparams
         self.active_layer = active_layer
 
-    def forward(self, categorical):
-        # categorical is size = (1, layer_width)
-        # bernoulli is size (2, layer_width)
-        bernoulli = torch.empty((2, self.hyperparams.layer_width))
-        assert categorical.shape == (1, self.hyperparams.layer_width)
+    def forward(self, v):
 
-        bernoulli[1][0] = categorical[0, 0]
-        bernoulli[0][0] = categorical[0, 1]
+        '''
+        v is size (layer_width, layer_width)
+        # Note that "above" is incoming in the decoder while "below" is outgoing
+        v, dim = 1 indexes across the layer above, with index above_lw which is short for "above layer width"
+        v, dim = 0 indexes the choice that a given attention pi is making
+        we should think of this dim=0 above choice as choosing one of the concepts in the layer below
+        therefore dim=0 indexes the layer below.  we'll call that index, below_lw "below layer width"
+        below_lw = above_choice
 
-        bernoulli[1][1] = categorical[0, 1]
-        bernoulli[0][1] = categorical[0, 0]
+        let's think in terms of below_lw
+        at below_lw=0, we receive a signal from attention_pi's at above_lw = 0 and above_lw = 1
+        Those are the two parents of the decoder_univers.  But before it vcan consume them,
+        we must convert both of them to Bernoullis.
 
-        bernoulli = torch.normalize(bernoulli, p=1, dim=0)
+        So what we need to do is to convert above_lw=0 to a Bernoulli
+        The question is, what is the value of the above_choice we should grab from the pi above?
+        The answer is, for below_lw=0, we want above_choice=0
 
-        return bernoulli
+        To convert categorical values to Bernoulli we take the categorical value and
+        that is p(1) for the Bernoulli
+
+        the v indexing is [below_lw][above_lw]
+        the u indexing is [heads/tails][below_lw][above_lw]
+        '''
+        # two parents of left open universe:
+        u[1][0][0] = v[0][0]  # heads from left above
+        u[0][0][0] = v[1][0]  # tails from left above
+        # is the probability above that is normalized with heads from above
+        # which is the below_lw=1 index
+
+        u[1][0][1] = v[0][1]  # heads from left above
+        u[0][0][1] = v[1][1]  # tails from left above
+
+        # to parents of right open universe:
+        u[1][1][0] = v[1][0]
+        u[0][1][0] = v[0][0]
+
+        u[1][1][1] = v[1][1]
+        u[0][1][1] = v[0][1]
+
+        u = torch.normalize(u, p=1, dim=0)
+        return u
