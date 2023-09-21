@@ -131,15 +131,31 @@ class EncoderUniverse(nn.Module):
         u[0][1][1] = z[1][] * 0.5 + z[0][] * 0.5
 
         '''
+        # let's look at the right-side encoder bernoulli-categorical
+        # the left parent of the this factor cross over to the left side
+        # the right parent goes straight up to the pi_a above
+
+        # let's look at the left-side encoder bernoulli-categorical
+        # the right parent of the this factor cross over to the right side
+        # the left parent goes straight up to the pi_a above
+
+        # and they both need to be dice at this point where
+        # all that means is that the two signals goiing to the left pi_a need to sum to 1
+        # and similarly for the two signals going to the right pi_a also need to sum to 1
 
         u = torch.normalize(u, p=1, dim=0)
         return u
 
         # encoder_bernoulli_categorical.py
-        # there's four coins, one on all four edges
-        # to get four edges, it's always head divided by tails
+        # there's four coins coming in
+        # to convert coins to categorical, it's always head divided by tails
+        # and then normalize the categoricals
         # v[below_lw][above_lw] = u[heads][below_lw][above_lw] / u[tails][below_lw][above_lw]
-        v[0][0] = u[1][0][0]/u[0][0][0] 
-        v[0][1] = u[1][0][1]/u[0][0][1]
-        v[1][0] = u[1][1][0]/u[0][1][0]
-        v[1][1] = u[1][1][1]/u[0][1][1]
+        v[0][0] = u[1][0][0]/u[0][0][0]  # straight up the left edge
+        v[0][1] = u[1][0][1]/u[0][0][1]  # the left universe to the right pi_a cross connection
+
+        v[1][0] = u[1][1][0]/u[0][1][0]  # the right universe to the left pi_a cross connection
+        v[1][1] = u[1][1][1]/u[0][1][1]  # straight up on the right
+
+        # we want to normalize is the inputs to a specific pi_a
+        v = torch.normalize(v, p=1, dim=0)
