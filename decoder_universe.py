@@ -18,6 +18,6 @@ class EncoderUniverse(nn.Module):
         z[0][1] = u[0][1][0] * u[0][1][1]
         z[1][1] = u[1][1][0] * u[1][1][1] + u[1][1][0] * u[0][1][1] + u[0][1][0] * u[0][1][1]
 
-        z = torch.normalize(z, p=1, dime=0)
+        z = torch.normalize(z, p=1, dim=0)
 
         return z
