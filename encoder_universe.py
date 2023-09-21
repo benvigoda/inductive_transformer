@@ -132,12 +132,7 @@ class EncoderUniverse(nn.Module):
 
         '''
 
-        
-
-
-        # FIXME:
-        u[:,:,0] = torch.normalize(u[:,:,0], p=1, dim=0)
-        u[:,:,1] = torch.normalize(u[:,:,1], p=1, dim=0)
+        u = torch.normalize(u, p=1, dim=0)
         return u
 
         # encoder_bernoulli_categorical.py
