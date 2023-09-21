@@ -11,19 +11,33 @@ class DecoderCategoricalBernoulli(nn.Module):
 
     def forward(self, v):
 
-        u
+        # v[below_lw][after_lw]
+        # u[heads/tails][below_lw][above_lw]
 
-        # categorical is size = (1, layer_width)
-        # bernoulli is size (2, layer_width)
-        bernoulli = torch.empty((2, self.hyperparams.layer_width))
-        assert categorical.shape == (1, self.hyperparams.layer_width)
+        # there are four signals coming down.  
+        # the two going to the left beloware:
+        # v[0][0]
+        # v[0][1]
 
-        bernoulli[1][0] = categorical[0, 0]
-        bernoulli[0][0] = categorical[0, 1]
+        # and two going to the right below:
+        # v[1][0]
+        # v[1][1]
 
-        bernoulli[1][1] = categorical[0, 1]
-        bernoulli[0][1] = categorical[0, 0]
+        # we need to convert all of these to bernoullis
+        # left:
+        u[1][0][0] = v[0][0]
+        u[0][0][0] = v[1][0] # for the tails state take the value that v[0][0] is normalized against which is v[1][0]
 
-        bernoulli = torch.normalize(bernoulli, p=1, dim=0)
+        u[1][0][1] = v[0][1]
+        u[0][0][1] = v[1][1]
+
+        # right:
+        u[1][1][0] = v[1][0] # the last two indices on the left hand side are equal to the indices on the right hand side
+        u[0][1][0] = v[0][0]
+
+        u[1][1][1] = v[1][1] # the last two indices on the left hand side are equal to the indices on the right hand side
+        u[0][1][1] = v[0][1]
+
+        u = torch.normalize(u, p=1, dim=0)
 
         return u
