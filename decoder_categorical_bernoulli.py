@@ -10,6 +10,20 @@ class DecoderCategoricalBernoulliY(nn.Module):
         self.active_layer = active_layer
 
     def forward(self, v):
+        # v[below_lw][above_lw]
+        # u[heads/tails][below_lw][above_lw]
+
+        # there are four signals coming down.  
+        # the two going to the left below are:
+        # v[0][0]
+        # v[0][1]
+
+        # and two going to the right below:
+        # v[1][0]
+        # v[1][1]
+
+        # we need to convert all of these to bernoullis
+        # left:
 
         '''
         v is size (layer_width, layer_width)
@@ -35,6 +49,8 @@ class DecoderCategoricalBernoulliY(nn.Module):
         the v indexing is [below_lw][above_lw]
         the u indexing is [heads/tails][below_lw][above_lw]
         '''
+        assert v.shape == (1, self.hyperparams.layer_width, self.hyperparams.layer_width)
+        u = torch.empty((2, self.hyperparams.layer_width, self.hyperparams.layer_width))
         # two parents of left open universe:
         u[1][0][0] = v[0][0]  # heads from left above
         u[0][0][0] = v[1][0]  # tails from left above
