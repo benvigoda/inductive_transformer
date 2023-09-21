@@ -11,11 +11,11 @@ class DecoderCategoricalBernoulli(nn.Module):
 
     def forward(self, v):
 
-        # v[below_lw][after_lw]
+        # v[below_lw][above_lw]
         # u[heads/tails][below_lw][above_lw]
 
         # there are four signals coming down.  
-        # the two going to the left beloware:
+        # the two going to the left below are:
         # v[0][0]
         # v[0][1]
 
@@ -38,6 +38,9 @@ class DecoderCategoricalBernoulli(nn.Module):
         u[1][1][1] = v[1][1] # the last two indices on the left hand side are equal to the indices on the right hand side
         u[0][1][1] = v[0][1]
 
-        u = torch.normalize(u, p=1, dim=0)
+        # FIXME: this will not normalize each of the heads/tails signals separately
+        u[:,:,0] = torch.normalize(u[:,:,0], p=1, dim=0)
+        u[:,:,1] = torch.normalize(u[:,:,1], p=1, dim=0)
+        # what we should do instead is:
 
         return u
