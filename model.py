@@ -53,5 +53,3 @@ class Model(nn.Module):
         self.encoder_output = (z1_encode)
         self.decoder_output = (t_decode_layer_0, z0_decode)
     '''
-
-

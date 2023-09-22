@@ -70,7 +70,7 @@ class EncoderUniverse(nn.Module):
         # u[:][0][0] bound to go straight up the left (the first index is just the heads/tails)
         # u[:][0][1] bound to cross over to the right
 
-        # similarly the right-side universe factor takes in a Bernoulli on the right, z[:][1]  
+        # similarly the right-side universe factor takes in a Bernoulli on the right, z[:][1]
         # and produces two Bernoulli parents:
         # u[:][1][0] bound to cross over to the left
         # u[:][1][1] bound to go straight up the right (the first index is just the heads/tails)
@@ -83,7 +83,7 @@ class EncoderUniverse(nn.Module):
         '''
         The inputs of the universe factor are in terms of the child and the other parent
         but since the other parent, when we are forward marginalizing the encoder
-        does not yet have any backward information, it is always uninformative, 
+        does not yet have any backward information, it is always uninformative,
         in other words on the right hand side we always have, u[][][] = 0.5
         That will save us a lot of work. e.g.
 
@@ -112,7 +112,7 @@ class EncoderUniverse(nn.Module):
         # u[:][0][0] bound to go straight up the left (the first index is just the heads/tails)
         # u[:][0][1] bound to cross over to the right
 
-        # similarly the right-side universe factor takes in a Bernoulli on the right, z[:][1]  
+        # similarly the right-side universe factor takes in a Bernoulli on the right, z[:][1]
         # and produces two Bernoulli parents:
         # u[:][1][0] bound to cross over to the left
         # u[:][1][1] bound to go straight up the right (the first index is just the heads/tails)

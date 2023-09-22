@@ -24,7 +24,7 @@ class DecoderAnd(nn.Module):
         prob = 1 states when y = 1
         0 1 0   1
         1 1 1   1
-        
+
         prob = 1 states when y = 0
         0 0 0   1
         1 0 0   1
