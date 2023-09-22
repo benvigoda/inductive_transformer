@@ -32,7 +32,7 @@ class DecoderAttentionPi(nn.Module):
         assert y.shape == (1, self.layer_width)
         y = nn.functional.normalize(y, p=1, dim=1)
         # we want to stack x in dim = 0
-        y_stacked = torch.stack([y for lw in range(self.layer_width)], dim=0)
+        y_stacked = torch.cat([y for lw in range(self.layer_width)], dim=0)
 
         # element-wise product of weight tensor and y_stacked
         v = prob_weights * y_stacked

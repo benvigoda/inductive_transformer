@@ -19,7 +19,6 @@ class EncoderTokenPi(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, t):
-        import pdb; pdb.set_trace()
         assert t.shape == (self.vocab_size, self.layer_width)
         # we expect t to be already normalized
 

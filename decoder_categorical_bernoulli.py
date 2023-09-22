@@ -49,7 +49,7 @@ class DecoderCategoricalBernoulli(nn.Module):
         the v indexing is [below_lw][above_lw]
         the u indexing is [heads/tails][below_lw][above_lw]
         '''
-        assert v.shape == (1, self.hyperparams.layer_width, self.hyperparams.layer_width)
+        assert v.shape == (self.hyperparams.layer_width, self.hyperparams.layer_width)
         u = torch.empty((2, self.hyperparams.layer_width, self.hyperparams.layer_width))
         # two parents of left open universe:
         u[1][0][0] = v[0][0]  # heads from left above

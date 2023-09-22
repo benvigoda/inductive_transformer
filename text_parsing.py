@@ -134,25 +134,28 @@ class ProbTensors():
                 training_input[word_position_and_layer_num, lw] = word_prob_tensor
                 training_output[word_position_and_layer_num, lw] = word_prob_tensor
             training_input = torch.transpose(training_input, 1, 2)
+            training_output = torch.transpose(training_output, 1, 2)
+            training_output_reshaped = torch.cat([to for to in training_output], dim=0)
+            # Add the z_decode_0 output to the training output data
+            full_training_output = torch.cat([training_output_reshaped, self.attention_input], dim=0)
+            assert full_training_output.shape == (num_layers*self.vocab_size + 2, self.layer_width)
             if self.print_flag:
                 print(f"word_prob_tensors/training_input in whole model for sentence #{lw + 1}:\n{training_input}")
                 print(f"training_input.size():\n{training_input.size()}")
             training_data.append(
-                (training_input, training_output)
+                (training_input, full_training_output)
             )
         return training_data
 
     def make_attention_input(self):
         '''
         For example, in a 2x2 model, we want to make a attention_input that looks like:
-        attention_input{i=0, l=0} = probable
-        attention_input{i=1, l=0} = improbable
-        attention_input{i=0, l=1} = improbable
-        attention_input{i=1, l=1} = probable
+        attention_input[i=0, l=0] = 0.5
+        attention_input[i=1, l=0] = 0.5
+        attention_input[i=0, l=1] = 0.5
+        attention_input[i=1, l=1] = 0.5
         '''
-        attention_input = torch.full((self.layer_width, self.layer_width), self.improbable)
-        for lw in range(self.layer_width):
-            attention_input[lw][lw] = self.probable
+        attention_input = torch.full((self.layer_width, self.layer_width), 0.5)
         return attention_input
 
     def make_inference_prompt_tensors(self, num_layers: int = 1) -> List[torch.Tensor]:
