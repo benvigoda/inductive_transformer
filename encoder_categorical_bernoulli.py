@@ -17,7 +17,7 @@ class EncoderCategoricalBernoulli(nn.Module):
 
         # we can ignore the dim=0 index in the categorical. It is always= 0.
         # prob of bernoulli = 1 on left side == prob of categorical on left side:
-        bernoulli[1][0] = categorical[0, 0] 
+        bernoulli[1][0] = categorical[0, 0]
         # prob of bernoulli = 0 on left side is just all the other probability mass in the categorical:
         bernoulli[0][0] = categorical[0, 1]
 
