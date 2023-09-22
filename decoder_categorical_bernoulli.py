@@ -9,6 +9,8 @@ class DecoderCategoricalBernoulli(nn.Module):
         self.hyperparams = hyperparams
         self.active_layer = active_layer
 
+        self.u = None
+
     def forward(self, v):
         # v[below_lw][above_lw]
         # u[heads/tails][below_lw][above_lw]
@@ -17,10 +19,12 @@ class DecoderCategoricalBernoulli(nn.Module):
         # the two going to the left below are:
         # v[0][0]
         # v[0][1]
+        # --> u[:][0][0]
 
         # and two going to the right below:
         # v[1][0]
         # v[1][1]
+        #  --> u[:][1][]
 
         # we need to convert all of these to bernoullis
         # left:
@@ -49,6 +53,14 @@ class DecoderCategoricalBernoulli(nn.Module):
         the v indexing is [below_lw][above_lw]
         the u indexing is [heads/tails][below_lw][above_lw]
         '''
+        if self.active_layer == 1 and False:  # Used for testing only
+            v[0][0] = 1
+            v[0][1] = 1  # --> z[0]=1
+
+            v[1][0] = 0
+            v[1][1] = 0  # --> z[1]=0
+            # we should observe z[0] = OR(v[0][0], v[0][1]) = 1
+
         assert v.shape == (self.hyperparams.layer_width, self.hyperparams.layer_width)
         u = torch.empty((2, self.hyperparams.layer_width, self.hyperparams.layer_width))
         # two parents of left open universe:
@@ -66,6 +78,8 @@ class DecoderCategoricalBernoulli(nn.Module):
 
         u[1][1][1] = v[1][1]
         u[0][1][1] = v[0][1]
-
+        # import pdb; pdb.set_trace()
         u = nn.functional.normalize(u, p=1, dim=0)
+
+        self.u = u
         return u

@@ -12,12 +12,16 @@ class DecoderAttentionPi(nn.Module):
         if hyperparams.decoder_attention_pi_weights is not None:
             self.weights = hyperparams.decoder_attention_pi_weights[active_layer]
         else:
+            # self.weights[below_lw][above_lw], where below in the decoder is towards the output, and above is from the encoder
             self.weights = nn.Parameter(torch.ones(self.layer_width, self.layer_width), requires_grad=True)
             nn.init.normal_(self.weights, mean=1, std=0.1)
         self.relu = nn.ReLU()
 
-    def forward(self, y):
+        self.y = None
+        self.v = None
 
+    def forward(self, y):
+        self.y = y
         # we expect y to be already normalized categorical
 
         prob_weights = self.relu(self.weights) + 1e-9
@@ -38,4 +42,5 @@ class DecoderAttentionPi(nn.Module):
         v = prob_weights * y_stacked
         assert v.shape == (self.layer_width, self.layer_width)
 
+        self.v = v
         return v

@@ -18,6 +18,8 @@ class EncoderAttentionPi(nn.Module):
             nn.init.normal_(self.weights, mean=1, std=0.1)
         self.relu = nn.ReLU()
 
+        self.y = None
+
     def forward(self, v):
         assert v.shape == (self.layer_width, self.layer_width)
         # we expect v to be already normalized categorical
@@ -34,5 +36,5 @@ class EncoderAttentionPi(nn.Module):
         assert y.shape == (1, self.layer_width)
 
         y = nn.functional.normalize(y, p=1, dim=1)
-
+        self.y = y
         return y  # y is categorical

@@ -17,7 +17,11 @@ class DecoderTokenPi(nn.Module):
             nn.init.normal_(self.weights, mean=1, std=0.1)
         self.relu = nn.ReLU()
 
+        self.x = None
+        self.t = None
+
     def forward(self, x):
+        self.x = x
         # we expect x to be already normalized categorical
 
         prob_weights = self.relu(self.weights) + 1e-9
@@ -38,4 +42,5 @@ class DecoderTokenPi(nn.Module):
         t = prob_weights * x_stacked
         assert t.shape == (self.vocab_size, self.layer_width)
 
+        self.t = t
         return t

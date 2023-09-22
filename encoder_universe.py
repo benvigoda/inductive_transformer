@@ -9,6 +9,8 @@ class EncoderUniverse(nn.Module):
         self.hyperparams = hyperparams
         self.active_layer = active_layer
 
+        self.u = None
+
     def forward(self, z):
         # z is a 2x2 tensor of Bernoulli's
         assert z.shape == (self.hyperparams.layer_width, self.hyperparams.layer_width)
@@ -147,4 +149,5 @@ class EncoderUniverse(nn.Module):
         u[0][1][1] = z[1][1] + z[0][1]
 
         u = nn.functional.normalize(u, p=1, dim=0)
+        self.u = u
         return u

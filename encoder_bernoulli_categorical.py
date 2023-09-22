@@ -9,6 +9,8 @@ class EncoderBernoulliCategorical(nn.Module):
         self.hyperparams = hyperparams
         self.active_layer = active_layer
 
+        self.v = None
+
     def forward(self, u):
         v = torch.empty((2, 2))
 
@@ -26,4 +28,5 @@ class EncoderBernoulliCategorical(nn.Module):
         # v[0][0] + v[1][0] = 1
         # v[0][1] + v[1][1] = 1
         v = nn.functional.normalize(v, p=1, dim=0)
+        self.v = v
         return v
