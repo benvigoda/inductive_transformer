@@ -1,4 +1,5 @@
 import time
+import math
 import typing
 import pathlib
 import argparse
@@ -78,7 +79,6 @@ def train_model(
     # Set the booleans to only print when local minimum is reached
     reached_local_minimum = False
     reached_local_maximum = False
-
     # Train the model for several epochs
     for epoch in range(epochs):
         for i in range(n_batches):
@@ -185,6 +185,7 @@ def main():
     prob_tensors = ProbTensors(data=data, layer_width=args.layer_width)
     prompt_tensors = prob_tensors.make_inference_prompt_tensors(num_layers=args.num_layers)
     training_data = prob_tensors.format_training_data(num_layers=args.num_layers)
+    training_data = training_data * math.ceil(args.num_data_points / len(training_data))  # Duplicate to have num_data_points
     hyperparams = HyperParameters(
         layer_width=args.layer_width,
         vocab_size=data.vocab_size,
@@ -203,7 +204,7 @@ def main():
             train_data=training_data,
             print_every=20,
             batch_size=2,
-            lr=0.0001,
+            lr=0.01,
             vocab=data.vocab,
             prompt_tensors=prompt_tensors,
         )

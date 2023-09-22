@@ -1,3 +1,4 @@
+import torch  # type: ignore
 from torch import nn  # type: ignore
 from encoder_layer import EncoderLayer
 from decoder_layer import DecoderLayer
@@ -11,6 +12,7 @@ class Model(nn.Module):
     def __init__(self, hyperparams):
         super(Model, self).__init__()
         self.layer_width = hyperparams.layer_width
+        self.vocab_size = hyperparams.vocab_size
         self.num_layers = hyperparams.num_layers
 
         self.encoder_layer_0 = EncoderLayer(hyperparams=hyperparams, active_layer=0)
@@ -26,9 +28,10 @@ class Model(nn.Module):
 
     # two layer model
     def forward(self, z_input, t):
-
-        z1_encode = self.encoder_layer_0(z_input, t)
-        z2_encode = self.encoder_layer_1(z1_encode, t)
+        assert t.shape == (self.num_layers, self.vocab_size, self.layer_width)
+        assert z_input.shape == (2, self.layer_width)
+        z1_encode = self.encoder_layer_0(z_input, t[0])
+        z2_encode = self.encoder_layer_1(z1_encode, t[1])
 
         z2_decode = z2_encode  # take the output of the encoder and feed it to the decoder
 
@@ -36,7 +39,7 @@ class Model(nn.Module):
         t_decode_layer_0, z0_decode = self.decoder_layer_0(z1_decode)
 
         self.encoder_output = (z1_encode, z2_encode)
-        self.decoder_output = (t_decode_layer_0, t_decode_layer_1, z0_decode)
+        self.decoder_output = torch.cat([t_decode_layer_0, t_decode_layer_1, z0_decode], dim=0)
 
         return self.decoder_output
 

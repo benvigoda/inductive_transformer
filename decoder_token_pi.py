@@ -32,9 +32,10 @@ class DecoderTokenPi(nn.Module):
         assert x.shape == (1, self.layer_width)
         x = nn.functional.normalize(x, p=1, dim=1)
         # we want to stack x in dim = 0
-        x_stacked = torch.stack([x for vs in range(self.vocab_size)], dim=0)
+        x_stacked = torch.cat([x for vs in range(self.vocab_size)], dim=0)
 
         # element-wise product of weight tensor and y_stacked
         t = prob_weights * x_stacked
+        assert t.shape == (self.vocab_size, self.layer_width)
 
         return t
