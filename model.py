@@ -9,7 +9,7 @@ class Model(nn.Module):
     dim=1 is layer_width
     """
     def __init__(self, hyperparams):
-
+        super(Model, self).__init__()
         self.layer_width = hyperparams.layer_width
         self.num_layers = hyperparams.num_layers
 
@@ -21,7 +21,8 @@ class Model(nn.Module):
 
         # Tuple of variables output by the forward pass
         # This can then be easily accessed for printing
-        self.forward_output = tuple()
+        self.encoder_output = tuple()
+        self.decoder_output = tuple()
 
     # two layer model
     def forward(self, z_input, t):
@@ -31,17 +32,26 @@ class Model(nn.Module):
 
         z2_decode = z2_encode  # take the output of the encoder and feed it to the decoder
 
-        z1_decode, x_decode_layer_1 = self.decoder_layer_1(z2_decode)
-        z0_decode, x_decode_layer_0 = self.decoder_layer_0(z1_decode)
+        t_decode_layer_1, z1_decode = self.decoder_layer_1(z2_decode)
+        t_decode_layer_0, z0_decode = self.decoder_layer_0(z1_decode)
 
-        self.forward_output = (x_decode_layer_0, x_decode_layer_1, z0_decode)
-        return self.forward_output
+        self.encoder_output = (z1_encode, z2_encode)
+        self.decoder_output = (t_decode_layer_0, t_decode_layer_1, z0_decode)
 
-    # one layer model
-    # def forward(self, z0):
+        return self.decoder_output
 
-    #     z1_encode = self.encoder_layer0(z0)
+    '''
+    one layer model
+    def forward(self, z0):
 
-    #     z1_decode = z1_encode # take the output of the encoder and feed it to the decoder
+        z1_encode = self.encoder_layer0(z0)
 
-    #     z0_decode = decoder_layer0(z1_decode)
+        z1_decode = z1_encode # take the output of the encoder and feed it to the decoder
+
+        t_decode_layer_0, z0_decode = decoder_layer0(z1_decode)
+
+        self.encoder_output = (z1_encode)
+        self.decoder_output = (t_decode_layer_0, z0_decode)
+    '''
+
+

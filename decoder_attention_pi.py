@@ -26,11 +26,11 @@ class DecoderAttentionPi(nn.Module):
         # each of these output categoricals will be of length vocab_size
         # each categorical will be normalized, not to 1, but to the y value at this lw
         # an easy way to do this is to normalize the prob weights in advance in dim=0
-        prob_weights = torch.normalize(prob_weights, p=1, dim=0)
+        prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)
 
         # and then since y comes in as categorical of size (1, layer_width)
         assert y.shape == (1, self.layer_width)
-        y = torch.normalize(y, dim=1)
+        y = nn.functional.normalize(y, p=1, dim=1)
         # we want to stack x in dim = 0
         y_stacked = torch.stack([y for lw in range(self.layer_width)], dim=0)
 

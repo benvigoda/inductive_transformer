@@ -24,6 +24,6 @@ class EncoderCategoricalBernoulli(nn.Module):
         bernoulli[1][1] = categorical[0, 1]
         bernoulli[0][1] = categorical[0, 0]
 
-        bernoulli = torch.normalize(bernoulli, p=1, dim=0)
+        bernoulli = nn.functional.normalize(bernoulli, p=1, dim=0)
 
         return bernoulli

@@ -2,10 +2,10 @@ import torch  # type: ignore
 from torch import nn  # type: ignore
 
 
-class DecoderCategoricalBernoulliY(nn.Module):
+class DecoderCategoricalBernoulli(nn.Module):
 
     def __init__(self, hyperparams, active_layer: int):
-        super(DecoderCategoricalBernoulliY, self).__init__()
+        super(DecoderCategoricalBernoulli, self).__init__()
         self.hyperparams = hyperparams
         self.active_layer = active_layer
 
@@ -13,7 +13,7 @@ class DecoderCategoricalBernoulliY(nn.Module):
         # v[below_lw][above_lw]
         # u[heads/tails][below_lw][above_lw]
 
-        # there are four signals coming down.  
+        # there are four signals coming down.
         # the two going to the left below are:
         # v[0][0]
         # v[0][1]
@@ -67,5 +67,5 @@ class DecoderCategoricalBernoulliY(nn.Module):
         u[1][1][1] = v[1][1]
         u[0][1][1] = v[0][1]
 
-        u = torch.normalize(u, p=1, dim=0)
+        u = nn.functional.normalize(u, p=1, dim=0)
         return u
