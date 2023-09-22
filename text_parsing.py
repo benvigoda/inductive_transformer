@@ -21,7 +21,7 @@ class InputData():
 
         self.raw_training_text = self.clean(raw_training_text)
         self.raw_inference_text = self.clean(raw_inference_text)
-        self.text = self.raw_training_text + self.raw_inference_text
+        self.text = self.raw_training_text + ' ' + self.raw_inference_text
 
         # Builds a vocab
         self.vocab: List[str] = self.get_vocab()
