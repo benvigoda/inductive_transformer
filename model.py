@@ -11,6 +11,7 @@ class Model(nn.Module):
     """
     def __init__(self, hyperparams):
         super(Model, self).__init__()
+        self.hyperparams = hyperparams
         self.layer_width = hyperparams.layer_width
         self.vocab_size = hyperparams.vocab_size
         self.num_layers = hyperparams.num_layers
