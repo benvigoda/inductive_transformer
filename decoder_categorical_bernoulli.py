@@ -66,19 +66,19 @@ class DecoderCategoricalBernoulli(nn.Module):
         u = torch.empty((2, self.hyperparams.layer_width, self.hyperparams.layer_width))
         # two parents of left open universe:
         u[1][0][0] = v[0][0]  # heads from left above
-        u[0][0][0] = v[1][0]  # tails from left above
+        u[0][0][0] = v[0][1]  # tails from left above
         # is the probability above that is normalized with heads from above
         # which is the below_lw=1 index
 
         u[1][0][1] = v[0][1]  # heads from left above
-        u[0][0][1] = v[1][1]  # tails from left above
+        u[0][0][1] = v[0][0]  # tails from left above
 
         # to parents of right open universe:
         u[1][1][0] = v[1][0]
-        u[0][1][0] = v[0][0]
+        u[0][1][0] = v[1][1]
 
         u[1][1][1] = v[1][1]
-        u[0][1][1] = v[0][1]
+        u[0][1][1] = v[1][0]
         # import pdb; pdb.set_trace()
         u = nn.functional.normalize(u, p=1, dim=0)
 
