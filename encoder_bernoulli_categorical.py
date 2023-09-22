@@ -10,11 +10,20 @@ class EncoderBernoulliCategorical(nn.Module):
         self.active_layer = active_layer
 
     def forward(self, u):
+        v = torch.empty((2, 2))
 
-        # FIXME
-        v = torch.empty((2, ))
+        # there's four coins coming in
+        # to convert coins to categorical, it's always head divided by tails
+        # and then normalize the categoricals
+        # v[below_lw][above_lw] = u[heads][below_lw][above_lw] / u[tails][below_lw][above_lw]
+        v[0][0] = u[1][0][0]/u[0][0][0]  # straight up the left edge
+        v[0][1] = u[1][0][1]/u[0][0][1]  # the left universe to the right pi_a cross connection
 
-        v[0] = u[1][0]/u[0][0]
-        v[1] = u[1][1]/u[0][1]
+        v[1][0] = u[1][1][0]/u[0][1][0]  # the right universe to the left pi_a cross connection
+        v[1][1] = u[1][1][1]/u[0][1][1]  # straight up on the right
 
+        # we want to normalize is the inputs to a specific pi_a, remember from the encoder universe factor:
+        # v[0][0] + v[1][0] = 1
+        # v[0][1] + v[1][1] = 1
+        v = torch.normalize(v, p=1, dim=0)
         return v

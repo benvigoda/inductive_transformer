@@ -18,15 +18,20 @@ class EncoderAttentionPi(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, v):
+        assert v.shape == (self.layer_width, self.layer_width)
         # we expect v to be already normalized categorical
 
         prob_weights = self.relu(self.weights) + 1e-9
+        # NOTE: we decided not to normalize the weights (it shouldn't matter)
+        # prob_weights = torch.normalize(prob_weights, p=1, dim=0)
 
         # element-wise product of weight vector and token vector for each column in the layer
         y = prob_weights * v
 
-        # make it an inner product by taking a sum along the token dimension
-        y = torch.sum(y, dim=0)  # after summing it is size = (1, layer_width)
+        # make it an inner product by taking a sum along the choice dimension
+        y = torch.sum(y, dim=0, keepdim=True)  # after summing it is size = (1, layer_width)
         assert y.shape == (1, self.layer_width)
+
+        y = torch.normalize(y, p=1, dim=1)
 
         return y  # y is categorical

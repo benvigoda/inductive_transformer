@@ -15,7 +15,10 @@ class EncoderCategoricalBernoulli(nn.Module):
         # bernoulli is size (2, layer_width)
         bernoulli = torch.empty((2, self.hyperparams.layer_width))
 
-        bernoulli[1][0] = categorical[0, 0]
+        # we can ignore the dim=0 index in the categorical. It is always= 0.
+        # prob of bernoulli = 1 on left side == prob of categorical on left side:
+        bernoulli[1][0] = categorical[0, 0] 
+        # prob of bernoulli = 0 on left side is just all the other probability mass in the categorical:
         bernoulli[0][0] = categorical[0, 1]
 
         bernoulli[1][1] = categorical[0, 1]
