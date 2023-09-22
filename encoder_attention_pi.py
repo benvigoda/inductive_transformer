@@ -8,6 +8,7 @@ class EncoderAttentionPi(nn.Module):
         super(EncoderAttentionPi, self).__init__()
         self.hyperparams = hyperparams
         self.vocab_size = self.hyperparams.vocab_size
+        self.layer_width = self.hyperparams.layer_width
         self.active_layer = active_layer
 
         if hyperparams.encoder_attention_pi_weights is not None:
@@ -23,7 +24,7 @@ class EncoderAttentionPi(nn.Module):
 
         prob_weights = self.relu(self.weights) + 1e-9
         # NOTE: we decided not to normalize the weights (it shouldn't matter)
-        # prob_weights = torch.normalize(prob_weights, p=1, dim=0)
+        # prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)
 
         # element-wise product of weight vector and token vector for each column in the layer
         y = prob_weights * v
@@ -32,6 +33,6 @@ class EncoderAttentionPi(nn.Module):
         y = torch.sum(y, dim=0, keepdim=True)  # after summing it is size = (1, layer_width)
         assert y.shape == (1, self.layer_width)
 
-        y = torch.normalize(y, p=1, dim=1)
+        y = nn.functional.normalize(y, p=1, dim=1)
 
         return y  # y is categorical

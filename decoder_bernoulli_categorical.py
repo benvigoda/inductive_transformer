@@ -20,6 +20,6 @@ class DecoderBernoulliCategorical(nn.Module):
         categorical[0, 0] = bernoulli[1][0]/bernoulli[0][0]
         categorical[0, 1] = bernoulli[1][1]/bernoulli[0][1]
 
-        categorical = torch.normalize(categorical, p=1, dim=1)
+        categorical = nn.functional.normalize(categorical, p=1, dim=1)
 
         return categorical

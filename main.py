@@ -5,9 +5,9 @@ import argparse
 import matplotlib.pyplot as plt  # type: ignore
 import torch  # type: ignore
 import torch.nn.functional as F  # type: ignore
-from . import printing
+import printing
 from text_parsing import InputData, ProbTensors
-from hyperparameters import Hyperparameters
+from hyperparameters import HyperParameters
 from model import Model
 
 
@@ -185,9 +185,9 @@ def main():
     prob_tensors = ProbTensors(data=data, layer_width=args.layer_width)
     prompt_tensors = prob_tensors.make_inference_prompt_tensors(num_layers=args.num_layers)
     training_data = prob_tensors.format_training_data(num_layers=args.num_layers)
-    hyperparams = Hyperparameters(
+    hyperparams = HyperParameters(
         layer_width=args.layer_width,
-        num_data_points=args.num_data_points,
+        vocab_size=data.vocab_size,
         num_layers=args.num_layers,
         weight_test=args.weight_test,
         perturbation_test=args.perturbation_test,
@@ -198,7 +198,7 @@ def main():
     if args.train:
         model = train_model(
             model=model,
-            input_decision_activations=prob_tensors.decision_input,
+            attention_input=prob_tensors.attention_input,
             epochs=3,
             train_data=training_data,
             print_every=20,
@@ -216,7 +216,7 @@ def main():
             truths=None,
             token_prob_tensors=None,
             model=model,
-            input_decision_activations=prob_tensors.decision_input,
+            input_attention_activations=prob_tensors.attention_input,
             vocab=data.vocab,
         )
     else:

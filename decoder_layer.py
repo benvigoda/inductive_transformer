@@ -1,6 +1,5 @@
-
 from torch import nn  # type: ignore
-from decoder_open_closed_universe import DecoderOpenClosedUniverse
+from decoder_universe import DecoderUniverse
 from decoder_bernoulli_categorical import DecoderBernoulliCategorical
 from decoder_categorical_bernoulli import DecoderCategoricalBernoulli
 from decoder_token_pi import DecoderTokenPi
@@ -13,7 +12,7 @@ class DecoderLayer(nn.Module):
     def __init__(self, hyperparams, active_layer: int):
         super(DecoderLayer, self).__init__()
         self.active_layer = active_layer
-        self.decoder_universe = DecoderOpenClosedUniverse(hyperparams=hyperparams, active_layer=active_layer)
+        self.decoder_universe = DecoderUniverse(hyperparams=hyperparams, active_layer=active_layer)
         self.decoder_bernoulli_categorical = DecoderBernoulliCategorical(hyperparams=hyperparams, active_layer=active_layer)
         self.decoder_token_pi = DecoderTokenPi(hyperparams=hyperparams, active_layer=active_layer)
         self.decoder_attention_pi = DecoderAttentionPi(hyperparams=hyperparams, active_layer=active_layer)
@@ -44,4 +43,4 @@ class DecoderLayer(nn.Module):
         # Decoder Open Closed Universe
         z = self.decoder_universe(u)
 
-        return z
+        return t, z

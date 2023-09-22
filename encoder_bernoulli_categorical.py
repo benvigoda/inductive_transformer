@@ -25,5 +25,5 @@ class EncoderBernoulliCategorical(nn.Module):
         # we want to normalize is the inputs to a specific pi_a, remember from the encoder universe factor:
         # v[0][0] + v[1][0] = 1
         # v[0][1] + v[1][1] = 1
-        v = torch.normalize(v, p=1, dim=0)
+        v = nn.functional.normalize(v, p=1, dim=0)
         return v

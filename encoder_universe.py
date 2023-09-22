@@ -79,14 +79,14 @@ class EncoderUniverse(nn.Module):
         # z[heads/tails][below_lw]
 
         # so when we are considering parent u[:][below_lw][] we are using child z[:][below_lw]
-        
+
         '''
         The inputs of the universe factor are in terms of the child and the other parent
         but since the other parent, when we are forward marginalizing the encoder
         does not yet have any backward information, it is always uninformative, 
         in other words on the right hand side we always have, u[][][] = 0.5
         That will save us a lot of work. e.g.
-        
+
         # p(parent_left = 1) = p(child = 1)p(parent_b = 0) + p(child = 1)p(parent_b = 1)
         u[1][0][0] = z[1][0] * u[0][][] + z[1][0] * u[1][][]
         # p(parent_left = 0) = p(child = 1)p(parent_b = 1) + p(child = 0)p(parent_b = 0)
@@ -106,7 +106,6 @@ class EncoderUniverse(nn.Module):
         # p(parent_left = 0) = p(child = 1)p(parent_b = 1) + p(child = 0)p(parent_b = 0)
         u[0][1][0]= z[0][1] + z[1][1]
 
-        
         so we just need to get the child indices right
         '''
         # the universe factor takes in a z[:][0] Bernoulli on the left and produces two Bernoulli parents
@@ -140,12 +139,12 @@ class EncoderUniverse(nn.Module):
         # p(parent_left = 1) = p(child = 1)p(parent_right = 0) + p(child = 1)p(parent_right = 1)
         u[1][1][0] = z[1][1] + z[1][1]
         # p(parent_left = 0) = p(child = 1)p(parent_right = 1) + p(child = 0)p(parent_right = 0)
-        u[0][1][0]= z[1][1] + z[0][1]
+        u[0][1][0] = z[1][1] + z[0][1]
 
         # p(parent_right = 1) = p(child = 1)p(parent_left = 0) + p(child = 1)p(parent_left = 1)
         u[1][1][1] = z[1][1] + z[1][1]
         # p(parent_right = 0) = p(child = 1)p(parent_left = 1) + p(child = 0)p(parent_left = 0)
         u[0][1][1] = z[1][1] + z[0][1]
 
-        u = torch.normalize(u, p=1, dim=0)
+        u = nn.functional.normalize(u, p=1, dim=0)
         return u

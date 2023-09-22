@@ -96,7 +96,7 @@ class ProbTensors():
         self.probable = PROBABLE
         self.print_flag = print_flag
 
-        self.decision_input = self.make_decision_input()
+        self.attention_input = self.make_attention_input()
 
     def format_training_data(self, num_layers: int = 1):
         '''
@@ -142,18 +142,18 @@ class ProbTensors():
             )
         return training_data
 
-    def make_decision_input(self):
+    def make_attention_input(self):
         '''
-        For example, in a 2x2 model, we want to make a decision_input that looks like:
-        decision_input{i=0, l=0} = probable
-        decision_input{i=1, l=0} = improbable
-        decision_input{i=0, l=1} = improbable
-        decision_input{i=1, l=1} = probable
+        For example, in a 2x2 model, we want to make a attention_input that looks like:
+        attention_input{i=0, l=0} = probable
+        attention_input{i=1, l=0} = improbable
+        attention_input{i=0, l=1} = improbable
+        attention_input{i=1, l=1} = probable
         '''
-        decision_input = torch.full((self.layer_width, self.layer_width), self.improbable)
+        attention_input = torch.full((self.layer_width, self.layer_width), self.improbable)
         for lw in range(self.layer_width):
-            decision_input[lw][lw] = self.probable
-        return decision_input
+            attention_input[lw][lw] = self.probable
+        return attention_input
 
     def make_inference_prompt_tensors(self, num_layers: int = 1) -> List[torch.Tensor]:
         prompt_tensors = []

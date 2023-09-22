@@ -78,7 +78,7 @@ class DecoderAnd(nn.Module):
         x[1][1] = z[0][1] + z[1][1]
         x[0][1] = z[0][1] + z[0][1]
 
-        y = torch.normalize(y, p=1, dim=0)
-        x = torch.normalize(x, p=1, dim=0)
+        y = nn.functional.normalize(y, p=1, dim=0)
+        x = nn.functional.normalize(x, p=1, dim=0)
 
         return x, y   # Bernoullis
