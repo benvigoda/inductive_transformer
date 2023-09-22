@@ -9,6 +9,8 @@ class DecoderBernoulliCategorical(nn.Module):
         self.hyperparams = hyperparams
         self.active_layer = active_layer
 
+        self.categorical = None
+
     def forward(self, bernoulli):
 
         # bernoulli is size (2, layer_width)
@@ -21,5 +23,7 @@ class DecoderBernoulliCategorical(nn.Module):
         categorical[0, 1] = bernoulli[1][1]/bernoulli[0][1]
 
         categorical = nn.functional.normalize(categorical, p=1, dim=1)
+
+        self.categorical = categorical
 
         return categorical

@@ -9,6 +9,8 @@ class EncoderCategoricalBernoulli(nn.Module):
         self.hyperparams = hyperparams
         self.active_layer = active_layer
 
+        self.bernoulli = None
+
     def forward(self, categorical):
         # categorical is size = (1, layer_width)
         assert categorical.shape == (1, self.hyperparams.layer_width)
@@ -25,5 +27,5 @@ class EncoderCategoricalBernoulli(nn.Module):
         bernoulli[0][1] = categorical[0, 0]
 
         bernoulli = nn.functional.normalize(bernoulli, p=1, dim=0)
-
+        self.bernoulli = bernoulli
         return bernoulli

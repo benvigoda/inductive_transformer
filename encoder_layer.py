@@ -19,6 +19,8 @@ class EncoderLayer(nn.Module):
         self.encoder_categorical_bernoulli = EncoderCategoricalBernoulli(hyperparams=hyperparams, active_layer=active_layer)
         self.encoder_and = EncoderAnd(hyperparams=hyperparams, active_layer=active_layer)
 
+        self.z_prime = None
+
     def forward(self, z, t):
         # dim=0 indexes the state of the variable e.g. cat or dog, 0 or 1, etc.
         # dim=1 indexes the layer width
@@ -42,5 +44,6 @@ class EncoderLayer(nn.Module):
 
         # Encoder $\land$
         z_prime = self.encoder_and(x_bernoulli, y_bernoulli)
+        self.z_prime = z_prime
 
         return z_prime

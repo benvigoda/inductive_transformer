@@ -41,7 +41,6 @@ class Model(nn.Module):
 
         self.encoder_output = (z1_encode, z2_encode)
         self.decoder_output = torch.cat([t_decode_layer_0, t_decode_layer_1, z0_decode], dim=0)
-
         return self.decoder_output
 
     '''

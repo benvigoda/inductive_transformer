@@ -41,7 +41,7 @@ class HyperParameters:
         self.encoder_attention_pi_weights: Optional[Tensor] = None  # torch.ones(self.layer_width, self.layer_width)
         self.encoder_token_pi_weights: Optional[Tensor] = None  # torch.ones(self.vocab_size, self.layer_width)
         self.decoder_attention_pi_weights: Optional[Tensor] = None  # torch.ones(self.layer_width, self.layer_width)
-        self.decoder_token_pi_weights: Optional[Tensor] = None  # torch.ones(self.layer_width, self.vocab_size)
+        self.decoder_token_pi_weights: Optional[Tensor] = None  # torch.ones(self.vocab_size, self.layer_width)
 
         if self.weight_test:
             self.construct_weights()
@@ -111,35 +111,39 @@ class HyperParameters:
         layer 1 right = "a" = (-5, -5., -5., -5., 0., -5.)
         layer 0 right  = "cat" = (-5, -5., -5., 0., -5., -5.)
         '''
-        self.encoder_token_pi_weights = torch.full((self.num_layers, self.vocab_size, self.layer_width), self.weak)
-        self.decoder_token_pi_weights = torch.full((self.num_layers, self.layer_width, self.vocab_size), self.weak)
+        self.encoder_token_pi_weights = torch.ones(self.vocab_size, self.layer_width)
+        self.decoder_token_pi_weights = torch.ones(self.vocab_size, self.layer_width)
+        self.encoder_attention_pi_weights = torch.ones(self.layer_width, self.layer_width)
+        self.decoder_attention_pi_weights = torch.ones(self.layer_width, self.layer_width)
+        # self.encoder_token_pi_weights = torch.full((self.num_layers, self.vocab_size, self.layer_width), self.weak)
+        # self.decoder_token_pi_weights = torch.full((self.num_layers, self.layer_width, self.vocab_size), self.weak)
 
-        self.encoder_token_pi_weights[0][1][0] = self.strong  # dog in layer 0, left column
-        self.encoder_token_pi_weights[0][4][1] = self.strong  # cat in layer 0, right column
+        # self.encoder_token_pi_weights[0][1][0] = self.strong  # dog in layer 0, left column
+        # self.encoder_token_pi_weights[0][4][1] = self.strong  # cat in layer 0, right column
 
-        self.decoder_token_pi_weights[0][0][1] = self.strong
-        self.decoder_token_pi_weights[0][1][4] = self.strong
+        # self.decoder_token_pi_weights[0][0][1] = self.strong
+        # self.decoder_token_pi_weights[0][1][4] = self.strong
 
-        if self.num_layers >= 2:
-            self.encoder_token_pi_weights[1][0][0] = self.strong  # the in layer 1, left column
-            self.encoder_token_pi_weights[1][3][1] = self.strong  # a in layer 1, right column
+        # if self.num_layers >= 2:
+        #     self.encoder_token_pi_weights[1][0][0] = self.strong  # the in layer 1, left column
+        #     self.encoder_token_pi_weights[1][3][1] = self.strong  # a in layer 1, right column
 
-            self.decoder_token_pi_weights[1][0][0] = self.strong
-            self.decoder_token_pi_weights[1][1][3] = self.strong
+        #     self.decoder_token_pi_weights[1][0][0] = self.strong
+        #     self.decoder_token_pi_weights[1][1][3] = self.strong
 
-        if self.num_layers == 3:
-            self.encoder_token_pi_weights[2][5][0] = self.strong  # always light up for PADDING
-            self.encoder_token_pi_weights[2][5][1] = self.strong  # always light up for PADDING
+        # if self.num_layers == 3:
+        #     self.encoder_token_pi_weights[2][5][0] = self.strong  # always light up for PADDING
+        #     self.encoder_token_pi_weights[2][5][1] = self.strong  # always light up for PADDING
 
-            self.decoder_token_pi_weights[2][0][5] = self.strong
-            self.decoder_token_pi_weights[2][1][5] = self.strong
+        #     self.decoder_token_pi_weights[2][0][5] = self.strong
+        #     self.decoder_token_pi_weights[2][1][5] = self.strong
 
-        # self.weak decision cross-connections, so we send signals straight up and down the columns
-        self.encoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), self.strong)
-        self.decoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), self.strong)
-        for n in range(self.num_layers):
-            for i in range(self.layer_width):
-                for lw in range(self.layer_width):
-                    if i != lw:
-                        self.encoder_attention_pi_weights[n][i][lw] = self.weak
-                        self.decoder_attention_pi_weights[n][i][lw] = self.weak
+        # # self.weak decision cross-connections, so we send signals straight up and down the columns
+        # self.encoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), self.strong)
+        # self.decoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), self.strong)
+        # for n in range(self.num_layers):
+        #     for i in range(self.layer_width):
+        #         for lw in range(self.layer_width):
+        #             if i != lw:
+        #                 self.encoder_attention_pi_weights[n][i][lw] = self.weak
+        #                 self.decoder_attention_pi_weights[n][i][lw] = self.weak

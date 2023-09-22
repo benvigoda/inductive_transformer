@@ -8,6 +8,9 @@ class DecoderAnd(nn.Module):
         super(DecoderAnd, self).__init__()
         self.hyperparams = hyperparams
         self.active_layer = active_layer
+        
+        self.y = None
+        self.x = None
 
     def forward(self, z):
         '''
@@ -80,5 +83,8 @@ class DecoderAnd(nn.Module):
 
         y = nn.functional.normalize(y, p=1, dim=0)
         x = nn.functional.normalize(x, p=1, dim=0)
+
+        self.y = y
+        self.x = x
 
         return x, y   # Bernoullis

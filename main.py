@@ -145,6 +145,46 @@ def train_model(
                         vocab=vocab,
                     )
 
+                import pdb; pdb.set_trace()
+                #############################
+                # Use this to print the model parameters
+                # encoder printing
+                model.encoder_layer_0.encoder_universe.u
+                model.encoder_layer_0.encoder_bernoulli_categorical.v
+                model.encoder_layer_0.encoder_attention_pi.y
+                model.encoder_layer_0.encoder_token_pi.x
+                # model.encoder_layer_0.encoder_categorical_bernoulli.bernoulli
+                model.encoder_layer_0.encoder_and.z
+
+                model.encoder_layer_1.encoder_universe.u
+                model.encoder_layer_1.encoder_bernoulli_categorical.v
+                model.encoder_layer_1.encoder_attention_pi.y
+                model.encoder_layer_1.encoder_token_pi.x
+                # model.encoder_layer_1.encoder_categorical_bernoulli.bernoulli
+                model.encoder_layer_1.encoder_and.z
+
+                # decoder printing
+                model.decoder_layer_1.decoder_and.y
+                model.decoder_layer_1.decoder_and.x
+                # model.decoder_layer_1.decoder_bernoulli_categorical.categorical
+                model.decoder_layer_1.decoder_attention_pi.y
+                model.decoder_layer_1.decoder_attention_pi.v
+                model.decoder_layer_1.decoder_token_pi.t
+                model.decoder_layer_1.decoder_categorical_bernoulli.u
+                model.decoder_layer_1.decoder_universe.z
+
+                model.decoder_layer_0.decoder_and.y
+                model.decoder_layer_0.decoder_and.x
+                # model.decoder_layer_0.decoder_bernoulli_categorical.categorical
+                model.decoder_layer_0.decoder_attention_pi.y
+                model.decoder_layer_0.decoder_attention_pi.y  # input
+                model.decoder_layer_0.decoder_attention_pi.v  # output
+                model.decoder_layer_0.decoder_token_pi.x  # input
+                model.decoder_layer_0.decoder_token_pi.t  # output
+                model.decoder_layer_0.decoder_categorical_bernoulli.u
+                model.decoder_layer_0.decoder_universe.z
+                #############################
+
                 # Set the model back to training mode
                 model.train()
 
@@ -183,8 +223,12 @@ def main():
     args = parse_args()
     data = InputData(args.training_text, args.inference_text)
     prob_tensors = ProbTensors(data=data, layer_width=args.layer_width)
-    prompt_tensors = prob_tensors.make_inference_prompt_tensors(num_layers=args.num_layers)
     training_data = prob_tensors.format_training_data(num_layers=args.num_layers)
+    inference_match_training = True  # Toggle to match training data or not
+    if inference_match_training:
+        prompt_tensors = [input_training for input_training, _ in training_data]
+    else:
+        prompt_tensors = prob_tensors.make_inference_prompt_tensors(num_layers=args.num_layers)
     training_data = training_data * math.ceil(args.num_data_points / len(training_data))  # Duplicate to have num_data_points
     hyperparams = HyperParameters(
         layer_width=args.layer_width,
@@ -204,7 +248,7 @@ def main():
             train_data=training_data,
             print_every=20,
             batch_size=2,
-            lr=0.01,
+            lr=0.001,
             vocab=data.vocab,
             prompt_tensors=prompt_tensors,
         )
@@ -217,7 +261,7 @@ def main():
             truths=None,
             token_prob_tensors=None,
             model=model,
-            input_attention_activations=prob_tensors.attention_input,
+            attention_input=prob_tensors.attention_input,
             vocab=data.vocab,
         )
     else:

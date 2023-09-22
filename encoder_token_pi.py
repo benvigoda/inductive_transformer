@@ -18,6 +18,8 @@ class EncoderTokenPi(nn.Module):
             nn.init.normal_(self.weights, mean=1, std=0.1)
         self.relu = nn.ReLU()
 
+        self.x = None
+
     def forward(self, t):
         assert t.shape == (self.vocab_size, self.layer_width)
         # we expect t to be already normalized
@@ -31,6 +33,6 @@ class EncoderTokenPi(nn.Module):
 
         # make it an inner product by taking a sum along the token dimension
         x = torch.sum(x, dim=0, keepdim=True)  # after summing it is size = (1, layer_width)
-
         x = nn.functional.normalize(x, p=1, dim=1)
+        self.x = x
         return x  # x is categorical
