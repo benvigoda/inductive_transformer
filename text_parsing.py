@@ -123,6 +123,7 @@ class ProbTensors():
         for lw, window in enumerate(self.windows):
             if lw >= self.layer_width:
                 print(f"WARNING: there are more sentences than layer width. Cannot place more than {self.layer_width} sentences.")
+                effective_lw = lw % self.layer_width
             training_output = torch.full((num_layers, self.layer_width, self.vocab_size), self.improbable)
             training_input = torch.full((num_layers, self.layer_width, self.vocab_size), self.improbable)
             # Within a given column, we put one word in each layer
@@ -131,8 +132,13 @@ class ProbTensors():
                     print(f"WARNING: there are more words in the sentence than num layers. Cannot place more than {num_layers} words.")
                 word_prob_tensor = torch.full((self.vocab_size, ), self.improbable)
                 word_prob_tensor[vocab_index] = self.probable
-                training_input[word_position_and_layer_num, lw] = word_prob_tensor
-                training_output[word_position_and_layer_num, lw] = word_prob_tensor
+                if lw >= self.layer_width:
+                    effective_lw = lw % self.layer_width + word_position_and_layer_num
+                    training_input[word_position_and_layer_num, effective_lw] = word_prob_tensor
+                    training_output[word_position_and_layer_num, effective_lw] = word_prob_tensor
+                else:
+                    training_input[word_position_and_layer_num, lw] = word_prob_tensor
+                    training_output[word_position_and_layer_num, lw] = word_prob_tensor
             training_input = torch.transpose(training_input, 1, 2)
             training_output = torch.transpose(training_output, 1, 2)
             training_output_reshaped = torch.cat([to for to in training_output], dim=0)
@@ -160,14 +166,34 @@ class ProbTensors():
 
     def make_inference_prompt_tensors(self, num_layers: int = 1) -> List[torch.Tensor]:
         prompt_tensors = []
+        empty_word_prob_tensor = torch.full((self.vocab_size, ), self.improbable)
+        empty_layer_prob_tensor = torch.full((self.vocab_size, self.layer_width), self.improbable)
         for window in self.data.inference_windows:
-            inference_word_prob_tensor = torch.full((self.vocab_size, 1), self.improbable)
+            inference_word_prob_tensor = torch.full((self.vocab_size, ), self.improbable)
             for index_of_probable_word in window:
                 inference_word_prob_tensor[index_of_probable_word] = self.probable
-            # Stack up on layer_width
-            inference_word_prob_tensor_stacked_tmp = torch.stack([inference_word_prob_tensor for _ in range(self.layer_width)], dim=1).squeeze(2)
-            # Stack up on num_layers
-            inference_word_prob_tensor_stacked = torch.stack([inference_word_prob_tensor_stacked_tmp for _ in range(num_layers)], dim=0)
+            if window[0] == self.data.tokenizer_dict["big"]:
+                inference_word_prob_tensor_stacked = torch.stack([
+                    torch.stack([inference_word_prob_tensor, empty_word_prob_tensor], dim=1),  # Stack up on layer_width
+                    empty_layer_prob_tensor
+                ], dim=0)  # Stack up on num_layers
+            elif window[0] == self.data.tokenizer_dict["small"]:
+                inference_word_prob_tensor_stacked = torch.stack([
+                    torch.stack([empty_word_prob_tensor, inference_word_prob_tensor], dim=1),  # Stack up on layer_width
+                    empty_layer_prob_tensor,
+                ], dim=0)  # Stack up on num_layers
+            elif window[0] == self.data.tokenizer_dict["cat"]:
+                inference_word_prob_tensor_stacked = torch.stack([
+                    empty_layer_prob_tensor,
+                    torch.stack([inference_word_prob_tensor, empty_word_prob_tensor], dim=1),  # Stack up on layer_width
+                ], dim=0)  # Stack up on num_layers
+            elif window[0] == self.data.tokenizer_dict["dog"]:
+                inference_word_prob_tensor_stacked = torch.stack([
+                    empty_layer_prob_tensor,
+                    torch.stack([empty_word_prob_tensor, inference_word_prob_tensor], dim=1),  # Stack up on layer_width
+                ], dim=0)  # Stack up on num_layers
+
+            assert inference_word_prob_tensor_stacked.shape == (num_layers, self.vocab_size, self.layer_width)
             prompt_tensors.append(inference_word_prob_tensor_stacked)
         return prompt_tensors
 

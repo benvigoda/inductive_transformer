@@ -1,1 +1,1 @@
-big. small. big cat. small dog. big dog. small cat.
+big. small. cat. dog.
