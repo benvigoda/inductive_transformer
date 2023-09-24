@@ -79,6 +79,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
                 top_row_label="decoder attention pi weights",
                 decoder=True,
             )
+            print("decoder weights")
             output_to_sheet(res_decoder_weights, "decoder_weights")
 
             # write encoder weights
@@ -90,6 +91,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
                 top_row_label="encoder attention pi weights",
                 decoder=False,
             )
+            print("encoder weights")
             output_to_sheet(res_encoder_weights, "encoder_weights")
 
         prompt_preds.append(y)
@@ -108,6 +110,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
         attention_inputs=[attention_input for _ in range(len(prompt_tensors))],
         title="test prediction versus truth",
     )
+    print("inference_input_pred")
     output_to_sheet(res_pred_truth_input, "inference_input_pred")
 
     if preds is not None and truths is not None and token_prob_tensors is not None:
@@ -128,6 +131,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
             attention_inputs=[attention_input for _ in range(len(prompt_tensors))],
             title="training prediction versus truth"
         )
+        print("training_input_pred_truth")
         output_to_sheet(res_pred_truth_input, "training_input_pred_truth")
 
 
