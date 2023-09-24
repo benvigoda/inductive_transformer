@@ -224,7 +224,7 @@ def main():
     data = InputData(args.training_text, args.inference_text)
     prob_tensors = ProbTensors(data=data, layer_width=args.layer_width)
     training_data = prob_tensors.format_training_data(num_layers=args.num_layers)
-    inference_match_training = True  # Toggle to match training data or not
+    inference_match_training = False  # Toggle to match training data or not
     if inference_match_training:
         prompt_tensors = [input_training for input_training, _ in training_data]
     else:
@@ -247,7 +247,7 @@ def main():
             epochs=3,
             train_data=training_data,
             print_every=20,
-            batch_size=2,
+            batch_size=len(prob_tensors.windows),  # Batch all the different sentences together
             lr=0.001,
             vocab=data.vocab,
             prompt_tensors=prompt_tensors,

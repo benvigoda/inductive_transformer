@@ -2,6 +2,7 @@ import torch  # type: ignore
 import pathlib
 import os
 import time
+from torch import nn  # type: ignore
 from google_sheets_api.sheetsstart import Sheet
 from googleapiclient.errors import HttpError  # type: ignore
 
@@ -40,13 +41,29 @@ def print_to_terminal(model, iter, epoch, start, loss_avg, toc, print_every):
     )
 
 
+def normalize_weights(weights):
+    return nn.functional.normalize(nn.ReLU()(weights), p=1, dim=0)
+
+
 def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, model, attention_input, vocab):
     # token_prob_tensors are the training inputs
     prompt_preds = []  # Store the predictions from each prompt_tensor
-    encoder_attention_pi_weights = torch.stack([model.encoder_layer_0.encoder_attention_pi.weights, model.encoder_layer_1.encoder_attention_pi.weights], dim=0)
-    encoder_token_pi_weights = torch.stack([model.encoder_layer_0.encoder_token_pi.weights, model.encoder_layer_1.encoder_token_pi.weights], dim=0)
-    decoder_attention_pi_weights = torch.stack([model.decoder_layer_0.decoder_attention_pi.weights, model.decoder_layer_1.decoder_attention_pi.weights], dim=0)
-    decoder_token_pi_weights = torch.stack([model.decoder_layer_0.decoder_token_pi.weights, model.decoder_layer_1.decoder_token_pi.weights], dim=0)
+    encoder_attention_pi_weights = torch.stack([
+        normalize_weights(model.encoder_layer_0.encoder_attention_pi.weights),
+        normalize_weights(model.encoder_layer_1.encoder_attention_pi.weights),
+    ], dim=0)
+    encoder_token_pi_weights = torch.stack([
+        normalize_weights(model.encoder_layer_0.encoder_token_pi.weights),
+        normalize_weights(model.encoder_layer_1.encoder_token_pi.weights),
+    ], dim=0)
+    decoder_attention_pi_weights = torch.stack([
+        normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights),
+        normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights),
+    ], dim=0)
+    decoder_token_pi_weights = torch.stack([
+        normalize_weights(model.decoder_layer_0.decoder_token_pi.weights),
+        normalize_weights(model.decoder_layer_1.decoder_token_pi.weights),
+    ], dim=0)
     for sheet_number, prompt_tensor in enumerate(prompt_tensors):
         # write activations
         y = model(attention_input, prompt_tensor)
