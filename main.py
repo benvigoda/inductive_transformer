@@ -139,9 +139,6 @@ def train_model(
                 )
                 toc = time.time()
                 total_loss = 0
-            # Print the model parameters to a google sheet only if the boolean is set to true
-            if not output_to_google_sheet:
-                continue
             # Save the model parameters for later printing
             # Only output to the google sheet when we reach a local minimum
             # Or at the very end of a batch
@@ -166,15 +163,16 @@ def train_model(
                         toc=toc,
                         print_every=print_every,
                     )
-                    printing.send_to_google_sheet(
-                        prompt_tensors=prompt_tensors,
-                        preds=preds,
-                        truths=truths,
-                        token_prob_tensors=token_prob_tensors,
-                        model=model,
-                        attention_input=attention_input,
-                        vocab=vocab,
-                    )
+                    if output_to_google_sheet:
+                        printing.send_to_google_sheet(
+                            prompt_tensors=prompt_tensors,
+                            preds=preds,
+                            truths=truths,
+                            token_prob_tensors=token_prob_tensors,
+                            model=model,
+                            attention_input=attention_input,
+                            vocab=vocab,
+                        )
 
                 # import pdb; pdb.set_trace()
                 #############################
@@ -255,6 +253,7 @@ def parse_args():
     parser.add_argument("--num_data_points", type=int, default=100)
     parser.add_argument("--num_layers", type=int, default=3)
     parser.add_argument("--num_train", type=int, default=1)  # Number of times to train
+    parser.add_argument("--silence_google_sheet", help="Whether to output to google sheet", action="store_true")
     return parser.parse_args()
 
 
@@ -297,6 +296,7 @@ def main():
                 lr=0.01,
                 vocab=data.vocab,
                 prompt_tensors=prompt_tensors,
+                output_to_google_sheet=not args.silence_google_sheet,
             )
             model_weights = get_model_weights(model=model)
             encoder_attention_pi_weights.append(model_weights['encoder_attention_pi_weights'])
