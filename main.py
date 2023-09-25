@@ -143,8 +143,6 @@ def train_model(
             # Only output to the google sheet when we reach a local minimum
             # Or at the very end of a batch
             if is_local_minimum(losses=losses, reached_local_minimum=reached_local_minimum) or i == n_batches - 1 or loss_avg < 1e-8:
-                print("* LOSS went up *")
-
                 reached_local_minimum = True
                 reached_local_maximum = False
                 minimum_index = i * epoch + i - 1
