@@ -26,6 +26,10 @@ def format_prob_vocab(prob_outputs, vocab):
     return prob_token_pairs_str
 
 
+def format_attention_tensor(t):
+    return '[' + ', '.join(['{:.2f}'.format(value) for value in t]) + ']'
+
+
 def print_to_terminal(model, iter, epoch, start, loss_avg, toc, print_every):
     print(
         "time = %dm, epoch %d, iter = %d, loss = %.10f,\
@@ -98,7 +102,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
     # With test data sentences running through inference
     # Print the input, pred, and truth (same as input) for each activation:
     unpacked_prompt_preds = [torch.stack([p[i: i + model.vocab_size] for i in range(0, model.vocab_size * model.num_layers, model.vocab_size)], dim=0) for p in prompt_preds]
-    unpacked_attention_preds = [p[model.layer_width * model.num_layers:] for p in prompt_preds]
+    unpacked_attention_preds = [p[model.vocab_size * model.num_layers:] for p in prompt_preds]
     res_pred_truth_input = format_into_pred_truth_table(
         model=model,
         vocab=vocab,
@@ -118,8 +122,8 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
         # Print the input, pred, and truth to google-sheet
         unpacked_preds = [torch.stack([p[i: i + model.vocab_size] for i in range(0, model.vocab_size * model.num_layers, model.vocab_size)], dim=0) for p in preds]
         unpacked_truths = [torch.stack([t[i: i + model.vocab_size] for i in range(0, model.vocab_size * model.num_layers, model.vocab_size)], dim=0) for t in truths]
-        unpacked_attention_preds = [p[model.layer_width * model.num_layers:] for p in preds]
-        unpacked_attention_truths = [t[model.layer_width * model.num_layers:] for t in truths]
+        unpacked_attention_preds = [p[model.vocab_size * model.num_layers:] for p in preds]
+        unpacked_attention_truths = [t[model.vocab_size * model.num_layers:] for t in truths]
         res_pred_truth_input = format_into_pred_truth_table(
             model=model,
             vocab=vocab,
@@ -137,10 +141,11 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
 
 def format_into_pred_truth_table(model, vocab, preds, truths, inputs, attention_preds, attention_truths, attention_inputs, title=""):
     # preds, truths, inputs are all size (num_sentences, num_layers, vocab_size, layer_width)
-    # attention_preds, attention_truths, attention_inputs are all size (num_sentences, num_layers, layer_width, layer_width)
+    # attention_preds, attention_truths, attention_inputs are all size (num_sentences, layer_width, layer_width)
+    # The num_layers index is collapsed as we are only training on the 0th output layer
 
     # Initialize the table to None
-    table = [[None for _ in range(1 + len(preds) * (model.hyperparams.layer_width + 3))] for _ in range(model.hyperparams.num_layers * 4 + 1)]
+    table = [[None for _ in range(1 + len(preds) * (model.hyperparams.layer_width * 2 + 1))] for _ in range(model.hyperparams.num_layers * 4 + 1)]
     # Title in the top left corner
     table[0][0] = title
 
@@ -150,7 +155,7 @@ def format_into_pred_truth_table(model, vocab, preds, truths, inputs, attention_
         # sentence 1 is in column 1 + layer_width + 1
         # sentence 2 is in column 1 + layer_width + 1 + layer_width + 1
         # ...
-        table[0][1 + k * (model.hyperparams.layer_width + 1)] = f"sentence {k}"
+        table[0][1 + k * (model.hyperparams.layer_width * 2 + 1)] = f"sentence {k}"
     # Fill-in the token-lists
     for n in range(model.hyperparams.num_layers):
         table[1 + n * 4][0] = f"pred layer {n}"
@@ -164,10 +169,18 @@ def format_into_pred_truth_table(model, vocab, preds, truths, inputs, attention_
                 # for sentence 1: columns are 1 + layer_width + 1 + lw
                 # for sentence 2: columns are 1 + layer_width + 1 + num_layers + 1 + lw
                 # ...
-                left_row = (1 + model.hyperparams.layer_width) * k + 1 + lw
-                table[1 + n * 4][left_row] = format_prob_vocab(preds[k][n][:, lw], vocab)
-                table[1 + n * 4 + 1][left_row] = format_prob_vocab(truths[k][n][:, lw], vocab)
-                table[1 + n * 4 + 2][left_row] = format_prob_vocab(inputs[k][n][:, lw], vocab)
+                token_row = (1 + model.hyperparams.layer_width * 2) * k + 1 + lw
+                attention_row = token_row + model.hyperparams.layer_width
+                table[1 + n * 4][token_row] = format_prob_vocab(preds[k][n][:, lw], vocab)
+                table[1 + n * 4 + 1][token_row] = format_prob_vocab(truths[k][n][:, lw], vocab)
+                table[1 + n * 4 + 2][token_row] = format_prob_vocab(inputs[k][n][:, lw], vocab)
+                # For the attention output we are only interested in the 0th layer
+                # We are not training on any other layer
+                # So the `n` index is dropped
+                if n == 0:
+                    table[1 + n * 4][attention_row] = format_attention_tensor(attention_preds[k][:, lw])
+                    table[1 + n * 4 + 1][attention_row] = format_attention_tensor(attention_truths[k][:, lw])
+                    table[1 + n * 4 + 2][attention_row] = format_attention_tensor(attention_inputs[k][:, lw])
     return table
 
 

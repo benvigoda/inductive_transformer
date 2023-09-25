@@ -67,19 +67,37 @@ class DecoderAnd(nn.Module):
 
         x = torch.empty((2, 2))
         y = torch.empty((2, 2))
-        # left
-        y[1][0] = z[0][0] + z[1][0]
-        y[0][0] = z[0][0] + z[0][0]
+        use_encoder_message = False  # Toggle this to use the encoder message
+        # In theory this should be True, but there could be an error in there
+        # and also, it should be simpler without the encoder message.
+        if use_encoder_message:
+            # left
+            y[1][0] = x_encoder[0][0]*z[0][0] + x_encoder[1][0]*z[1][0]
+            y[0][0] = x_encoder[0][0]*z[0][0] + x_encoder[1][0]*z[0][0]
 
-        x[1][0] = z[0][0] + z[1][0]
-        x[0][0] = z[0][0] + z[0][0]
+            x[1][0] = y_encoder[0][0]*z[0][0] + y_encoder[1][0]*z[1][0]
+            x[0][0] = y_encoder[0][0]*z[0][0] + y_encoder[1][0]*z[0][0]
 
-        # right
-        y[1][1] = z[0][1] + z[1][1]
-        y[0][1] = z[0][1] + z[0][1]
+            # right
+            y[1][1] = x_encoder[0][1]*z[0][1] + x_encoder[1][1]*z[1][1]
+            y[0][1] = x_encoder[0][1]*z[0][1] + x_encoder[1][1]*z[0][1]
 
-        x[1][1] = z[0][1] + z[1][1]
-        x[0][1] = z[0][1] + z[0][1]
+            x[1][1] = y_encoder[0][1]*z[0][1] + y_encoder[1][1]*z[1][1]
+            x[0][1] = y_encoder[0][1]*z[0][1] + y_encoder[1][1]*z[0][1]
+        else:
+            # left
+            y[1][0] = z[0][0] + z[1][0]
+            y[0][0] = z[0][0] + z[0][0]
+
+            x[1][0] = z[0][0] + z[1][0]
+            x[0][0] = z[0][0] + z[0][0]
+
+            # right
+            y[1][1] = z[0][1] + z[1][1]
+            y[0][1] = z[0][1] + z[0][1]
+
+            x[1][1] = z[0][1] + z[1][1]
+            x[0][1] = z[0][1] + z[0][1]
 
         y = nn.functional.normalize(y, p=1, dim=0)
         x = nn.functional.normalize(x, p=1, dim=0)
