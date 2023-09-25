@@ -6,6 +6,7 @@ import argparse
 import matplotlib.pyplot as plt  # type: ignore
 import torch  # type: ignore
 import torch.nn.functional as F  # type: ignore
+from torch.optim.lr_scheduler import ReduceLROnPlateau  # type: ignore
 import printing
 from text_parsing import InputData, ProbTensors
 from hyperparameters import HyperParameters
@@ -38,6 +39,32 @@ def plot_convergence(losses: typing.List[float]):
     plt.savefig('loss_vs_step.png')
 
 
+def get_model_weights(model):
+    encoder_attention_pi_weights = torch.stack([
+        printing.normalize_weights(model.encoder_layer_0.encoder_attention_pi.weights),
+        printing.normalize_weights(model.encoder_layer_1.encoder_attention_pi.weights),
+    ], dim=0)
+    encoder_token_pi_weights = torch.stack([
+        printing.normalize_weights(model.encoder_layer_0.encoder_token_pi.weights),
+        printing.normalize_weights(model.encoder_layer_1.encoder_token_pi.weights),
+    ], dim=0)
+    decoder_attention_pi_weights = torch.stack([
+        printing.normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights),
+        printing.normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights),
+    ], dim=0)
+    decoder_token_pi_weights = torch.stack([
+        printing.normalize_weights(model.decoder_layer_0.decoder_token_pi.weights),
+        printing.normalize_weights(model.decoder_layer_1.decoder_token_pi.weights),
+    ], dim=0)
+    model_weights = {
+        'encoder_attention_pi_weights': encoder_attention_pi_weights,
+        'encoder_token_pi_weights': encoder_token_pi_weights,
+        'decoder_attention_pi_weights': decoder_attention_pi_weights,
+        'decoder_token_pi_weights': decoder_token_pi_weights,
+    }
+    return model_weights
+
+
 def train_model(
     model,
     attention_input,
@@ -56,6 +83,7 @@ def train_model(
 
     # Initialize the optimizer and the loss function
     optim = torch.optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
+    scheduler = ReduceLROnPlateau(optim, mode='min', factor=0.1, patience=10, verbose=True)
     total_loss = 0.0
     start = time.time()  # Keep track of time
     toc = start
@@ -79,6 +107,7 @@ def train_model(
     # Set the booleans to only print when local minimum is reached
     reached_local_minimum = False
     reached_local_maximum = False
+    loss_avg = math.inf
     # Train the model for several epochs
     for epoch in range(epochs):
         for i in range(n_batches):
@@ -88,6 +117,7 @@ def train_model(
             preds = torch.stack([model(attention_input, text_window) for text_window in token_prob_tensors], 0)
             # Compute and save the loss for that batch
             loss = criterion(preds, truths)
+            scheduler.step(loss)
             total_loss += loss
             losses.append(loss.detach())
 
@@ -115,7 +145,7 @@ def train_model(
             # Save the model parameters for later printing
             # Only output to the google sheet when we reach a local minimum
             # Or at the very end of a batch
-            if is_local_minimum(losses=losses, reached_local_minimum=reached_local_minimum) or i == n_batches - 1:
+            if is_local_minimum(losses=losses, reached_local_minimum=reached_local_minimum) or i == n_batches - 1 or loss_avg < 1e-8:
                 print("* LOSS went up *")
 
                 reached_local_minimum = True
@@ -192,6 +222,9 @@ def train_model(
 
                 # Set the model back to training mode
                 model.train()
+                if loss_avg < 1e-8:
+                    # Terminate training
+                    return model
 
             # If the loss goes back down for the first time, we have reached a local maximum
             elif len(losses) > 1 and losses[-1] < losses[-2] and not reached_local_maximum:
@@ -221,6 +254,7 @@ def parse_args():
     parser.add_argument("--layer_width", type=int, default=4)
     parser.add_argument("--num_data_points", type=int, default=100)
     parser.add_argument("--num_layers", type=int, default=3)
+    parser.add_argument("--num_train", type=int, default=1)  # Number of times to train
     return parser.parse_args()
 
 
@@ -246,17 +280,52 @@ def main():
 
     # Train:
     if args.train:
-        model = train_model(
-            model=model,
-            attention_input=prob_tensors.attention_input,
-            epochs=3,
-            train_data=training_data,
-            print_every=20,
-            batch_size=len(prob_tensors.windows),  # Batch all the different sentences together
-            lr=0.001,
-            vocab=data.vocab,
-            prompt_tensors=prompt_tensors,
-        )
+        encoder_attention_pi_weights = []
+        encoder_token_pi_weights = []
+        decoder_attention_pi_weights = []
+        decoder_token_pi_weights = []
+        for i in range(args.num_train):
+            print(f"Training run {i + 1} of {args.num_train}")
+            model = Model(hyperparams=hyperparams)
+            model = train_model(
+                model=model,
+                attention_input=prob_tensors.attention_input,
+                epochs=1,
+                train_data=training_data,
+                print_every=20,
+                batch_size=len(prob_tensors.windows),  # Batch all the different sentences together
+                lr=0.01,
+                vocab=data.vocab,
+                prompt_tensors=prompt_tensors,
+            )
+            model_weights = get_model_weights(model=model)
+            encoder_attention_pi_weights.append(model_weights['encoder_attention_pi_weights'])
+            encoder_token_pi_weights.append(model_weights['encoder_token_pi_weights'])
+            decoder_attention_pi_weights.append(model_weights['decoder_attention_pi_weights'])
+            decoder_token_pi_weights.append(model_weights['decoder_token_pi_weights'])
+        # Stack-up the lists to make tensors we can run stats on
+        encoder_attention_pi_weights = torch.stack(encoder_attention_pi_weights, dim=0)
+        encoder_token_pi_weights = torch.stack(encoder_token_pi_weights, dim=0)
+        decoder_attention_pi_weights = torch.stack(decoder_attention_pi_weights, dim=0)
+        decoder_token_pi_weights = torch.stack(decoder_token_pi_weights, dim=0)
+        # Print the mean and standard deviation of the weights
+        print("encoder_attention_pi_weights:")
+        print(encoder_attention_pi_weights.mean(dim=0))
+        print("+/-")
+        print(encoder_attention_pi_weights.std(dim=0))
+        print("encoder_token_pi_weights:")
+        print(encoder_token_pi_weights.mean(dim=0))
+        print("+/-")
+        print(encoder_token_pi_weights.std(dim=0))
+        print("decoder_attention_pi_weights:")
+        print(decoder_attention_pi_weights.mean(dim=0))
+        print("+/-")
+        print(decoder_attention_pi_weights.std(dim=0))
+        print("decoder_token_pi_weights:")
+        print(decoder_token_pi_weights.mean(dim=0))
+        print("+/-")
+        print(decoder_token_pi_weights.std(dim=0))
+
     # Inference:
     elif prompt_tensors is not None:
         model.eval()  # set the model to inference mode
