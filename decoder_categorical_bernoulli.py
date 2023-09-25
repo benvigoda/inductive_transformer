@@ -1,5 +1,6 @@
 import torch  # type: ignore
 from torch import nn  # type: ignore
+from helper_functions import custom_normalize
 
 
 class DecoderCategoricalBernoulli(nn.Module):
@@ -80,7 +81,8 @@ class DecoderCategoricalBernoulli(nn.Module):
         u[1][1][1] = v[1][1]
         u[0][1][1] = v[1][0]
         # import pdb; pdb.set_trace()
-        u = nn.functional.normalize(u, p=1, dim=0)
+        # u = nn.functional.normalize(u, p=1, dim=0)
+        u = custom_normalize(u, dim=0)
 
         self.u = u
         return u

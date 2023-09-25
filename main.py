@@ -6,7 +6,7 @@ import argparse
 import matplotlib.pyplot as plt  # type: ignore
 import torch  # type: ignore
 import torch.nn.functional as F  # type: ignore
-from torch.optim.lr_scheduler import ReduceLROnPlateau  # type: ignore
+from torch.optim.lr_scheduler import ReduceLROnPlateau, CyclicLR  # type: ignore
 import printing
 from text_parsing import InputData, ProbTensors
 from hyperparameters import HyperParameters
@@ -83,7 +83,8 @@ def train_model(
 
     # Initialize the optimizer and the loss function
     optim = torch.optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
-    scheduler = ReduceLROnPlateau(optim, mode='min', factor=0.1, patience=10, verbose=True)
+    # scheduler = ReduceLROnPlateau(optim, mode='min', factor=2., patience=10, verbose=True)
+    scheduler = CyclicLR(optim, base_lr=lr, max_lr=0.1, step_size_up=20, step_size_down=5000, mode='triangular', cycle_momentum=False)
     total_loss = 0.0
     start = time.time()  # Keep track of time
     toc = start
@@ -117,13 +118,13 @@ def train_model(
             preds = torch.stack([model(attention_input, text_window) for text_window in token_prob_tensors], 0)
             # Compute and save the loss for that batch
             loss = criterion(preds, truths)
-            scheduler.step(loss)
             total_loss += loss
             losses.append(loss.detach())
 
             # Backpropagate the loss
             loss.backward()
             optim.step()
+            scheduler.step()
 
             # Print the loss every print_every batches
             if (i + 1) % print_every == 0:
@@ -260,7 +261,7 @@ def main():
     data = InputData(args.training_text, args.inference_text)
     prob_tensors = ProbTensors(data=data, layer_width=args.layer_width)
     training_data = prob_tensors.format_training_data(num_layers=args.num_layers)
-    inference_match_training = True  # Toggle to match training data or not
+    inference_match_training = False  # Toggle to match training data or not
     if inference_match_training:
         prompt_tensors = [input_training for input_training, _ in training_data]
     else:

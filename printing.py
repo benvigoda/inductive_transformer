@@ -5,6 +5,7 @@ import time
 from torch import nn  # type: ignore
 from google_sheets_api.sheetsstart import Sheet
 from googleapiclient.errors import HttpError  # type: ignore
+from helper_functions import custom_normalize
 
 
 def format_prob_vocab(prob_outputs, vocab):
@@ -46,7 +47,8 @@ def print_to_terminal(model, iter, epoch, start, loss_avg, toc, print_every):
 
 
 def normalize_weights(weights):
-    return nn.functional.normalize(nn.ReLU()(weights), p=1, dim=0)
+    # return nn.functional.normalize(nn.ReLU()(weights), p=1, dim=0)
+    return custom_normalize(nn.ReLU()(weights), dim=0)
 
 
 def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, model, attention_input, vocab):

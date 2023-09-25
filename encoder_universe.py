@@ -1,5 +1,6 @@
 import torch  # type: ignore
 from torch import nn  # type: ignore
+from helper_functions import custom_normalize
 
 
 class EncoderUniverse(nn.Module):
@@ -148,6 +149,7 @@ class EncoderUniverse(nn.Module):
         # p(parent_right = 0) = p(child = 1)p(parent_left = 1) + p(child = 0)p(parent_left = 0)
         u[0][1][1] = z[1][1] + z[0][1]
 
-        u = nn.functional.normalize(u, p=1, dim=0)
+        # u = nn.functional.normalize(u, p=1, dim=0)
+        u = custom_normalize(u, dim=0)
         self.u = u
         return u

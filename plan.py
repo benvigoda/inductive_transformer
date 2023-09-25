@@ -1,6 +1,6 @@
 '''
 Ben:
-- send to Jeff & Steve for feedback
+X send to Jeff & Steve for feedback
 - move pencil edits into appendices
 - send to Bill
 - Matt Barr

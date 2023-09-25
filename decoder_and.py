@@ -1,5 +1,6 @@
 import torch  # type: ignore
 from torch import nn  # type: ignore
+from helper_functions import custom_normalize
 
 
 class DecoderAnd(nn.Module):
@@ -99,8 +100,10 @@ class DecoderAnd(nn.Module):
             x[1][1] = z[0][1] + z[1][1]
             x[0][1] = z[0][1] + z[0][1]
 
-        y = nn.functional.normalize(y, p=1, dim=0)
-        x = nn.functional.normalize(x, p=1, dim=0)
+        # y = nn.functional.normalize(y, p=1, dim=0)
+        # x = nn.functional.normalize(x, p=1, dim=0)
+        x = custom_normalize(x, dim=0)
+        y = custom_normalize(y, dim=0)
 
         self.y = y
         self.x = x

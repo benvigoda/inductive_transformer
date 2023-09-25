@@ -1,5 +1,6 @@
 import torch  # type: ignore
 from torch import nn  # type: ignore
+from helper_functions import custom_normalize
 
 
 class EncoderCategoricalBernoulli(nn.Module):
@@ -26,6 +27,7 @@ class EncoderCategoricalBernoulli(nn.Module):
         bernoulli[1][1] = categorical[0, 1]
         bernoulli[0][1] = categorical[0, 0]
 
-        bernoulli = nn.functional.normalize(bernoulli, p=1, dim=0)
+        # bernoulli = nn.functional.normalize(bernoulli, p=1, dim=0)
+        bernoulli = custom_normalize(bernoulli, dim=0)
         self.bernoulli = bernoulli
         return bernoulli
