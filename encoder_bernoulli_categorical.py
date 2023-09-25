@@ -1,5 +1,6 @@
 import torch  # type: ignore
 from torch import nn  # type: ignore
+from helper_functions import custom_normalize
 
 
 class EncoderBernoulliCategorical(nn.Module):
@@ -27,6 +28,7 @@ class EncoderBernoulliCategorical(nn.Module):
         # we want to normalize is the inputs to a specific pi_a, remember from the encoder universe factor:
         # v[0][0] + v[1][0] = 1
         # v[0][1] + v[1][1] = 1
-        v = nn.functional.normalize(v, p=1, dim=0)
+        # v = nn.functional.normalize(v, p=1, dim=0)
+        v = custom_normalize(v, dim=0)
         self.v = v
         return v

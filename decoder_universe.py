@@ -1,5 +1,6 @@
 import torch  # type: ignore
 from torch import nn  # type: ignore
+from helper_functions import custom_normalize
 
 
 class DecoderUniverse(nn.Module):
@@ -23,6 +24,7 @@ class DecoderUniverse(nn.Module):
         z[0][1] = u[0][1][0] * u[0][1][1]
         z[1][1] = u[1][1][0] * u[1][1][1] + u[1][1][0] * u[0][1][1] + u[0][1][0] * u[1][1][1]
 
-        z = nn.functional.normalize(z, p=1, dim=0)
+        # z = nn.functional.normalize(z, p=1, dim=0)
+        z = custom_normalize(z, dim=0)
         self.z = z
         return z

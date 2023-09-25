@@ -1,5 +1,6 @@
 import torch  # type: ignore
 from torch import nn  # type: ignore
+from helper_functions import custom_normalize
 
 
 class EncoderAttentionPi(nn.Module):
@@ -26,7 +27,8 @@ class EncoderAttentionPi(nn.Module):
 
         prob_weights = self.relu(self.weights) + 1e-9
         # NOTE: we decided not to normalize the weights (it shouldn't matter)
-        prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)
+        # prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)
+        prob_weights = custom_normalize(prob_weights, dim=0)
 
         # element-wise product of weight vector and token vector for each column in the layer
         y = prob_weights * v
@@ -35,6 +37,7 @@ class EncoderAttentionPi(nn.Module):
         y = torch.sum(y, dim=0, keepdim=True)  # after summing it is size = (1, layer_width)
         assert y.shape == (1, self.layer_width)
 
-        y = nn.functional.normalize(y, p=1, dim=1)
+        # y = nn.functional.normalize(y, p=1, dim=1)
+        y = custom_normalize(y, dim=1)
         self.y = y
         return y  # y is categorical

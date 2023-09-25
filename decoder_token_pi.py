@@ -1,5 +1,6 @@
 import torch  # type: ignore
 from torch import nn  # type: ignore
+from helper_functions import custom_normalize
 
 
 class DecoderTokenPi(nn.Module):
@@ -30,11 +31,13 @@ class DecoderTokenPi(nn.Module):
         # each of these output categoricals will be of length vocab_size
         # each categorical will be normalized, not to 1, but to the x value at this lw
         # an easy way to do this is to normalize the prob weights in advance in dim=0
-        prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)
+        # prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)
+        prob_weights = custom_normalize(prob_weights, dim=0)
 
         # and then since x comes in as categorical of size (1, layer_width)
         assert x.shape == (1, self.layer_width)
-        x = nn.functional.normalize(x, p=1, dim=1)
+        # x = nn.functional.normalize(x, p=1, dim=1)
+        x = custom_normalize(x, dim=1)
         # we want to stack x in dim = 0
         x_stacked = torch.cat([x for vs in range(self.vocab_size)], dim=0)
 

@@ -1,5 +1,6 @@
 import torch  # type: ignore
 from torch import nn  # type: ignore
+from helper_functions import custom_normalize
 
 
 class EncoderAnd(nn.Module):
@@ -25,6 +26,7 @@ class EncoderAnd(nn.Module):
         z[1][1] = x[1][1]*y[1][1]  # 0 * 0.5 = 0
         z[0][1] = x[0][1]*y[1][1] + x[1][1]*y[0][1] + x[0][1]*y[0][1]  # 1 * 0.5 + 0 + 0 = 0
 
-        z = nn.functional.normalize(z, p=1, dim=0)
+        # z = nn.functional.normalize(z, p=1, dim=0)
+        z = custom_normalize(z, dim=0)
         self.z = z
         return z
