@@ -114,7 +114,8 @@ def train_model(
                 continue
             # Save the model parameters for later printing
             # Only output to the google sheet when we reach a local minimum
-            if is_local_minimum(losses=losses, reached_local_minimum=reached_local_minimum):
+            # Or at the very end of a batch
+            if is_local_minimum(losses=losses, reached_local_minimum=reached_local_minimum) or i == n_batches - 1:
                 print("* LOSS went up *")
 
                 reached_local_minimum = True

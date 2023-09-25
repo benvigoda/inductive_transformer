@@ -143,8 +143,8 @@ class ProbTensors():
             training_output = torch.transpose(training_output, 1, 2)
             training_output_reshaped = torch.cat([to for to in training_output], dim=0)
             # Add the z_decode_0 output to the training output data
-            full_training_output = torch.cat([training_output_reshaped, self.attention_input], dim=0)
-            assert full_training_output.shape == (num_layers*self.vocab_size + 2, self.layer_width)
+            full_training_output = torch.cat([training_output_reshaped], dim=0)
+            assert full_training_output.shape == (num_layers*self.vocab_size, self.layer_width)
             if self.print_flag:
                 print(f"word_prob_tensors/training_input in whole model for sentence #{lw + 1}:\n{training_input}")
                 print(f"training_input.size():\n{training_input.size()}")
