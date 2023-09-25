@@ -6,7 +6,7 @@ import argparse
 import matplotlib.pyplot as plt  # type: ignore
 import torch  # type: ignore
 import torch.nn.functional as F  # type: ignore
-from torch.optim.lr_scheduler import ReduceLROnPlateau, CyclicLR  # type: ignore
+from torch.optim.lr_scheduler import CyclicLR  # type: ignore
 import printing
 from text_parsing import InputData, ProbTensors
 from hyperparameters import HyperParameters
@@ -261,7 +261,7 @@ def main():
     data = InputData(args.training_text, args.inference_text)
     prob_tensors = ProbTensors(data=data, layer_width=args.layer_width)
     training_data = prob_tensors.format_training_data(num_layers=args.num_layers)
-    inference_match_training = False  # Toggle to match training data or not
+    inference_match_training = True  # Toggle to match training data or not
     if inference_match_training:
         prompt_tensors = [input_training for input_training, _ in training_data]
     else:
@@ -292,7 +292,7 @@ def main():
                 train_data=training_data,
                 print_every=20,
                 batch_size=len(prob_tensors.windows),  # Batch all the different sentences together
-                lr=0.01,
+                lr=0.1,
                 vocab=data.vocab,
                 prompt_tensors=prompt_tensors,
                 output_to_google_sheet=not args.silence_google_sheet,
