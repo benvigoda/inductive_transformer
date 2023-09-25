@@ -19,12 +19,12 @@ class DecoderLayer(nn.Module):
         self.decoder_categorical_bernoulli = DecoderCategoricalBernoulli(hyperparams=hyperparams, active_layer=active_layer)
         self.decoder_and = DecoderAnd(hyperparams=hyperparams, active_layer=active_layer)
 
-    def forward(self, z_prime):
+    def forward(self, z_prime, x_encoder, y_encoder):
         # dim=0 indexes the state of the variable e.g. cat or dog, 0 or 1, etc.
         # dim=1 indexes the layer width
 
         # Decoder $\land$
-        x_bernoulli, y_bernoulli = self.decoder_and(z_prime)
+        x_bernoulli, y_bernoulli = self.decoder_and(z_prime, x_encoder, y_encoder)
 
         # Decoder Bernoulli-Categorical
         y_categorical = self.decoder_bernoulli_categorical(y_bernoulli)

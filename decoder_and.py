@@ -8,11 +8,11 @@ class DecoderAnd(nn.Module):
         super(DecoderAnd, self).__init__()
         self.hyperparams = hyperparams
         self.active_layer = active_layer
-        
+
         self.y = None
         self.x = None
 
-    def forward(self, z):
+    def forward(self, z, x_encoder, y_encoder):
         '''
         x y z prob
         0 0 0   1

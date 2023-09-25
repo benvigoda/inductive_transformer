@@ -155,6 +155,8 @@ def train_model(
                 model.encoder_layer_0.encoder_token_pi.x
                 # model.encoder_layer_0.encoder_categorical_bernoulli.bernoulli
                 model.encoder_layer_0.encoder_and.z
+                model.encoder_layer_0.encoder_and.y
+                model.encoder_layer_0.encoder_and.x
 
                 model.encoder_layer_1.encoder_universe.u
                 model.encoder_layer_1.encoder_bernoulli_categorical.v
@@ -162,6 +164,8 @@ def train_model(
                 model.encoder_layer_1.encoder_token_pi.x
                 # model.encoder_layer_1.encoder_categorical_bernoulli.bernoulli
                 model.encoder_layer_1.encoder_and.z
+                model.encoder_layer_1.encoder_and.y
+                model.encoder_layer_1.encoder_and.x
 
                 # decoder printing
                 model.decoder_layer_1.decoder_and.y
@@ -224,7 +228,7 @@ def main():
     data = InputData(args.training_text, args.inference_text)
     prob_tensors = ProbTensors(data=data, layer_width=args.layer_width)
     training_data = prob_tensors.format_training_data(num_layers=args.num_layers)
-    inference_match_training = False  # Toggle to match training data or not
+    inference_match_training = True  # Toggle to match training data or not
     if inference_match_training:
         prompt_tensors = [input_training for input_training, _ in training_data]
     else:
