@@ -2,7 +2,14 @@
 Ben:
 - send to Jeff & Steve for feedback
 - move pencil edits into appendices
-- send to Bill and who else?
+- send to Bill
+- Matt Barr
+- Alex Wissner Gross
+- Martin McCormick?
+- Jonathan Yedidia
+- David Blei student
+- Jake Neely
+- Theo?
 - go over every citation
 
 Ben & Thomas:
@@ -19,6 +26,8 @@ Thomas:
 - proofread and spotcheck every step and equation
 - review how Ben discusses marginalizing out position in the main body
 - go over every citation too
+- send to Helene Rochais
+- send to Jonathan Heckman
 
 results tables:
 1. fill in some representative numbers in the black weights criss cross diagram which means we need final simulation results

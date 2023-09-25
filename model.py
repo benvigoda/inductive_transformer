@@ -34,10 +34,16 @@ class Model(nn.Module):
         z1_encode = self.encoder_layer_0(z_input, t[0])
         z2_encode = self.encoder_layer_1(z1_encode, t[1])
 
+        # passing x and y from the encoder to the decoder
+        x_encoder_1 = self.encoder_layer_1.encoder_and.x
+        y_encoder_1 = self.encoder_layer_1.encoder_and.y
+        x_encoder_0 = self.encoder_layer_0.encoder_and.x
+        y_encoder_0 = self.encoder_layer_0.encoder_and.y
+
         z2_decode = z2_encode  # take the output of the encoder and feed it to the decoder
 
-        t_decode_layer_1, z1_decode = self.decoder_layer_1(z2_decode)
-        t_decode_layer_0, z0_decode = self.decoder_layer_0(z1_decode)
+        t_decode_layer_1, z1_decode = self.decoder_layer_1(z2_decode, x_encoder_1, y_encoder_1)
+        t_decode_layer_0, z0_decode = self.decoder_layer_0(z1_decode, x_encoder_0, y_encoder_0)
 
         self.encoder_output = (z1_encode, z2_encode)
         self.decoder_output = torch.cat([t_decode_layer_0, t_decode_layer_1, z0_decode], dim=0)

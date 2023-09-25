@@ -9,9 +9,13 @@ class EncoderAnd(nn.Module):
         self.hyperparams = hyperparams
         self.active_layer = active_layer
 
+        self.x = None
+        self.y = None
         self.z = None
 
     def forward(self, x, y):
+        self.x = x
+        self.y = y
 
         z = torch.empty((2, 2))  # size = (2, layer_width)
         # left
