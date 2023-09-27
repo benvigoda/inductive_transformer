@@ -14,8 +14,12 @@ class DecoderAttentionPi(nn.Module):
             self.weights = hyperparams.decoder_attention_pi_weights[active_layer]
         else:
             # self.weights[below_lw][above_lw], where below in the decoder is towards the output, and above is from the encoder
-            self.weights = nn.Parameter(torch.ones(self.layer_width, self.layer_width), requires_grad=True)
-            nn.init.normal_(self.weights, mean=1, std=0.1)
+            if self.active_layer == 0:
+                self.weights = nn.Parameter(torch.ones(self.layer_width, self.layer_width), requires_grad=True)
+                nn.init.normal_(self.weights, mean=1, std=0.1)
+            else:
+                self.weights = nn.Parameter(torch.eye(self.layer_width), requires_grad=True)
+                self.weights.data += torch.randn_like(self.weights) * 0.1
         self.relu = nn.ReLU()
 
         self.y = None
