@@ -19,9 +19,11 @@ class EncoderTokenPi(nn.Module):
             nn.init.normal_(self.weights, mean=1, std=0.1)
         self.relu = nn.ReLU()
 
+        self.t = None
         self.x = None
 
     def forward(self, t):
+        self.t = t
         assert t.shape == (self.vocab_size, self.layer_width)
         # we expect t to be already normalized
 

@@ -73,7 +73,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
     for sheet_number, prompt_tensor in enumerate(prompt_tensors):
         # write activations
         y = model(attention_input, prompt_tensor)
-
+        # import pdb; pdb.set_trace()
         if sheet_number == 0:
 
             # write decoder weights
