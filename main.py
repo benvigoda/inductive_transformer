@@ -83,8 +83,8 @@ def train_model(
 
     # Initialize the optimizer and the loss function
     optim = torch.optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
-    scheduler = ReduceLROnPlateau(optim, mode='min', factor=.5, patience=10, min_lr=1e-3, verbose=True)
-    # scheduler = CyclicLR(optim, base_lr=lr, max_lr=0.1, step_size_up=200, step_size_down=2, mode='triangular', cycle_momentum=False)
+    scheduler = ReduceLROnPlateau(optim, mode='min', factor=.1, patience=50, min_lr=5e-5, verbose=True)
+    # scheduler = CyclicLR(optim, base_lr=lr, max_lr=0.1, step_size_up=20, step_size_down=2, mode='triangular', cycle_momentum=False, verbose=True)
     total_loss = 0.0
     start = time.time()  # Keep track of time
     toc = start
@@ -143,7 +143,7 @@ def train_model(
             # Save the model parameters for later printing
             # Only output to the google sheet when we reach a local minimum
             # Or at the very end of a batch
-            if is_local_minimum(losses=losses, reached_local_minimum=reached_local_minimum) or i == n_batches - 1 or loss_avg < 1e-6:
+            if is_local_minimum(losses=losses, reached_local_minimum=reached_local_minimum) or i == n_batches - 1 or loss_avg < 1e-8:
                 reached_local_minimum = True
                 reached_local_maximum = False
                 minimum_index = i * epoch + i - 1
@@ -219,7 +219,7 @@ def train_model(
 
                 # Set the model back to training mode
                 model.train()
-                if loss_avg < 1e-6:
+                if loss_avg < 1e-8:
                     # Terminate training
                     return model
 
@@ -292,7 +292,7 @@ def main():
                 train_data=training_data,
                 print_every=20,
                 batch_size=len(prob_tensors.windows),  # Batch all the different sentences together
-                lr=0.01,
+                lr=1e-3,
                 vocab=data.vocab,
                 prompt_tensors=prompt_tensors,
                 output_to_google_sheet=not args.silence_google_sheet,
