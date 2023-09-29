@@ -31,14 +31,21 @@ class Model(nn.Module):
     def forward(self, z_input, t):
         assert t.shape == (self.num_layers, self.vocab_size, self.layer_width)
         assert z_input.shape == (2, self.layer_width)
-        z1_encode = self.encoder_layer_0(z_input, t[0])
-        z2_encode = self.encoder_layer_1(z1_encode, t[1])
+        if t[1].numel() == 0:
+            z1_encode = z_input
+            x_encoder_0 = None
+            y_encoder_0 = None
+        else:
+            z1_encode = self.encoder_layer_0(z_input, t[1])
+            # passing x and y from the encoder to the decoder
+            x_encoder_0 = self.encoder_layer_0.encoder_and.x
+            y_encoder_0 = self.encoder_layer_0.encoder_and.y
+
+        z2_encode = self.encoder_layer_1(z1_encode, t[0])
 
         # passing x and y from the encoder to the decoder
         x_encoder_1 = self.encoder_layer_1.encoder_and.x
         y_encoder_1 = self.encoder_layer_1.encoder_and.y
-        x_encoder_0 = self.encoder_layer_0.encoder_and.x
-        y_encoder_0 = self.encoder_layer_0.encoder_and.y
 
         z2_decode = z2_encode  # take the output of the encoder and feed it to the decoder
 
