@@ -83,8 +83,8 @@ def train_model(
 
     # Initialize the optimizer and the loss function
     optim = torch.optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
-    scheduler = ReduceLROnPlateau(optim, mode='min', factor=.1, patience=50, min_lr=5e-5, verbose=True)
-    # scheduler = CyclicLR(optim, base_lr=lr, max_lr=0.1, step_size_up=20, step_size_down=2, mode='triangular', cycle_momentum=False, verbose=True)
+    scheduler_plateau = ReduceLROnPlateau(optim, mode='min', factor=.1, patience=50, min_lr=5e-5, verbose=True)
+    scheduler_cycle = CyclicLR(optim, base_lr=lr, max_lr=0.1, step_size_up=20, step_size_down=2, mode='triangular', cycle_momentum=False, verbose=True)
     total_loss = 0.0
     start = time.time()  # Keep track of time
     toc = start
@@ -124,7 +124,10 @@ def train_model(
             # Backpropagate the loss
             loss.backward()
             optim.step()
-            scheduler.step(loss)
+            # if 1500 < i % 2000 < 1600:
+            #     scheduler_cycle.step()
+            # else:
+            #     scheduler_plateau.step(loss)
 
             # Print the loss every print_every batches
             if (i + 1) % print_every == 0:
@@ -143,7 +146,7 @@ def train_model(
             # Save the model parameters for later printing
             # Only output to the google sheet when we reach a local minimum
             # Or at the very end of a batch
-            if is_local_minimum(losses=losses, reached_local_minimum=reached_local_minimum) or i == n_batches - 1 or loss_avg < 1e-8:
+            if is_local_minimum(losses=losses, reached_local_minimum=reached_local_minimum) or i == n_batches - 1 or loss_avg < 1e-9:
                 reached_local_minimum = True
                 reached_local_maximum = False
                 minimum_index = i * epoch + i - 1
@@ -219,7 +222,7 @@ def train_model(
 
                 # Set the model back to training mode
                 model.train()
-                if loss_avg < 1e-8:
+                if loss_avg < 1e-9:
                     # Terminate training
                     return model
 
@@ -261,7 +264,7 @@ def main():
     data = InputData(args.training_text, args.inference_text)
     prob_tensors = ProbTensors(data=data, layer_width=args.layer_width)
     training_data = prob_tensors.format_training_data(num_layers=args.num_layers)
-    inference_match_training = True  # Toggle to match training data or not
+    inference_match_training = False  # Toggle to match training data or not
     if inference_match_training:
         prompt_tensors = [input_training for input_training, _ in training_data]
     else:
