@@ -167,7 +167,7 @@ class ProbTensors():
     def make_inference_prompt_tensors(self, num_layers: int = 1) -> List[torch.Tensor]:
         prompt_tensors = []
         empty_word_prob_tensor = torch.full((self.vocab_size, ), self.improbable)
-        empty_layer_prob_tensor = torch.full((self.vocab_size, self.layer_width), self.improbable)
+        empty_layer_prob_tensor = torch.empty((self.vocab_size, self.layer_width))
         for window in self.data.inference_windows:
             inference_word_prob_tensor = torch.full((self.vocab_size, ), self.improbable)
             for index_of_probable_word in window:
