@@ -20,7 +20,10 @@ def format_prob_vocab(prob_outputs, vocab):
     token, sorted from highest prob to lowest
     """
     # Pair each prob with it's corresponding token string in the vocab
-    prob_token_pairs = [(round(x.item() * 100) / 100, v) for x, v in zip(prob_outputs, vocab)]
+    try:
+        prob_token_pairs = [(round(x.item() * 100) / 100, v) for x, v in zip(prob_outputs, vocab)]
+    except ValueError:
+        prob_token_pairs = [(-1, v) for x, v in zip(prob_outputs, vocab)]
     # Sort from highest probability to lowest, so we have the most likely token on top
     prob_token_pairs.sort(key=lambda x: x[0], reverse=True)
     prob_token_pairs_str = "\n".join([str(pw) for pw in prob_token_pairs])

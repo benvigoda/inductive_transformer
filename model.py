@@ -31,7 +31,7 @@ class Model(nn.Module):
     def forward(self, z_input, t):
         assert t.shape == (self.num_layers, self.vocab_size, self.layer_width)
         assert z_input.shape == (2, self.layer_width)
-        if t[1].numel() == 0:
+        if torch.any(torch.isnan(t[1])):
             z1_encode = z_input
             x_encoder_0 = None
             y_encoder_0 = None
