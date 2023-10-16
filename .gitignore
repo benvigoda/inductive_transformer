@@ -17,6 +17,9 @@ credentials.json
 *.snm
 *.synctex.gz
 *.dvi
+*blg
+*fdb_latexmk
+*fls
 
 # Temporary files
 *.swp
