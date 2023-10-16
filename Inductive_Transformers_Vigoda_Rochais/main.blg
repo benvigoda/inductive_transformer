@@ -1,0 +1,51 @@
+This is BibTeX, Version 0.99d (TeX Live 2023)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: main.aux
+The style file: iclr2024_conference.bst
+Database file #1: references.bib
+Warning--entry type for "amodei2018ai" isn't style-file defined
+--line 585 of file references.bib
+Warning--can't use both volume and number fields in mazzaglia2022curiosity
+Warning--empty journal in peterson2019embracing
+You've used 61 entries,
+            2773 wiz_defined-function locations,
+            928 strings with 16624 characters,
+and the built_in function-call counts, 30729 in all, are:
+= -- 2568
+> -- 2316
+< -- 36
++ -- 784
+- -- 723
+* -- 2539
+:= -- 4818
+add.period$ -- 189
+call.type$ -- 61
+change.case$ -- 411
+chr.to.int$ -- 61
+cite$ -- 124
+duplicate$ -- 1257
+empty$ -- 2202
+format.name$ -- 804
+if$ -- 6362
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 52
+newline$ -- 313
+num.names$ -- 244
+pop$ -- 906
+preamble$ -- 1
+purify$ -- 361
+quote$ -- 0
+skip$ -- 1126
+stack$ -- 0
+substring$ -- 677
+swap$ -- 158
+text.length$ -- 9
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 621
+warning$ -- 2
+while$ -- 222
+width$ -- 0
+write$ -- 780
+(There were 3 warnings)
