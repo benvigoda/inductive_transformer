@@ -1,0 +1,216 @@
+
+Regarding sinusoidal position encodings, if we consider $q_i$ and $k_j$ to contain sinusoidal position encoding, then this would mean that every weight, $\text{softmax}\large(\frac{q_{i} \cdot k_{j}}{\sqrt{d_k}}\large)$ is smaller when the distance $|i-j|$ between two positions, is larger. This is true at short-range for small positional distances $i-j$. Depending on the frequencies of the sinusoidal position encoding, at longer ranges, larger weights may recur, enabling the system to attend sparsely to more distant vectors.
+
+In addition to the sinusoidal position encoding, $q_i$ and $k_j$ may represent points in some semantic embedding space so that their inner product would not only depend on their position, but also on the similarity in their ``meaning''.  
+
+
+-----
+To perform inference on the attention layer, we reverse the direction of the conditional distributions in equation~\ref{eq:prob-position-generate} and marginalize over $v$, $j$, and then $i$ in order to find $p(y)$,
+\begin{eqnarray}
+    p(y) = \sum_{i \in \{1 \ldots P\}} p(y|i) \sum_{j \in \{1 \ldots P\}} p(i|j) \sum_v p(j|v) p(v), \label{eq:prob-position}
+\end{eqnarray}
+where $P$ is the length of the input data window.  This marginalization amounts to a sequence of inner products that is similar to the vanilla attention layer.  For each value of $i$ we take the inner product of a row of weights $\omega_{i, j}$ and the $V_j$ vectors, resulting in $Y_i$ which contains one vector for each value of $i$.  Finally, the vanilla transformer mixes the chunks by multiplying $W^Y$ by $Y_i$. This can be viewed as corresponding to the final marginalization operation, $\sum_i p(y|i)p(i)$.
+---
+
+The inductive transformer consistently learns localized concepts that are amenable to inspection. This may also make them more amenable to machine self-inspection -- introspection.
+
+------
+
+The intention here is not to propose a single specific inductive transformer architecture, but to open up a design space of models.  The family of inductive bias we presented makes the following broad modeling assumptions:
+
+\begin{enumerate}
+    \item It is helpful to model the world in terms of categories, grammar, and logic. Beyond the sentence, a bias for grammar becomes a bias for story structures.
+    \item The data may not perfectly fit a logical story, and therefore the model must allow for uncertainty as it fits logical stories to data.
+    \item It may take more than one logical story operating simultaneously to explain away the data.  (e.g. an eagle is simultaneously a kind of bird, a kind of predator, and a symbol of strength.)
+    \item A neural network may be large, but always has finite size. Certain aspects of the architecture therefore help allocate probability mass for operating in an open universe with unknown unknowns.
+\end{enumerate}
+
+Given the identifiability and controllability we have demonstrated, scaling the inductive transformer could help transformer architectures learn tighter conceptual organization and higher levels of conceptual abstraction.
+
+----
+
+The individual conditional distributions in this equation are,
+
+\begingroup
+\addtolength{\jot}{1em}
+\begin{align}
+    p(x, y|z') &= \delta(z'_{\text{Ber}}-\land(x_{\text{Ber}}, y_{\text{Ber}})), \\
+    verify: \quad  p(y_{\text{Categorical}}=i|y^j_{\text{Ber}}=1) &= \begin{cases}1 \text{ for } i=j \\ 0 \text{ for } i\neq j \end{cases}, \\
+    p(v_{\text{Categorical}}|y_{\text{Categorical}}) &= W_{v,y}, \\
+    p(t_{\text{Categorical}}|x_{\text{Categorical}}) &= W_{t,x}, \\
+    verify : \quad p(z^i_{\text{Ber}}=1|z_{\text{Categorical}}=j) &= \begin{cases}1 \text{ for } i = j \\ 0 \text{ for } i \neq j \end{cases}.
+\end{align} 
+\endgroup
+
+where $W$'s are learned weight matrices.  The \emph{encoder} marginalizes in the opposite direction of the decoder, with conditional distributions in the opposite direction which nonetheless impose the same joint constraints on adjacent variables.  Detailed equations for each summation are provided in appendix~\ref{appendix:activation-functions}.
+
+
+------
+
+FIXME: remove?:
+
+In the end, we are properly normalized over all possible outcomes from all $\pi$'s in the layer.  Take for example a situation where we have layer width of size two with  
+ $p(x_1)=0.8$ and $p(x_2)=0.2$. Furthermore suppose that for $\pi_1$, $\omega^{\pi_1}_{\text{dog}} = 1$ and $\omega^{\pi_1}_{\text{cat}} = 0$, while for $\pi_2$, $\omega^{\pi_2}_{\text{dog}} = 0.6$ and $\omega^{\pi_2}_{\text{cat}} = 0.4$.
+
+How likely is it that we should output the word ``dog'' at a given position in the generated text?  Keep in mind that we cannot generate both ``cat'' and ``dog'' in the same position, they are mutually exclusive. 
+\begin{align}
+    p(\text{``dog''}) 
+    &= \omega^{\pi_1}_{\text{dog}}p(x_1) + \omega^{\pi_2}_{\text{dog}}p(x_2) \\
+    &= (1)(0.8) + (0.6)(0.2) = 0.92
+\end{align}  
+
+\begin{align}
+    p(\text{``cat''}) 
+    &= \omega^{\pi_1}_{\text{cat}}p(x_1) + \omega^{\pi_2}_{\text{cat}}p(x_2) \\
+    &= (0)(0.8) + (0.4)(0.2) = 0.08
+\end{align}  
+
+end FIXME
+
+
+-------
+
+Marginalization of the conditional distribution
+
+
+\begin{align}
+p(z) 
+&= 
+\sum_u \sum_{v_\text{categorical}} \sum_{y_\text{categorical}} \sum_y \sum_t \sum_{x_\text{categorical}} \sum_x \sum_{z'} \nonumber \\
+&\quad\quad\quad\quad \cdot p(z|u)p(u|v_{\text{Categorical}})p(v_{\text{Categorical}}|y_{\text{Categorical}})p(y_{\text{Categorical}}|y) \nonumber \\
+&\quad\quad\quad\quad \cdot p(t|x_{\text{Categorical}})p(x_{\text{Categorical}}|x)p(x, y|z')p(z').
+\end{align}
+
+
+---
+The full distribution for the inductive transformer with position in the attention layer can be expressed as,
+\begin{equation}
+p(z, y, j, i, t, z') = p(z|y)p(y|j)p(j|i)p(i|z')p(t|x)p(x|z')p(z'),
+\end{equation}
+where $t$ is a terminal \emph{token} (or word), and $z$ becomes $z'$ for the layer below.  We therefore focus our discussion on a simplified form of this distribution where we have already marginalized out $j$ and $i$ so that we have,
+\begin{equation}
+p(z, y, t, x, z') = p(z|y)p(y|z)p(t|x)p(x|z')p(z'),
+\end{equation}
+---
+
+The joint distribution for the inductive transformer can be factored as, 
+\begin{align}\label{eq:inductive-transformer-joint-distribution}
+    &p(z_{\text{Ber}}, u_{\text{Ber}}, v_{\text{Categorical}}, y_{\text{Categorical}}, t_{\text{Categorical}}, x_{\text{Categorical}}, x_{\text{Ber}}, y_{\text{Ber}}, z'_{\text{Ber}}) \nonumber \\
+    &\quad\quad = p(z_{\text{Ber}}, u_{\text{Ber}})p( u_{\text{Ber}},v_{\text{Categorical}}) p(v_{\text{Categorical}}, y_{\text{Categorical}})
+    p(y_{\text{Categorical}}, y_{\text{Ber}}) \nonumber \\
+    &\quad\quad\quad \cdot p( t_{\text{Categorical}}, x_{\text{Categorical}})
+    p(x_{\text{Categorical}}, x_{\text{Ber}}) \nonumber \\
+    &\quad\quad\quad \cdot p(x_{\text{Ber}}, y_{\text{Ber}}, z'_{\text{Ber}}),
+\end{align}
+
+----
+FIXME NECESSARY?: Graph neural networks express probabilistic message passing in a graphical model as inference in a neural network so that it becomes possible to use SOA deep learning packages for inference and back-propagation for structure/parameter learning~\cite{DBLP:journals/corr/abs-1901-00596}.
+
+--------
+ 
+
+    \item $t \sim p(t|z)$: Sample a terminal token from the $\pi$ distribution $p(t)$.
+    
+----------
+
+For example, if we only had a single sentence with three tokens, it would look like this:
+\begin{align}
+    Y &= \begin{pmatrix}
+    \text{softmax}\large(\frac{q_{1} \cdot k_{1}}{\sqrt{d}} & \frac{q_{1} \cdot k_{2}}{\sqrt{d}} & \frac{q_{1} \cdot k_{3}}{\sqrt{d}} \large) \\
+    \text{softmax}\large(\frac{q_{2} \cdot k_{1}}{\sqrt{d}} & \frac{q_{2} \cdot k_{2}}{\sqrt{d}} & \frac{q_{2} \cdot k_{3}}{\sqrt{d}} \large) \\
+    \text{softmax}\large(\frac{q_{3} \cdot k_{1}}{\sqrt{d}} & \frac{q_{3} \cdot k_{2}}{\sqrt{d}} & \frac{q_{3} \cdot k_{3}}{\sqrt{d}} \large) \\
+    \end{pmatrix} \begin{pmatrix}
+    v_{1} \\
+    v_{2} \\
+    v_{3}
+    \end{pmatrix}.
+\end{align}
+
+----------
+The Hammersley-Clifford theorem has allowed us to express only the conditional dependence between connected variables\cite{}, for example,
+
+\begin{equation}
+    p(y_{\text{Categorical}}|y_{\text{Ber}}) = p(y_{\text{Categorical}}|y_{\text{Ber}}, x_{\text{Ber}}, z_{\text{Ber}}).
+\end{equation}
+
+-----------
+
+Not sure internal interpretability would  now be considered prior art:
+
+Prior art for inception in transformers? \cite{}
+BERTology:
+- prompt "cat", sense internal LLM vector, train an ancillary model to see if it can learn to predict cat from only the internal LLM vector.
+- lesioning experiments
+
+
+*** include? *** The intuition is that when the network wants to weight specific tokens differently from others, it needs to learn to project the embedding into a space where it can weight them relatively independently.  This may also require changes to how the inductive bias is implemented in order to accommodate sparse coded inputs.
+
+
+
+-------------
+
+
+Enhancing all of these capabilities would have many applications including scientific, legal, medical, and policy assistants that more accurately follow and explain a chain of reasoning,\cite{} systems that autonomously and reliably iterate real-world scientific experiments,\cite{} long-term planning and task sequencing provided by the model itself rather than by an outer scaffolding,\cite{} robotics that can be trusted with greater autonomy e.g. for space exploration,\cite{}, and clearer attribution of intellectual property within trained models.
+
+--------------
+
+better scientific understanding of the human ``language instinct''\cite{}
+
+--------------
+
+for space, don't need to write the joint distribution?:
+
+\begin{equation}
+    p(z'_{\text{Ber}}) 
+    &= \sum_{z_{\text{Categorical}}}\sum_{y_{\text{Categorical}}}\sum_{y_{\text{Ber}}}\sum_{z_{\text{Ber}}, x_{\text{Ber}}}
+    p(z'_{\text{Ber}}, z_{\text{Categorical}}, y_{\text{Categorical}}, y_{\text{Ber}}, z_{\text{Ber}}, x_{\text{Ber}}) \\[1em]
+\end{equation}
+
+
+--------------
+
+\section{Weights}
+
+Note that rather than typical weights in the categorical distribution in the probability domain, when we multiply a \emph{log} probability by a $\beta =$ 1/temperature, this is equivalent to raising a probability to a power, essentially providing an individual \emph{temperature} for each message/edge in the model.  We enforce these temperatures to be greater than or equal to 0 by setting each temperature equal to ReLu(weight), where weights can vary from $-\infty$ to $\infty$ and can be optimized by any standard back-propagation Categorical gradient descent method.
+
+
+-------------
+
+\subsection{Posterior Log Probability for the Bernoulli Exactly-One in the Log-Probability Domain}
+
+The $\pi$ layer essentially embeds a preference for multi-categorical thinking within the transformer's feed-forward layer. 
+
+We modify the feed-forward activation in the vanilla transformer, to design in a preference for categorical explanations of the data.  Intuitively, when the output of our $\pi$ activation function 
+is high probability (in the upward inference direction), this means that one input is high probability input and the other inputs are low probability.  It fires when it sees a single input being preferred.  Conversely, then the output is low probability, this means either no inputs are probable or many inputs are probable.
+
+If we want to think of this activation function in the sampling direction (downward), then think of a random Categorical.  When we activate the Categorical (from above), it rolls and outputs a side.  When we do not select the Categorical, it chooses from all other possible outcomes other than landing on a single side.
+
+To compute the posterior for the categorical distribution, we follow the same derivation as in equations~\ref{eq:marginalize-joint},~\ref{eq:Bayes-rule}, and~\ref{eq:independence}. 
+ Instead of the AND constraint in equation~\ref{eq:and-constraint}, we have,
+
+\begin{equation}\label{eq:categorical-constraint}
+p(z|x, y) = \delta(z - \mathrm{ExactlyOne}(x, y)),
+\end{equation}
+
+where $\mathrm{ExactlyOne}(x, y) = 1$ when we have either of the joint states $(x=0, y=1)$ or $(x=1, y=0)$. $\mathrm{ExactlyOne}(x, y) = 0$ when we have either $(x=1, y=1)$ or $(x=0, y=0)$.
+
+\begin{align}\label{eq:probability-domain-categorical}
+p_Z(z=1) = p_X(x=1)p_Y(y=0) + p_X(x=0)p_Y(y=1) \\
+p_Z(z=0) = p_X(x=0)p_Y(y=0) + p_X(x=1)p_Y(y=1). \nonumber
+\end{align}
+
+In the log probability domain, again the products become sums.  Exactly computing the sums requires a LogSumExp,
+
+\begin{align}\label{eq:log-probability-domain-categorical}
+l_Z(z=1) = \mathrm{LogSumExp}(l_X(x=1) + l_Y(y=0), l_X(x=0) + l_Y(y=1)) \\
+l_Z(z=0) = \mathrm{LogSumExp}(l_X(x=0) + l_Y(y=0), l_X(x=1) + l_Y(y=1)). \nonumber
+\end{align}
+
+Inference in the $\pi$ layer computes a posterior of the categorical distribution in the log probability domain. This ``categorical'' activation function is related to the winner-takes-all neural circuit in many mammalian brains.  It is a nonlinear function.  The vanilla transformer's feed-forward layer can learn to approximate this nonlinear activation function, because it can contain multiple fully connected layers of ReLu's.\cite{}  The generality of the feed-forward layer in the vanilla transformer is good for modeling data in an arbitrary distribution when there is a lot of data to use for training. 
+
+By contrast, the $\pi$ layer in our model provides a narrower model with greater inductive bias.  It can make sense to choose a somewhat more specialized model structure when we have a specialized data distribution.  Figure~\ref{fig:bird-categories} is a simplified illustratation (without position) of how this inductive bias nudges the inductive transformer to learn more concentrated and organized concepts.
+
+
+Modeling assumptions can be detrimental if the inductive bias in the model causes a discrepancy between the model and the data distribution~\cite{Latent Dirichlet Allocation}. If need be, however, the inductive bias can always be loosened in a number of ways.  For example, we could pretrain a feed-forward network to approximate the $\pi$ layer, insert this pretrained layer into an untrained transformer, and then train with actual training data.  We could also approximate the $\pi$ layer with a winner-takes-all layer where we can control the degree of lateral inhibition.
+
+
