@@ -47,17 +47,17 @@ Inductive bias adds constraints that a model could eventually learn with enough 
 
 In fact, the right inductive bias can be used as a substitute for orders of magnitude more high-quality training data.  For example, ``a controller optimization system equipped with differentiable simulators converges one to four orders of magnitude faster than those using model-free reinforcement learning algorithms''~\citep{10.5555/3327757.3327820},  and on Emotion and AG News benchmark tasks, models pretrained on entailment data outperformed models five hundred times larger~\citep{ge-etal-2023-entailment}.
 
+Grammar transformers apply part-of-speech pre-processing to the input text in order to guide the attention mechanism to which words/tokens should be attended by other words/tokens~\citep{sartran2022transformer}.  They add grammatical constraints the TransformerXL model~\citep{dai2019transformerxl}, by pre-processing the training data to tag parts of speech within sentences and then dynamically mask the attention matrices based on these tags. They do not focus beyond the limits of each sentence, however, and only address their inductive bias to the attention mechanism, not to the entire model.  That said, on some tasks they demonstrate equivalent performance to models five hundred times larger than their own, providing further credence for the effectiveness of these hierarchical/grammatical inductive biases at scale.
+
 The opposite of inductive bias is to remove constraints from the model and simply use more training data. For example, researchers have replaced attention layers in transformers with multi-layer perceptron layers and with additional training data demonstrated equivalent performance~\citep{liu2021pay}.
 
 Transformer models are often summarized as a conditional distribution of the next token given previous tokens, p$(t_{i+1} | t_i, \ldots t_{i-N})$ where $N$ is the context window length. This sometimes gets reinterpreted in the popular imagination that the transformer is simply learning to parrot back sequences of words that it has seen before, i.e. it is ``fancy auto-complete''~\citep{marcus2023sentence}.  As we will see, there is more structure in these models than implied by this articulation~\citep{veres2022large}. %We leave it as a future project though to write a more detailed benchmark for the model's ability to abstract concepts at different depth levels.
 
-That said, today's ``vanilla'' transformers seem to organize internal concepts somewhat loosely and unreliably unless extreme quantities of data and reinforcement are applied (compared to human learning). A great deal of research has been dedicated to understanding how information is encoded within deep learning networks. For example, convolutional networks trained on images have been shown to encode increasing abstraction in increasing layers of the network.  This can be demonstrated by stimulating neurons at different layers and observing the images that the trained network outputs~\citep{doi:10.1073/pnas.1907375117}.  Looking for similar patterns in transformers has been less conclusive~\citep{clark-etal-2019-bert}. ``BERTology has clearly come a long way, but it is fair to say we still have more questions than answers about how BERT works~\citep{rogers2020primer}'' and primarily limited to token semantics, sentence syntax, and co-reference and parts of speech~\cite{clark-etal-2019-bert}.
+That said, today's ``vanilla'' transformers seem to organize internal concepts somewhat loosely and unreliably unless extreme quantities of data and reinforcement are applied (compared to human learning). A great deal of research has been dedicated to understanding how information is encoded within deep learning networks. For example, convolutional networks trained on images have been shown to encode increasing abstraction in increasing layers of the network.  This can be demonstrated by stimulating neurons at different layers and observing the images that the trained network outputs~\citep{doi:10.1073/pnas.1907375117}.  Looking for similar patterns in transformers has been less conclusive~\citep{clark-etal-2019-bert}. ``BERTology has clearly come a long way, but it is fair to say we still have more questions than answers about how BERT works''~\citep{rogers2020primer}.  Current approaches have been primarily limited to token semantics, sentence syntax, co-reference and parts of speech~\cite{clark-etal-2019-bert} and post-facto investigation of small circuits that emerge from training toy models~\citep{elhage2021mathematical}.
 
-To design inductive bias for better and broader conceptual organization requires a modeling prior~\citep{frankle2019lottery}.  Goyal and Bengio propose principles for additional inductive bias~\citep{goyal2022inductive} Paraphrasing their list, (1) knowledge is factorized in terms of abstract variables and functions, (2) high-level variables play a causal role and learn representations of latent entities/attributes, (3) changes in distribution are due to causal intervention and are localized, (4) short causal chains of concepts at higher concept levels organize groups of lower level concepts in order to span very complex explanations or plans, and (5) top-down contextual information is dynamically combined with bottom-up sensory signals at every level of the hierarchy of computations relating low-level and high-level representations.  Our family of inductive transformers aspires to satisfy these desiderata.
+Designing inductive bias for better and broader conceptual organization requires a modeling prior~\citep{frankle2019lottery}.  Goyal and Bengio propose principles for additional inductive bias~\citep{goyal2022inductive} Paraphrasing their list, (1) knowledge is factorized in terms of abstract variables and functions, (2) high-level variables play a causal role and learn representations of latent entities/attributes, (3) changes in distribution are due to causal intervention and are localized, (4) short causal chains of concepts at higher concept levels organize groups of lower level concepts in order to span very complex explanations or plans, and (5) top-down contextual information is dynamically combined with bottom-up sensory signals at every level of the hierarchy of computations relating low-level and high-level representations.  Our family of inductive transformers aspires to strongly adhere to these desiderata.
 
-Grammar transformers are some of the most related work to our own. They apply part-of-speech pre-processing to the input text in order to guide the attention mechanism to which words/tokens should be attended by other words/tokens.  Our work differs, however in that they require data pre-processing, do not focus beyond the limits of a sentence, and only address their inductive bias to the attention mechanism, not to the entire model.  That said, on some tasks they demonstrate equivalent performance to models five hundred times larger than their own, providing further credence for the effectiveness of these hierarchical/grammatical inductive biases at scale~\citep{sartran2022transformer}.
-
-Our work differs in that we start with the question, ``What is the generative statistical model such that recursive marginalization of the model is in tight equivalence with the calculations performed by inference in a vanilla transformer?''  Furthermore, we show that understanding transformers from this perspective can provide a foundation for the design of new inductive bias into transformers, yielding \emph{inductive transformers}.
+Our work starts with the question, ``What is the generative statistical model such that recursive marginalization of the model is in tight equivalence with the calculations performed by inference in a vanilla transformer?''  We show that understanding transformers from this perspective can provide a foundation for the design of new inductive bias into transformers, yielding \emph{inductive transformers}.
 
 \section{The Inductive Transformer Model}\label{section:inductive-transformer-model}
 
@@ -118,7 +118,9 @@ This is highly suggestive of a strong correspondence.  There is an important dif
 
 In this section, we will start to see that we can understand inference in a transformer not just as predicting the next token given previous tokens, but as inferring ``forward'' into a latent space of concepts and then ``backwards'' to predict tokens in the token window.
 
-FIXME: write more to give context here.  (1) Talk about forward-backward marginalization prior art providing exact inference on the production model since it is a tree.  (2) talk about how the fact that the layers having multiple tree-like paths within them does not put us in a loopy situation, because of the open-closed universe transformation (3) talk about how marginalization is the operation that starts from an input and given an uncertain inverse problem, efficiently estimates the probabilities. (4) perhaps mention that an encoder-only transformer without a decoder is like a forward-only pass (which we know works from vigoda and dynamic bayes nets) and a decoder only transformer is similarly only performing inference in one direction.  In principle, we can trace the model's reasoning from prompt to latent concepts to generations.
+Determining the certainty of latent concepts in the model given the input data is, in general, an underdetermined inverse problem.  When the probability distribution of a model can be represented by a directed acyclic graph, then forward-backward marginalization of the model is exact and computationally efficient~\cite{10.5555/779343.779352}.
+
+Although our highly connected multilayer neural network may appear to be a cyclic graph, in fact the model represented by concatenation of our productions is a tree.  It is only the transformation from an open-universe model to a closed-universe model, discussed in detail in appendix ~\ref{appendix:Open-Closed-Universe} that makes the model appear to have loops.
 
 The conditional distribution for the inductive transformer decoder in figure \ref{fig:factor-graph-for-inductive-transformer} is,
 \begin{align}
@@ -194,11 +196,7 @@ Prompt & Generation &  \thead{Percentage \\ of Generations} \\[1ex]
 
 \subsection{Identifiability}
 
-FIXME: Does identifiability come hand in hand with stability? What is the benefit of satisfying this criteria?
-
-We see in figure \ref{fig:result-weights} that when repeatedly trained on the same data, the inductive transformer repeatably learns to position the same concepts in the same places within the model. This is repeatable with only a small nudge in one corner of the model to break symmetry. On larger data sets, longer range positional correlations in the data ensures symmetry breaking leading to this repeatability.  
-
-This training repeatability is a consequence of a strong inductive bias, which leads to the system inverting the data in the same way every time.
+The inductive transformer strongly organizes the concepts it learns; It organizes its concepts (1) the same way as the model that generated its training data, and (2) the same way every time.  This novel training repeatability is a consequence of the strong inductive bias.
 
 In our context, ``identifiability'' means the ability for a learning model to receive instructional data from a teacher model, and repeatably learn to mirror the teacher model's structure.  To determine if our model is identifiable in this sense, we follow these steps:
 
@@ -211,9 +209,35 @@ In our context, ``identifiability'' means the ability for a learning model to re
     \item Compare the (learned) weights in the inverse model to the weights in the forward model.  If the weights in the inverse model converge to the same values as the corresponding weights in the forward model, then we say that the model is identifiable.
 \end{enumerate}
 
+We see in figure \ref{fig:result-weights} that when repeatedly trained on the same data, the inductive transformer repeatably learns to position the same concepts in the same places within the model. This is repeatable with only a small nudge in one corner of the model to break symmetry. On larger data sets, longer range correlations in the data ensure this symmetry breaking.
+
 The identifiability in the inductive transformer is reminiscent of the fact that for a wide range of concepts, different humans from diverse backgrounds learn to localize particular concepts at the same positions in their brains~\citep{DBLP:journals/nature/HuthHGTG16, li2023large, geva-etal-2021-transformer, merlin2022language}.
 
+% \subsection{Rejection of Low Quality Data}
 
+% \begin{table}[H]
+%     \begin{center}
+%     \begin{tabular}{ccc}
+%         \hline\hline
+%         Training Data &  \thead{Percentage} \\[1ex]
+%         \hline\hline
+%         ``dog dog'' & 10\% \\
+%         ``small dog'' & 40\% \\
+%         ``big cat'' & 50\% \\
+%         \hline
+%     \end{tabular}
+%     \quad\quad\quad
+%     \begin{tabular}{ccc}
+%         \hline\hline
+%         Free Generations After Training &  \thead{Percentage} \\[1ex]
+%         \hline\hline
+%         ``small dog'' & 44.4\% \\
+%         ``big cat'' & 55.6\% \\
+%         \hline
+%     \end{tabular}
+%     \caption{After training, the model only reflects the high quality training data, e.g. ``small dog'', and rejects the low quality training data, e.g. ``dog dog''.}
+%     \end{center}
+%     \end{table}
 
 \subsection{Controllability}
 
