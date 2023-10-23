@@ -91,15 +91,15 @@ class HyperParameters:
         self.encoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), WEAK)
         self.decoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), WEAK)
 
-        self.encoder_token_pi_weights[0][0][0] = self.strong  # big in layer 0, left column
-        self.encoder_token_pi_weights[0][3][1] = self.strong  # small in layer 0, right column
-        self.encoder_token_pi_weights[1][1][0] = self.strong  # cat in layer 1, left column
-        self.encoder_token_pi_weights[1][4][1] = self.strong  # dog in layer 1, right column
+        self.encoder_token_pi_weights[1][0][0] = self.strong  # cat in layer 0, left column
+        self.encoder_token_pi_weights[1][3][1] = self.strong  # dog in layer 0, right column
+        self.encoder_token_pi_weights[0][1][0] = self.strong  # big in layer 1, left column
+        self.encoder_token_pi_weights[0][4][1] = self.strong  # small in layer 1, right column
 
-        self.decoder_token_pi_weights[0][0][0] = self.strong  # big in layer 0, left column
-        self.decoder_token_pi_weights[0][3][1] = self.strong  # small in layer 0, right column
-        self.decoder_token_pi_weights[1][1][0] = self.strong  # cat in layer 1, left column
-        self.decoder_token_pi_weights[1][4][1] = self.strong  # dog in layer 1, right column
+        self.decoder_token_pi_weights[1][0][0] = self.strong  # cat in layer 0, left column
+        self.decoder_token_pi_weights[1][3][1] = self.strong  # dog in layer 0, right column
+        self.decoder_token_pi_weights[0][1][0] = self.strong  # big in layer 1, left column
+        self.decoder_token_pi_weights[0][4][1] = self.strong  # small in layer 1, right column
 
         # Set the layer_0 attention weights to 0.5
         self.encoder_attention_pi_weights[0][0][0] = self.strong / 2
