@@ -71,7 +71,7 @@ class DecoderAnd(nn.Module):
         use_encoder_message = True  # Toggle this to use the encoder message
         # In theory this should be True, but there could be an error in there
         # and also, it should be simpler without the encoder message.
-        if use_encoder_message:
+        if use_encoder_message and x_encoder is not None and y_encoder is not None:
             # left
             y[1][0] = x_encoder[0][0]*z[0][0] + x_encoder[1][0]*z[1][0]
             y[0][0] = x_encoder[0][0]*z[0][0] + x_encoder[1][0]*z[0][0]

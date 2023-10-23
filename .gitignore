@@ -2,3 +2,40 @@ Pipfile
 # credentials
 token.json
 credentials.json
+
+# LaTeX output files
+*.pdf
+*.log
+*.aux
+*.toc
+*.out
+*.idx
+*.lof
+*.lot
+*.gz
+*.nav
+*.snm
+*.synctex.gz
+*.dvi
+*blg
+*fdb_latexmk
+*fls
+
+# Temporary files
+*.swp
+*.swo
+*.swn
+*.bak
+
+# Build output
+/build/
+/output/
+/dist/
+
+# Editor/IDE-specific files and directories
+.vscode/
+.idea/
+
+# Package manager directories
+/texlive/
+/miktex/
