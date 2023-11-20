@@ -97,6 +97,8 @@ def train_model(
     total_loss = 0.0
     start = time.time()  # Keep track of time
     toc = start
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model.to(device)
     model.train()  # Set the model to training mode
 
     criterion = L2Loss(optim)  # Simply use an L2 loss
