@@ -3,14 +3,21 @@ import math
 import typing
 import pathlib
 import argparse
-import matplotlib.pyplot as plt  # type: ignore
+# import matplotlib.pyplot as plt  # type: ignore
 import torch  # type: ignore
+from torch import nn  # type: ignore
 import torch.nn.functional as F  # type: ignore
 from torch.optim.lr_scheduler import ReduceLROnPlateau, CyclicLR  # type: ignore
-import printing
+# import printing
 from text_parsing import InputData, ProbTensors
 from hyperparameters import HyperParameters
 from model import Model
+from helper_functions import custom_normalize
+
+
+def normalize_weights(weights):
+    # return nn.functional.normalize(nn.ReLU()(weights), p=1, dim=0)
+    return custom_normalize(nn.ReLU()(weights), dim=0)
 
 
 class L2Loss:
@@ -29,6 +36,7 @@ def is_local_minimum(losses: typing.List[float], reached_local_minimum: bool = F
         return False
 
 
+"""
 def plot_convergence(losses: typing.List[float]):
     font = {"weight": "normal", "size": 22}
     plt.figure(dpi=80, figsize=(25, 13))
@@ -37,24 +45,25 @@ def plot_convergence(losses: typing.List[float]):
     plt.xlabel('step', fontdict=font)
     plt.ylabel('loss', rotation=90, fontdict=font)
     plt.savefig('loss_vs_step.png')
+"""
 
 
 def get_model_weights(model):
     encoder_attention_pi_weights = torch.stack([
-        printing.normalize_weights(model.encoder_layer_0.encoder_attention_pi.weights),
-        printing.normalize_weights(model.encoder_layer_1.encoder_attention_pi.weights),
+        normalize_weights(model.encoder_layer_0.encoder_attention_pi.weights),
+        normalize_weights(model.encoder_layer_1.encoder_attention_pi.weights),
     ], dim=0)
     encoder_token_pi_weights = torch.stack([
-        printing.normalize_weights(model.encoder_layer_0.encoder_token_pi.weights),
-        printing.normalize_weights(model.encoder_layer_1.encoder_token_pi.weights),
+        normalize_weights(model.encoder_layer_0.encoder_token_pi.weights),
+        normalize_weights(model.encoder_layer_1.encoder_token_pi.weights),
     ], dim=0)
     decoder_attention_pi_weights = torch.stack([
-        printing.normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights),
-        printing.normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights),
+        normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights),
+        normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights),
     ], dim=0)
     decoder_token_pi_weights = torch.stack([
-        printing.normalize_weights(model.decoder_layer_0.decoder_token_pi.weights),
-        printing.normalize_weights(model.decoder_layer_1.decoder_token_pi.weights),
+        normalize_weights(model.decoder_layer_0.decoder_token_pi.weights),
+        normalize_weights(model.decoder_layer_1.decoder_token_pi.weights),
     ], dim=0)
     model_weights = {
         'encoder_attention_pi_weights': encoder_attention_pi_weights,
@@ -132,15 +141,15 @@ def train_model(
             # Print the loss every print_every batches
             if (i + 1) % print_every == 0:
                 loss_avg = total_loss / print_every
-                printing.print_to_terminal(
-                    model=model,
-                    iter=i,
-                    epoch=epoch,
-                    start=start,
-                    loss_avg=loss_avg,
-                    toc=toc,
-                    print_every=print_every
-                )
+                # printing.print_to_terminal(
+                #     model=model,
+                #     iter=i,
+                #     epoch=epoch,
+                #     start=start,
+                #     loss_avg=loss_avg,
+                #     toc=toc,
+                #     print_every=print_every
+                # )
                 toc = time.time()
                 total_loss = 0
             # Save the model parameters for later printing
@@ -156,15 +165,15 @@ def train_model(
                 model.eval()
 
                 if prompt_tensors is not None:
-                    printing.print_to_terminal(
-                        model=model,
-                        iter=i,
-                        epoch=epoch,
-                        start=start,
-                        loss_avg=loss_avg,
-                        toc=toc,
-                        print_every=print_every,
-                    )
+                    # printing.print_to_terminal(
+                    #     model=model,
+                    #     iter=i,
+                    #     epoch=epoch,
+                    #     start=start,
+                    #     loss_avg=loss_avg,
+                    #     toc=toc,
+                    #     print_every=print_every,
+                    # )
                     if output_to_google_sheet:
                         printing.send_to_google_sheet(
                             prompt_tensors=prompt_tensors,
@@ -232,7 +241,7 @@ def train_model(
                 reached_local_minimum = False
 
     # Plot the losses:
-    plot_convergence(losses=losses)
+    # plot_convergence(losses=losses)
 
     # Return the model
     return model
@@ -332,15 +341,15 @@ def main():
     # Inference:
     elif prompt_tensors is not None:
         model.eval()  # set the model to inference mode
-        printing.send_to_google_sheet(
-            prompt_tensors,
-            preds=None,
-            truths=None,
-            token_prob_tensors=None,
-            model=model,
-            attention_input=prob_tensors.attention_input,
-            vocab=data.vocab,
-        )
+        # printing.send_to_google_sheet(
+        #     prompt_tensors,
+        #     preds=None,
+        #     truths=None,
+        #     token_prob_tensors=None,
+        #     model=model,
+        #     attention_input=prob_tensors.attention_input,
+        #     vocab=data.vocab,
+        # )
     else:
         print("No inference prompt tensors found, so no inference will be run")
 

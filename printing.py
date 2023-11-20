@@ -46,11 +46,6 @@ def print_to_terminal(model, iter, epoch, start, loss_avg, toc, print_every):
     )
 
 
-def normalize_weights(weights):
-    # return nn.functional.normalize(nn.ReLU()(weights), p=1, dim=0)
-    return custom_normalize(nn.ReLU()(weights), dim=0)
-
-
 def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, model, attention_input, vocab):
     # token_prob_tensors are the training inputs
     prompt_preds = []  # Store the predictions from each prompt_tensor
