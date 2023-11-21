@@ -85,7 +85,9 @@ def train_model(
     vocab=None,
     prompt_tensors=None,
     output_to_google_sheet=True,
+    device=None,
 ):
+    print("attention input", attention_input.device)
     # Initialize the lists used for storing what we want to print to the terminal and google sheet
     losses = []  # Store all the losses for later printing
     minima_models_indices = []  # Store the indices of the models at the local minima so we can print just those
@@ -97,8 +99,8 @@ def train_model(
     total_loss = 0.0
     start = time.time()  # Keep track of time
     toc = start
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model.to(device)
+    if device:
+        model.to(device)
     model.train()  # Set the model to training mode
 
     criterion = L2Loss(optim)  # Simply use an L2 loss
@@ -271,10 +273,12 @@ def parse_args():
 
 
 def main():
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     args = parse_args()
     data = InputData(args.training_text, args.inference_text)
     prob_tensors = ProbTensors(data=data, layer_width=args.layer_width)
-    training_data = prob_tensors.format_training_data(num_layers=args.num_layers)
+    prob_tensors.to(device)
+    training_data = prob_tensors.format_training_data(num_layers=args.num_layers, device=device)
     inference_match_training = True  # Toggle to match training data or not
     if inference_match_training:
         prompt_tensors = [input_training for input_training, _ in training_data]
@@ -310,6 +314,7 @@ def main():
                 vocab=data.vocab,
                 prompt_tensors=prompt_tensors,
                 output_to_google_sheet=not args.silence_google_sheet,
+                device=device,
             )
             model_weights = get_model_weights(model=model)
             encoder_attention_pi_weights.append(model_weights['encoder_attention_pi_weights'])

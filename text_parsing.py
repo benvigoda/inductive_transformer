@@ -98,7 +98,7 @@ class ProbTensors():
 
         self.attention_input = self.make_attention_input()
 
-    def format_training_data(self, num_layers: int = 1):
+    def format_training_data(self, num_layers: int = 1, device = None):
         '''
         EXAMPLE:
 
@@ -148,9 +148,14 @@ class ProbTensors():
             if self.print_flag:
                 print(f"word_prob_tensors/training_input in whole model for sentence #{lw + 1}:\n{training_input}")
                 print(f"training_input.size():\n{training_input.size()}")
-            training_data.append(
-                (training_input, full_training_output)
-            )
+            if device:
+                training_data.append(
+                    (training_input.to(device), full_training_output.to(device))
+                )
+            else:
+                training_data.append(
+                    (training_input, full_training_output)
+                )
         return training_data
 
     def make_attention_input(self):
@@ -196,6 +201,10 @@ class ProbTensors():
             assert inference_word_prob_tensor_stacked.shape == (num_layers, self.vocab_size, self.layer_width)
             prompt_tensors.append(inference_word_prob_tensor_stacked)
         return prompt_tensors
+
+    def to(self, device):
+        # TODO Are there other tensors that should be moved as well?
+        self.attention_input = self.attention_input.to(device)
 
 
 def parse_args():

@@ -18,7 +18,7 @@ class EncoderAnd(nn.Module):
         self.x = x
         self.y = y
 
-        z = torch.empty((2, 2))  # size = (2, layer_width)
+        z = torch.empty((2, 2), device=x.device)  # size = (2, layer_width)
         # left
         z[1][0] = x[1][0]*y[1][0]  # 1 * 0.5 = 0.5
         z[0][0] = x[0][0]*y[1][0] + x[1][0]*y[0][0] + x[0][0]*y[0][0]  # 0 + 1 * 0.5 + 0 = 0.5

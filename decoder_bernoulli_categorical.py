@@ -18,7 +18,7 @@ class DecoderBernoulliCategorical(nn.Module):
         assert bernoulli.shape == (2, self.hyperparams.layer_width)
 
         # categorical is size = (1, layer_width)
-        categorical = torch.empty((1, self.hyperparams.layer_width))
+        categorical = torch.empty((1, self.hyperparams.layer_width), device=bernoulli.device)
 
         categorical[0, 0] = bernoulli[1][0]/bernoulli[0][0]
         categorical[0, 1] = bernoulli[1][1]/bernoulli[0][1]
