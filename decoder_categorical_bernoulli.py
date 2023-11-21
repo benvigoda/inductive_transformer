@@ -64,7 +64,7 @@ class DecoderCategoricalBernoulli(nn.Module):
 
         assert v.shape == (self.hyperparams.layer_width, self.hyperparams.layer_width)
         # v = torch.transpose(v, 0, 1)  # FIXME XXX FINDME THIS HELPS SOME BREAKS SOME
-        u = torch.empty((2, self.hyperparams.layer_width, self.hyperparams.layer_width))
+        u = torch.empty((2, self.hyperparams.layer_width, self.hyperparams.layer_width), device=v.device)
         # two parents of left open universe:
         u[1][0][0] = v[0][0]  # heads from left above
         u[0][0][0] = v[0][1]  # tails from left above

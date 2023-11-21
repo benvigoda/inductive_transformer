@@ -16,7 +16,7 @@ class EncoderCategoricalBernoulli(nn.Module):
         # categorical is size = (1, layer_width)
         assert categorical.shape == (1, self.hyperparams.layer_width)
         # bernoulli is size (2, layer_width)
-        bernoulli = torch.empty((2, self.hyperparams.layer_width))
+        bernoulli = torch.empty((2, self.hyperparams.layer_width), device=categorical.device)
 
         # we can ignore the dim=0 index in the categorical. It is always= 0.
         # prob of bernoulli = 1 on left side == prob of categorical on left side:

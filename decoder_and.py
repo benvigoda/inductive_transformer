@@ -66,8 +66,8 @@ class DecoderAnd(nn.Module):
 
         # --------------
 
-        x = torch.empty((2, 2))
-        y = torch.empty((2, 2))
+        x = torch.empty((2, 2), device=z.device)
+        y = torch.empty((2, 2), device=z.device)
         use_encoder_message = True  # Toggle this to use the encoder message
         # In theory this should be True, but there could be an error in there
         # and also, it should be simpler without the encoder message.
