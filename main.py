@@ -362,7 +362,9 @@ def main():
 
 
 if __name__ == "__main__":
-    torch.set_default_dtype(torch.float64)
+    # As of November 2023, using float64 breaks optimization on the GPU.
+    # https://discuss.pytorch.org/t/tensors-of-the-same-index-must-be-on-the-same-device-and-the-same-dtype-except-step-tensors-that-can-be-cpu-and-float32-notwithstanding/190335
+    torch.set_default_dtype(torch.float32)
     torch.set_printoptions(precision=20)
     tic = time.time()
     main()
