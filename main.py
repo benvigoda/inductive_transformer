@@ -269,12 +269,15 @@ def parse_args():
     parser.add_argument("--num_layers", type=int, default=3)
     parser.add_argument("--num_train", type=int, default=1)  # Number of times to train
     parser.add_argument("--silence_google_sheet", help="Whether to output to google sheet", action="store_true")
+    parser.add_argument("--use_gpu", help="Whether to run on a GPU if available", action="store_true")
     return parser.parse_args()
 
 
 def main():
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     args = parse_args()
+    device = "cpu"
+    if args.use_gpu and torch.cuda.is_available():
+        device = "cuda:0"
     data = InputData(args.training_text, args.inference_text)
     prob_tensors = ProbTensors(data=data, layer_width=args.layer_width)
     prob_tensors.to(device)
