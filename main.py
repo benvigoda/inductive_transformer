@@ -3,7 +3,6 @@ import math
 import typing
 import pathlib
 import argparse
-import matplotlib.pyplot as plt  # type: ignore
 import torch  # type: ignore
 import torch.nn.functional as F  # type: ignore
 from torch.optim.lr_scheduler import ReduceLROnPlateau, CyclicLR  # type: ignore
@@ -30,6 +29,8 @@ def is_local_minimum(losses: typing.List[float], reached_local_minimum: bool = F
 
 
 def plot_convergence(losses: typing.List[float]):
+    # Keeping the import here so we don't have to install matplotlib if we don't need it
+    import matplotlib.pyplot as plt  # type: ignore
     font = {"weight": "normal", "size": 22}
     plt.figure(dpi=80, figsize=(25, 13))
     plt.plot(list(range(len(losses))), losses)
@@ -76,6 +77,7 @@ def train_model(
     vocab=None,
     prompt_tensors=None,
     output_to_google_sheet=True,
+    output_matplot=True,
 ):
     # Initialize the lists used for storing what we want to print to the terminal and google sheet
     losses = []  # Store all the losses for later printing
@@ -232,7 +234,8 @@ def train_model(
                 reached_local_minimum = False
 
     # Plot the losses:
-    plot_convergence(losses=losses)
+    if output_matplot:
+        plot_convergence(losses=losses)
 
     # Return the model
     return model
@@ -256,6 +259,7 @@ def parse_args():
     parser.add_argument("--num_layers", type=int, default=3)
     parser.add_argument("--num_train", type=int, default=1)  # Number of times to train
     parser.add_argument("--silence_google_sheet", help="Whether to output to google sheet", action="store_true")
+    parser.add_argument("--silence_matplot", help="Whether to output matplotlib plots", action="store_true")
     return parser.parse_args()
 
 
@@ -299,6 +303,7 @@ def main():
                 vocab=data.vocab,
                 prompt_tensors=prompt_tensors,
                 output_to_google_sheet=not args.silence_google_sheet,
+                output_matplot=not args.silence_matplot,
             )
             model_weights = get_model_weights(model=model)
             encoder_attention_pi_weights.append(model_weights['encoder_attention_pi_weights'])
