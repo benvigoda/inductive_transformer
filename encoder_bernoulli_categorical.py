@@ -13,7 +13,7 @@ class EncoderBernoulliCategorical(nn.Module):
         self.v = None
 
     def forward(self, u):
-        v = torch.empty((2, 2))
+        v = torch.empty((self.hyperparams.layer_width, self.hyperparams.layer_width))
 
         # there's four coins coming in
         # to convert coins to categorical, it's always head divided by tails
