@@ -18,14 +18,15 @@ class EncoderCategoricalBernoulli(nn.Module):
         # bernoulli is size (2, layer_width)
         bernoulli = torch.empty((2, self.hyperparams.layer_width))
 
-        # we can ignore the dim=0 index in the categorical. It is always= 0.
-        # prob of bernoulli = 1 on left side == prob of categorical on left side:
-        bernoulli[1][0] = categorical[0, 0]
-        # prob of bernoulli = 0 on left side is just all the other probability mass in the categorical:
-        bernoulli[0][0] = categorical[0, 1]
+        # The probability of a bernoulli variable being true is the same as the probability of the
+        # corresponding categorical state.
+        bernoulli[1] = categorical
 
-        bernoulli[1][1] = categorical[0, 1]
-        bernoulli[0][1] = categorical[0, 0]
+        # The probability of a bernoulli variable being false is the sum of the probabilities of all
+        # the other categorical states.
+        # Note: if categorical[i][j] is much larger than categorical[i][k] for k != j, then this
+        # method of performing the calculation introduces a lot of rounding error.
+        bernoulli[0] = categorical.sum(dim=-1, keepdim=True) - categorical
 
         # bernoulli = nn.functional.normalize(bernoulli, p=1, dim=0)
         bernoulli = custom_normalize(bernoulli, dim=0)
