@@ -20,8 +20,7 @@ class DecoderBernoulliCategorical(nn.Module):
         # categorical is size = (1, layer_width)
         categorical = torch.empty((1, self.hyperparams.layer_width))
 
-        categorical[0, 0] = bernoulli[1][0]/bernoulli[0][0]
-        categorical[0, 1] = bernoulli[1][1]/bernoulli[0][1]
+        categorical[0] = bernoulli[1] / bernoulli[0]
 
         # categorical = nn.functional.normalize(categorical, p=1, dim=1)
         categorical = custom_normalize(categorical, dim=1)
