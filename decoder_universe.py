@@ -15,7 +15,7 @@ class DecoderUniverse(nn.Module):
     def forward(self, u):
         z = torch.empty((2, self.hyperparams.layer_width))
         assert u.shape == (2, self.hyperparams.layer_width, self.hyperparams.layer_width)
-        z = torch.sum(u, dim=-1)
+        z = torch.sum(u, dim=1)
         """
         # u[heads/tails][below_lw?][above_lw?]
         # left
