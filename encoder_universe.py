@@ -13,10 +13,10 @@ class EncoderUniverse(nn.Module):
         self.u = None
 
     def forward(self, z):
-        # z is a 2x2 tensor of Bernoulli's
-        assert z.shape == (self.hyperparams.layer_width, self.hyperparams.layer_width)
+        # z is a 2xlayer_width tensor of Bernoulli's
+        assert z.shape == (2, self.hyperparams.layer_width)
         u = torch.empty(2, self.hyperparams.layer_width, self.hyperparams.layer_width)
-
+        """
         # we are developing an encoder closed_to_open_universe factor
         # it's output will go into an encoder bernoulli_to_categorical
 
@@ -161,14 +161,14 @@ class EncoderUniverse(nn.Module):
         # Final (simplified) step
         u[1] = [z[1]] * self.hyperparams.layer_width  # FIXME: Make that a proper tensor operation
         # TODO: Turn this latex into code
-        """
+
         n = layer_width
         \begin{align}
-            p(\text{parent}_0 = 0) &= 
+            p(\text{parent}_0 = 0) &=
             p(\text{child}=1) * 0.5 ^ (n - 1) * ( 2^(n-1) - 1 )
             p(\text{child}=0) * 0.5 ^ (n - 1) \nonumber \\
         \end{align}
-        """
+
 
         # Tail
         # First step
@@ -176,5 +176,8 @@ class EncoderUniverse(nn.Module):
 
         # u = nn.functional.normalize(u, p=1, dim=0)
         u = custom_normalize(u, dim=0)
+        """
+        u = torch.stack([z] * self.hyperparams.layer_width, dim=-1)
+
         self.u = u
         return u
