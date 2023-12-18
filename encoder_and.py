@@ -17,8 +17,7 @@ class EncoderAnd(nn.Module):
     def forward(self, x, y):
         self.x = x
         self.y = y
-
-        z = torch.empty((2, self.hyperparams.layer_width))
+        z = torch.empty((2, self.hyperparams.layer_width), device=x.device)
         z[1] = x[1] * y[1]
         z[0] = x[0] * y[1] + x[1] * y[0] + x[0] * y[0]
 

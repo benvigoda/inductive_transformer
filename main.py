@@ -4,12 +4,19 @@ import typing
 import pathlib
 import argparse
 import torch  # type: ignore
+from torch import nn  # type: ignore
 import torch.nn.functional as F  # type: ignore
 from torch.optim.lr_scheduler import ReduceLROnPlateau, CyclicLR  # type: ignore
-import printing
+# import printing
 from text_parsing import InputData, ProbTensors
 from hyperparameters import HyperParameters
 from model import Model
+from helper_functions import custom_normalize
+
+
+def normalize_weights(weights):
+    # return nn.functional.normalize(nn.ReLU()(weights), p=1, dim=0)
+    return custom_normalize(nn.ReLU()(weights), dim=0)
 
 
 class L2Loss:
@@ -42,20 +49,20 @@ def plot_convergence(losses: typing.List[float]):
 
 def get_model_weights(model):
     encoder_attention_pi_weights = torch.stack([
-        printing.normalize_weights(model.encoder_layer_0.encoder_attention_pi.weights),
-        printing.normalize_weights(model.encoder_layer_1.encoder_attention_pi.weights),
+        normalize_weights(model.encoder_layer_0.encoder_attention_pi.weights),
+        normalize_weights(model.encoder_layer_1.encoder_attention_pi.weights),
     ], dim=0)
     encoder_token_pi_weights = torch.stack([
-        printing.normalize_weights(model.encoder_layer_0.encoder_token_pi.weights),
-        printing.normalize_weights(model.encoder_layer_1.encoder_token_pi.weights),
+        normalize_weights(model.encoder_layer_0.encoder_token_pi.weights),
+        normalize_weights(model.encoder_layer_1.encoder_token_pi.weights),
     ], dim=0)
     decoder_attention_pi_weights = torch.stack([
-        printing.normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights),
-        printing.normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights),
+        normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights),
+        normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights),
     ], dim=0)
     decoder_token_pi_weights = torch.stack([
-        printing.normalize_weights(model.decoder_layer_0.decoder_token_pi.weights),
-        printing.normalize_weights(model.decoder_layer_1.decoder_token_pi.weights),
+        normalize_weights(model.decoder_layer_0.decoder_token_pi.weights),
+        normalize_weights(model.decoder_layer_1.decoder_token_pi.weights),
     ], dim=0)
     model_weights = {
         'encoder_attention_pi_weights': encoder_attention_pi_weights,
@@ -77,8 +84,10 @@ def train_model(
     vocab=None,
     prompt_tensors=None,
     output_to_google_sheet=True,
+    device=None,
     output_matplot=True,
 ):
+    print("attention input", attention_input.device)
     # Initialize the lists used for storing what we want to print to the terminal and google sheet
     losses = []  # Store all the losses for later printing
     minima_models_indices = []  # Store the indices of the models at the local minima so we can print just those
@@ -90,6 +99,8 @@ def train_model(
     total_loss = 0.0
     start = time.time()  # Keep track of time
     toc = start
+    if device:
+        model.to(device)
     model.train()  # Set the model to training mode
 
     criterion = L2Loss(optim)  # Simply use an L2 loss
@@ -134,15 +145,15 @@ def train_model(
             # Print the loss every print_every batches
             if (i + 1) % print_every == 0:
                 loss_avg = total_loss / print_every
-                printing.print_to_terminal(
-                    model=model,
-                    iter=i,
-                    epoch=epoch,
-                    start=start,
-                    loss_avg=loss_avg,
-                    toc=toc,
-                    print_every=print_every
-                )
+                # printing.print_to_terminal(
+                #     model=model,
+                #     iter=i,
+                #     epoch=epoch,
+                #     start=start,
+                #     loss_avg=loss_avg,
+                #     toc=toc,
+                #     print_every=print_every
+                # )
                 toc = time.time()
                 total_loss = 0
             # Save the model parameters for later printing
@@ -158,15 +169,15 @@ def train_model(
                 model.eval()
 
                 if prompt_tensors is not None:
-                    printing.print_to_terminal(
-                        model=model,
-                        iter=i,
-                        epoch=epoch,
-                        start=start,
-                        loss_avg=loss_avg,
-                        toc=toc,
-                        print_every=print_every,
-                    )
+                    # printing.print_to_terminal(
+                    #     model=model,
+                    #     iter=i,
+                    #     epoch=epoch,
+                    #     start=start,
+                    #     loss_avg=loss_avg,
+                    #     toc=toc,
+                    #     print_every=print_every,
+                    # )
                     if output_to_google_sheet:
                         printing.send_to_google_sheet(
                             prompt_tensors=prompt_tensors,
@@ -259,15 +270,20 @@ def parse_args():
     parser.add_argument("--num_layers", type=int, default=3)
     parser.add_argument("--num_train", type=int, default=1)  # Number of times to train
     parser.add_argument("--silence_google_sheet", help="Whether to output to google sheet", action="store_true")
+    parser.add_argument("--use_gpu", help="Whether to run on a GPU if available", action="store_true")
     parser.add_argument("--silence_matplot", help="Whether to output matplotlib plots", action="store_true")
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
+    device = "cpu"
+    if args.use_gpu and torch.cuda.is_available():
+        device = "cuda:0"
     data = InputData(args.training_text, args.inference_text)
     prob_tensors = ProbTensors(data=data, layer_width=args.layer_width)
-    training_data = prob_tensors.format_training_data(num_layers=args.num_layers)
+    prob_tensors.to(device)
+    training_data = prob_tensors.format_training_data(num_layers=args.num_layers, device=device)
     inference_match_training = True  # Toggle to match training data or not
     if inference_match_training:
         prompt_tensors = [input_training for input_training, _ in training_data]
@@ -303,6 +319,7 @@ def main():
                 vocab=data.vocab,
                 prompt_tensors=prompt_tensors,
                 output_to_google_sheet=not args.silence_google_sheet,
+                device=device,
                 output_matplot=not args.silence_matplot,
             )
             model_weights = get_model_weights(model=model)
@@ -337,21 +354,23 @@ def main():
     # Inference:
     elif prompt_tensors is not None:
         model.eval()  # set the model to inference mode
-        printing.send_to_google_sheet(
-            prompt_tensors,
-            preds=None,
-            truths=None,
-            token_prob_tensors=None,
-            model=model,
-            attention_input=prob_tensors.attention_input,
-            vocab=data.vocab,
-        )
+        # printing.send_to_google_sheet(
+        #     prompt_tensors,
+        #     preds=None,
+        #     truths=None,
+        #     token_prob_tensors=None,
+        #     model=model,
+        #     attention_input=prob_tensors.attention_input,
+        #     vocab=data.vocab,
+        # )
     else:
         print("No inference prompt tensors found, so no inference will be run")
 
 
 if __name__ == "__main__":
-    torch.set_default_dtype(torch.float64)
+    # As of November 2023, using float64 breaks optimization on the GPU.
+    # https://discuss.pytorch.org/t/tensors-of-the-same-index-must-be-on-the-same-device-and-the-same-dtype-except-step-tensors-that-can-be-cpu-and-float32-notwithstanding/190335
+    torch.set_default_dtype(torch.float32)
     torch.set_printoptions(precision=20)
     tic = time.time()
     main()

@@ -13,7 +13,7 @@ class DecoderUniverse(nn.Module):
         self.z = None
 
     def forward(self, u):
-        z = torch.empty((2, self.hyperparams.layer_width))
+        z = torch.empty((2, self.hyperparams.layer_width), device=u.device)
         assert u.shape == (2, self.hyperparams.layer_width, self.hyperparams.layer_width)
         z = torch.sum(u, dim=1)
         """
