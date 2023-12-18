@@ -1,4 +1,9 @@
 '''
+1. Fix Ben's github
+2. Get layer_width=3 working
+
+
+DONE
 Generalization to more than 2 layer_width:
 1. encoder-and: Done
 2. encoder-attention: Done (was already good)
