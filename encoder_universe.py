@@ -13,10 +13,10 @@ class EncoderUniverse(nn.Module):
         self.u = None
 
     def forward(self, z):
-        # z is a 2x2 tensor of Bernoulli's
-        assert z.shape == (self.hyperparams.layer_width, self.hyperparams.layer_width)
+        # z is a 2xlayer_width tensor of Bernoulli's
+        assert z.shape == (2, self.hyperparams.layer_width)
         u = torch.empty(2, self.hyperparams.layer_width, self.hyperparams.layer_width)
-
+        """
         # we are developing an encoder closed_to_open_universe factor
         # it's output will go into an encoder bernoulli_to_categorical
 
@@ -24,30 +24,30 @@ class EncoderUniverse(nn.Module):
         # in terms of the inputs it receives from below (z)
 
         # the inputs below are z's and they live in a closed universe with a limited layer width
-        # the outputs go to the pi_a's above who live in an open universe of expanded choices
+        # the outputs go to the pi_z's above who live in an open universe of expanded choices
 
-        # in the decoder direction, the pi_a's choose from their own unique children which we then
+        # in the decoder direction, the pi_z's choose from their own unique children which we then
         # deduplicate and merge into a closed universe
 
         # in the encoder direction we start with these merged deduplicated children (z's)
-        # and we open them up into the open-universe choices that the encoder pi_a's want to
+        # and we open them up into the open-universe choices that the encoder pi_z's want to
         # see as inputs
 
         # let's look at the right-side encoder bernoulli-categorical
-        # the left output message of this factor crosses over to the left side pi_a
+        # the left output message of this factor crosses over to the left side pi_z
         # the right output message goes straight up to the right-side i_a above
 
         # the left-side encoder bernoulli-categorical
-        # the right output message of the this factor crosses over to the right side pi_a
-        # the left output message goes straight up to the pi_a above
+        # the right output message of the this factor crosses over to the right side pi_z
+        # the left output message goes straight up to the pi_z above
 
-        # all of the messages going up to pi_a's need to be categorical at this point
-        # which means that the two signals going to the left pi_a need to sum to 1
-        # and the two signals going to the right pi_a also need to sum to 1
+        # all of the messages going up to pi_z's need to be categorical at this point
+        # which means that the two signals going to the left pi_z need to sum to 1
+        # and the two signals going to the right pi_z also need to sum to 1
 
         # in terms of indexing, we would write
-        # v[0][0] + v[1][0] = 1 # all the inputs to the left pi_a sum to 1
-        # v[1][1] + v[0][1] = 1 # the inputs to the right pi_a also sum to 1
+        # v[0][0] + v[1][0] = 1 # all the inputs to the left pi_z sum to 1
+        # v[1][1] + v[0][1] = 1 # the inputs to the right pi_z also sum to 1
 
         # we already have a file for the bernoulli_to_categorical factor
         # what we need to figure out is the universe factor
@@ -149,7 +149,35 @@ class EncoderUniverse(nn.Module):
         # p(parent_right = 0) = p(child = 1)p(parent_left = 1) + p(child = 0)p(parent_left = 0)
         u[0][1][1] = z[1][1] + z[0][1]
 
+        # Head
+        # First step
+        # u[1][0][0] = self.hyperparams.layer_width * z[1][0]
+        # u[1][0][1] = self.hyperparams.layer_width * z[1][0]
+        # u[1][0][2] = self.hyperparams.layer_width * z[1][0]
+        # Second step
+        # u[1][0] = [ z[1][0] ] * self.hyperparams.layer_width
+        # u[1][1] = [ z[1][1] ] * self.hyperparams.layer_width
+        # u[1][2] = [ z[1][2] ] * self.hyperparams.layer_width
+        # Final (simplified) step
+        u[1] = [z[1]] * self.hyperparams.layer_width  # FIXME: Make that a proper tensor operation
+        # TODO: Turn this latex into code
+
+        n = layer_width
+        \begin{align}
+            p(\text{parent}_0 = 0) &=
+            p(\text{child}=1) * 0.5 ^ (n - 1) * ( 2^(n-1) - 1 )
+            p(\text{child}=0) * 0.5 ^ (n - 1) \nonumber \\
+        \end{align}
+
+
+        # Tail
+        # First step
+        u[0][0][0] = z[1][0] + z[0][0]
+
         # u = nn.functional.normalize(u, p=1, dim=0)
         u = custom_normalize(u, dim=0)
+        """
+        u = torch.stack([z] * self.hyperparams.layer_width, dim=-1)
+
         self.u = u
         return u

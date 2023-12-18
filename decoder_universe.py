@@ -14,7 +14,9 @@ class DecoderUniverse(nn.Module):
 
     def forward(self, u):
         z = torch.empty((2, self.hyperparams.layer_width))
-
+        assert u.shape == (2, self.hyperparams.layer_width, self.hyperparams.layer_width)
+        z = torch.sum(u, dim=1)
+        """
         # u[heads/tails][below_lw?][above_lw?]
         # left
 
@@ -25,6 +27,7 @@ class DecoderUniverse(nn.Module):
         z[1][1] = u[1][1][0] * u[1][1][1] + u[1][1][0] * u[0][1][1] + u[0][1][0] * u[1][1][1]
 
         # z = nn.functional.normalize(z, p=1, dim=0)
+        """
         z = custom_normalize(z, dim=0)
         self.z = z
         return z
