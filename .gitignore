@@ -40,3 +40,7 @@ credentials.json
 # Package manager directories
 /texlive/
 /miktex/
+
+# Python files
+__pycache__
+

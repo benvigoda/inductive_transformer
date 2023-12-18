@@ -15,7 +15,7 @@ class EncoderUniverse(nn.Module):
     def forward(self, z):
         # z is a 2xlayer_width tensor of Bernoulli's
         assert z.shape == (2, self.hyperparams.layer_width)
-        u = torch.empty(2, self.hyperparams.layer_width, self.hyperparams.layer_width)
+        u = torch.empty(2, self.hyperparams.layer_width, self.hyperparams.layer_width, device=z.device)
         """
         # we are developing an encoder closed_to_open_universe factor
         # it's output will go into an encoder bernoulli_to_categorical
