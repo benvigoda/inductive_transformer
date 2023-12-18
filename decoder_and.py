@@ -66,39 +66,21 @@ class DecoderAnd(nn.Module):
 
         # --------------
 
-        x = torch.empty((2, 2), device=z.device)
-        y = torch.empty((2, 2), device=z.device)
+        x = torch.empty((2, self.hyperparams.layer_width), device=z.device)
+        y = torch.empty((2, self.hyperparams.layer_width), device=z.device)
         use_encoder_message = True  # Toggle this to use the encoder message
         # In theory this should be True, but there could be an error in there
         # and also, it should be simpler without the encoder message.
         if use_encoder_message and x_encoder is not None and y_encoder is not None:
-            # left
-            y[1][0] = x_encoder[0][0]*z[0][0] + x_encoder[1][0]*z[1][0]
-            y[0][0] = x_encoder[0][0]*z[0][0] + x_encoder[1][0]*z[0][0]
-
-            x[1][0] = y_encoder[0][0]*z[0][0] + y_encoder[1][0]*z[1][0]
-            x[0][0] = y_encoder[0][0]*z[0][0] + y_encoder[1][0]*z[0][0]
-
-            # right
-            y[1][1] = x_encoder[0][1]*z[0][1] + x_encoder[1][1]*z[1][1]
-            y[0][1] = x_encoder[0][1]*z[0][1] + x_encoder[1][1]*z[0][1]
-
-            x[1][1] = y_encoder[0][1]*z[0][1] + y_encoder[1][1]*z[1][1]
-            x[0][1] = y_encoder[0][1]*z[0][1] + y_encoder[1][1]*z[0][1]
+            y[1] = x_encoder[0] * z[0] + x_encoder[1] * z[1]
+            y[0] = x_encoder[0] * z[0] + x_encoder[1] * z[0]
+            x[1] = y_encoder[0] * z[0] + y_encoder[1] * z[1]
+            x[0] = y_encoder[0] * z[0] + y_encoder[1] * z[0]
         else:
-            # left
-            y[1][0] = z[0][0] + z[1][0]
-            y[0][0] = z[0][0] + z[0][0]
-
-            x[1][0] = z[0][0] + z[1][0]
-            x[0][0] = z[0][0] + z[0][0]
-
-            # right
-            y[1][1] = z[0][1] + z[1][1]
-            y[0][1] = z[0][1] + z[0][1]
-
-            x[1][1] = z[0][1] + z[1][1]
-            x[0][1] = z[0][1] + z[0][1]
+            y[1] = z[0] + z[1]
+            y[0] = z[0] + z[0]
+            x[1] = z[0] + z[1]
+            x[0] = z[0] + z[0]
 
         # y = nn.functional.normalize(y, p=1, dim=0)
         # x = nn.functional.normalize(x, p=1, dim=0)

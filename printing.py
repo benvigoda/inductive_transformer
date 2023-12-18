@@ -3,8 +3,6 @@ import pathlib
 import os
 import time
 from torch import nn  # type: ignore
-from google_sheets_api.sheetsstart import Sheet
-from googleapiclient.errors import HttpError  # type: ignore
 from helper_functions import custom_normalize
 
 
@@ -230,6 +228,9 @@ def format_into_table(output, model, vocab, top_row, top_row_label: str, decoder
 
 
 def output_to_sheet(result, sheet_name="Sheet1"):
+    # Keeping the google sheet imports here so that we can run the code without them
+    from google_sheets_api.sheetsstart import Sheet  # type: ignore
+    from googleapiclient.errors import HttpError  # type: ignore
     print("****************OUTPUTTING TO GOOGLE SHEET****************")
     spreadsheet_id = "1TpfTFWsFRRyXZU6pEtw1pqEaFpmO9VqXFqxnzpQQfCo"
     creds_dir = pathlib.Path(os.path.dirname(__file__)) / "google_sheets_api"
