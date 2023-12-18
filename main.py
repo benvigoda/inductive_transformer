@@ -7,7 +7,7 @@ import torch  # type: ignore
 from torch import nn  # type: ignore
 import torch.nn.functional as F  # type: ignore
 from torch.optim.lr_scheduler import ReduceLROnPlateau, CyclicLR  # type: ignore
-# import printing
+import printing
 from text_parsing import InputData, ProbTensors
 from hyperparameters import HyperParameters
 from model import Model
@@ -145,15 +145,15 @@ def train_model(
             # Print the loss every print_every batches
             if (i + 1) % print_every == 0:
                 loss_avg = total_loss / print_every
-                # printing.print_to_terminal(
-                #     model=model,
-                #     iter=i,
-                #     epoch=epoch,
-                #     start=start,
-                #     loss_avg=loss_avg,
-                #     toc=toc,
-                #     print_every=print_every
-                # )
+                printing.print_to_terminal(
+                    model=model,
+                    iter=i,
+                    epoch=epoch,
+                    start=start,
+                    loss_avg=loss_avg,
+                    toc=toc,
+                    print_every=print_every
+                )
                 toc = time.time()
                 total_loss = 0
             # Save the model parameters for later printing
@@ -169,15 +169,15 @@ def train_model(
                 model.eval()
 
                 if prompt_tensors is not None:
-                    # printing.print_to_terminal(
-                    #     model=model,
-                    #     iter=i,
-                    #     epoch=epoch,
-                    #     start=start,
-                    #     loss_avg=loss_avg,
-                    #     toc=toc,
-                    #     print_every=print_every,
-                    # )
+                    printing.print_to_terminal(
+                        model=model,
+                        iter=i,
+                        epoch=epoch,
+                        start=start,
+                        loss_avg=loss_avg,
+                        toc=toc,
+                        print_every=print_every,
+                    )
                     if output_to_google_sheet:
                         printing.send_to_google_sheet(
                             prompt_tensors=prompt_tensors,
@@ -349,7 +349,7 @@ def main():
         print(decoder_token_pi_weights.mean(dim=0))
         print("+/-")
         print(decoder_token_pi_weights.std(dim=0))
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
     # Inference:
     elif prompt_tensors is not None:
