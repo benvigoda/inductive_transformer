@@ -53,8 +53,13 @@ class Model(nn.Module):
         t_decode_layer_1, z1_decode = self.decoder_layer_1(z2_decode, x_encoder_1, y_encoder_1)
         t_decode_layer_0, z0_decode = self.decoder_layer_0(z1_decode, x_encoder_0, y_encoder_0)
 
+        # TODO: The new shapes should include num_positions once the decoder is position sensitive
+        assert t_decode_layer_0.shape == (self.vocab_size, self.layer_width)
+        assert t_decode_layer_1.shape == (self.vocab_size, self.layer_width)
+
         self.encoder_output = (z1_encode, z2_encode)
-        self.decoder_output = torch.cat([t_decode_layer_0, t_decode_layer_1], dim=0)
+        self.decoder_output = torch.stack([t_decode_layer_0, t_decode_layer_1], dim=0)
+        assert self.decoder_output.shape == (self.num_layers, self.vocab_size, self.layer_width)
         return self.decoder_output
 
     '''
