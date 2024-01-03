@@ -15,6 +15,7 @@ class Model(nn.Module):
         self.layer_width = hyperparams.layer_width
         self.vocab_size = hyperparams.vocab_size
         self.num_layers = hyperparams.num_layers
+        self.num_positions = hyperparams.num_positions
 
         self.encoder_layer_0 = EncoderLayer(hyperparams=hyperparams, active_layer=0)
         self.encoder_layer_1 = EncoderLayer(hyperparams=hyperparams, active_layer=1)
@@ -29,7 +30,7 @@ class Model(nn.Module):
 
     # two layer model
     def forward(self, z_input, t):
-        assert t.shape == (self.num_layers, self.vocab_size, self.layer_width)
+        assert t.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
         assert z_input.shape == (2, self.layer_width)
         if t[1].numel() == 0:
             z1_encode = z_input

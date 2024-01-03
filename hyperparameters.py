@@ -18,6 +18,7 @@ class HyperParameters:
             self,
             layer_width: int,
             vocab_size: int,
+            num_positions: int,
             num_layers: int,
             unittest: bool = False,
             weight_test: bool = False,
@@ -25,6 +26,7 @@ class HyperParameters:
     ):
         self.layer_width = layer_width
         self.vocab_size = vocab_size
+        self.num_positions = num_positions
         self.num_layers = num_layers
         self.unittest = unittest
         self.weight_test = weight_test
@@ -40,8 +42,10 @@ class HyperParameters:
 
         self.encoder_attention_pi_weights: Optional[Tensor] = None  # torch.ones(self.layer_width, self.layer_width)
         self.encoder_token_pi_weights: Optional[Tensor] = None  # torch.ones(self.vocab_size, self.layer_width)
+        self.encoder_position_pi_weights: Optional[Tensor] = None  # torch.ones(self.num_positions, self.vocab_size, self.layer_width)
         self.decoder_attention_pi_weights: Optional[Tensor] = None  # torch.ones(self.layer_width, self.layer_width)
         self.decoder_token_pi_weights: Optional[Tensor] = None  # torch.ones(self.vocab_size, self.layer_width)
+        self.decoder_position_pi_weights: Optional[Tensor] = None  # torch.ones(self.num_positions, self.vocab_size, self.layer_width)
 
         if self.weight_test:
             self.construct_weights()
