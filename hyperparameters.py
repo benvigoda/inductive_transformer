@@ -3,10 +3,10 @@ import torch  # type: ignore
 from torch import Tensor  # type: ignore
 
 PERTURBATION_TEST_WEIGHTS_TO_LEARN: Dict = {
-    'encoder_attention': True,
-    'encoder_token': False,
-    'decoder_attention': True,
-    'decoder_token': False,
+    'encoder_attention': False,
+    'encoder_token': True,
+    'decoder_attention': False,
+    'decoder_token': True,
 }  # Set to True to manually set weights. Set to False to learn weights
 
 STRONG = 1.  # Amplify the signal
@@ -57,17 +57,17 @@ class HyperParameters:
         print("Constructing some weights for perturbation test")
 
         if self.perturbation_test_encoder_token:
-            self.encoder_token_pi_weights = torch.full((self.num_layers, self.vocab_size, self.layer_width), WEAK)
-            self.encoder_token_pi_weights[0][0][0] = self.strong  # big in layer 0, left column
-            self.encoder_token_pi_weights[0][3][1] = self.strong  # small in layer 0, right column
-            self.encoder_token_pi_weights[1][1][0] = self.strong  # cat in layer 1, left column
-            self.encoder_token_pi_weights[1][4][1] = self.strong  # dog in layer 1, right column
+            self.encoder_token_pi_weights = torch.full((self.num_layers, self.num_positions, self.vocab_size, self.layer_width), WEAK)
+            self.encoder_token_pi_weights[0][0][0][0] = self.strong  # big in layer 0, left column
+            self.encoder_token_pi_weights[0][0][3][1] = self.strong  # small in layer 0, right column
+            self.encoder_token_pi_weights[1][1][1][0] = self.strong  # cat in layer 1, left column
+            self.encoder_token_pi_weights[1][1][4][1] = self.strong  # dog in layer 1, right column
         if self.perturbation_test_decoder_token:
-            self.decoder_token_pi_weights = torch.full((self.num_layers, self.vocab_size, self.layer_width), WEAK)
-            self.decoder_token_pi_weights[0][0][0] = self.strong  # big in layer 0, left column
-            self.decoder_token_pi_weights[0][3][1] = self.strong  # small in layer 0, right column
-            self.decoder_token_pi_weights[1][1][0] = self.strong  # cat in layer 1, left column
-            self.decoder_token_pi_weights[1][4][1] = self.strong  # dog in layer 1, right column
+            self.decoder_token_pi_weights = torch.full((self.num_layers, self.num_positions, self.vocab_size, self.layer_width), WEAK)
+            self.decoder_token_pi_weights[0][0][0][0] = self.strong  # big in layer 0, left column
+            self.decoder_token_pi_weights[0][0][3][1] = self.strong  # small in layer 0, right column
+            self.decoder_token_pi_weights[1][1][1][0] = self.strong  # cat in layer 1, left column
+            self.decoder_token_pi_weights[1][1][4][1] = self.strong  # dog in layer 1, right column
         if self.perturbation_test_encoder_attention:
             self.encoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), WEAK)
             # Set the layer_0 attention weights to 0.5
@@ -90,6 +90,7 @@ class HyperParameters:
             self.decoder_attention_pi_weights[1][1][1] = self.strong
 
     def construct_weights(self):
+        # FIXME: update with position
         self.encoder_token_pi_weights = torch.full((self.num_layers, self.vocab_size, self.layer_width), WEAK)
         self.decoder_token_pi_weights = torch.full((self.num_layers, self.vocab_size, self.layer_width), WEAK)
         self.encoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), WEAK)

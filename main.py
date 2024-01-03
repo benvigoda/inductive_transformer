@@ -52,6 +52,10 @@ def get_model_weights(model):
         normalize_weights(model.encoder_layer_0.encoder_attention_pi.weights),
         normalize_weights(model.encoder_layer_1.encoder_attention_pi.weights),
     ], dim=0)
+    encoder_position_pi_weights = torch.stack([
+        normalize_weights(model.encoder_layer_0.encoder_position_pi.weights),
+        normalize_weights(model.encoder_layer_1.encoder_position_pi.weights),
+    ], dim=0)
     encoder_token_pi_weights = torch.stack([
         normalize_weights(model.encoder_layer_0.encoder_token_pi.weights),
         normalize_weights(model.encoder_layer_1.encoder_token_pi.weights),
@@ -60,14 +64,20 @@ def get_model_weights(model):
         normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights),
         normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights),
     ], dim=0)
+    decoder_position_pi_weights = torch.stack([
+        normalize_weights(model.decoder_layer_0.decoder_position_pi.weights),
+        normalize_weights(model.decoder_layer_1.decoder_position_pi.weights),
+    ], dim=0)
     decoder_token_pi_weights = torch.stack([
         normalize_weights(model.decoder_layer_0.decoder_token_pi.weights),
         normalize_weights(model.decoder_layer_1.decoder_token_pi.weights),
     ], dim=0)
     model_weights = {
         'encoder_attention_pi_weights': encoder_attention_pi_weights,
+        'encoder_position_pi_weights': encoder_position_pi_weights,
         'encoder_token_pi_weights': encoder_token_pi_weights,
         'decoder_attention_pi_weights': decoder_attention_pi_weights,
+        'decoder_position_pi_weights': decoder_position_pi_weights,
         'decoder_token_pi_weights': decoder_token_pi_weights,
     }
     return model_weights
@@ -115,11 +125,7 @@ def train_model(
     token_prob_tensors = training_input[0: batch_size]
     truths = torch.stack(training_output[0: batch_size], 0)
     preds = torch.stack([model(attention_input, text_window) for text_window in token_prob_tensors], 0)
-    assert truths.shape == (batch_size, model.hyperparams.num_layers, model.hyperparams.vocab_size, model.hyperparams.layer_width)
-    ##########
-    # FIXME: The output doesn't have position yet, so we just drop the position dimension for now, but we'll have to add it back in eventually
-    # assert truths.shape == (batch_size, model.hyperparams.num_layers, model.hyperparams.num_positions, model.hyperparams.vocab_size, model.hyperparams.layer_width)
-    ##########
+    assert truths.shape == (batch_size, model.hyperparams.num_layers, model.hyperparams.num_positions, model.hyperparams.vocab_size, model.hyperparams.layer_width)
     assert truths.shape == preds.shape
     initial_loss = criterion(preds, truths)
     print("Initial loss:", initial_loss)
@@ -233,7 +239,7 @@ def train_model(
                 model.decoder_layer_0.decoder_attention_pi.y
                 model.decoder_layer_0.decoder_attention_pi.y  # input
                 model.decoder_layer_0.decoder_attention_pi.v  # output
-                model.decoder_layer_0.decoder_token_pi.x  # input
+                model.decoder_layer_0.decoder_token_pi.rho  # input
                 model.decoder_layer_0.decoder_token_pi.t  # output
                 model.decoder_layer_0.decoder_categorical_bernoulli.u
                 model.decoder_layer_0.decoder_universe.z
@@ -309,8 +315,10 @@ def main():
     # Train:
     if args.train:
         encoder_attention_pi_weights = []
+        encoder_position_pi_weights = []
         encoder_token_pi_weights = []
         decoder_attention_pi_weights = []
+        decoder_position_pi_weights = []
         decoder_token_pi_weights = []
         for i in range(args.num_train):
             print(f"Training run {i + 1} of {args.num_train}")
@@ -331,19 +339,27 @@ def main():
             )
             model_weights = get_model_weights(model=model)
             encoder_attention_pi_weights.append(model_weights['encoder_attention_pi_weights'])
+            encoder_position_pi_weights.append(model_weights['encoder_position_pi_weights'])
             encoder_token_pi_weights.append(model_weights['encoder_token_pi_weights'])
             decoder_attention_pi_weights.append(model_weights['decoder_attention_pi_weights'])
+            decoder_position_pi_weights.append(model_weights['decoder_position_pi_weights'])
             decoder_token_pi_weights.append(model_weights['decoder_token_pi_weights'])
         # Stack-up the lists to make tensors we can run stats on
         encoder_attention_pi_weights = torch.stack(encoder_attention_pi_weights, dim=0)
+        encoder_position_pi_weights = torch.stack(encoder_position_pi_weights, dim=0)
         encoder_token_pi_weights = torch.stack(encoder_token_pi_weights, dim=0)
         decoder_attention_pi_weights = torch.stack(decoder_attention_pi_weights, dim=0)
+        decoder_position_pi_weights = torch.stack(decoder_position_pi_weights, dim=0)
         decoder_token_pi_weights = torch.stack(decoder_token_pi_weights, dim=0)
         # Print the mean and standard deviation of the weights
         print("encoder_attention_pi_weights:")
         print(encoder_attention_pi_weights.mean(dim=0))
         print("+/-")
         print(encoder_attention_pi_weights.std(dim=0))
+        print("encoder_position_pi_weights:")
+        print(encoder_position_pi_weights.mean(dim=0))
+        print("+/-")
+        print(encoder_position_pi_weights.std(dim=0))
         print("encoder_token_pi_weights:")
         print(encoder_token_pi_weights.mean(dim=0))
         print("+/-")
@@ -352,6 +368,10 @@ def main():
         print(decoder_attention_pi_weights.mean(dim=0))
         print("+/-")
         print(decoder_attention_pi_weights.std(dim=0))
+        print("decoder_position_pi_weights:")
+        print(decoder_position_pi_weights.mean(dim=0))
+        print("+/-")
+        print(decoder_position_pi_weights.std(dim=0))
         print("decoder_token_pi_weights:")
         print(decoder_token_pi_weights.mean(dim=0))
         print("+/-")

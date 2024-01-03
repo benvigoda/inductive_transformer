@@ -3,6 +3,7 @@ from decoder_universe import DecoderUniverse
 from decoder_bernoulli_categorical import DecoderBernoulliCategorical
 from decoder_categorical_bernoulli import DecoderCategoricalBernoulli
 from decoder_token_pi import DecoderTokenPi
+from decoder_position_pi import DecoderPositionPi
 from decoder_attention_pi import DecoderAttentionPi
 from decoder_and import DecoderAnd
 
@@ -16,6 +17,7 @@ class DecoderLayer(nn.Module):
         self.decoder_bernoulli_categorical = DecoderBernoulliCategorical(hyperparams=hyperparams, active_layer=active_layer)
         self.decoder_token_pi = DecoderTokenPi(hyperparams=hyperparams, active_layer=active_layer)
         self.decoder_attention_pi = DecoderAttentionPi(hyperparams=hyperparams, active_layer=active_layer)
+        self.decoder_position_pi = DecoderPositionPi(hyperparams=hyperparams, active_layer=active_layer)
         self.decoder_categorical_bernoulli = DecoderCategoricalBernoulli(hyperparams=hyperparams, active_layer=active_layer)
         self.decoder_and = DecoderAnd(hyperparams=hyperparams, active_layer=active_layer)
 
@@ -33,8 +35,10 @@ class DecoderLayer(nn.Module):
         # Decoder Attention $\pi$
         v = self.decoder_attention_pi(y_categorical)
 
+        rho_categorical = self.decoder_position_pi(x_categorical)
+
         # Decoder Word $\pi$
-        t = self.decoder_token_pi(x_categorical)
+        t_categorical = self.decoder_token_pi(rho_categorical)
 
         # Decoder Categorical-Bernoulli
         # u is bernoulli, v is categorical
@@ -43,4 +47,4 @@ class DecoderLayer(nn.Module):
         # Decoder Open Closed Universe
         z = self.decoder_universe(u)
 
-        return t, z
+        return t_categorical, z

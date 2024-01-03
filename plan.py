@@ -1,13 +1,39 @@
 '''
 # Project Plan:
-1. TEST: python main.py training_text.txt inference_text.txt --train --num_layer 2 --layer_width 4 --num_data_points 10000 --silence_google_sheet
-2. Modify the decoder to also have position_pi
-3. Fix text_parsing output to also include position in the decoder, once that's done
-        ###########
-        # FIXME: The output doesn't have position yet, so we just drop the position dimension
-        output_tensor = input_tensor[:, 0, :, :]
-        ###########
-4. Fix the print to google-sheet to include the new position code
+TODO:
+The code does not converge
+
+
+1. Training output data is wrong?:
+Thomas to write what the training data looks like
+Ben write down what the symmetries are desired
+
+    shape = (NUM_LAYERS, NUM_POSITIONS, VOCAB_SIZE, LAYER_WIDTH)
+    input and target, for all layers:
+    position = 0, token = little
+    position = 0, token = big
+    position = 1, token = dog
+    position = 1, token = cat
+
+
+2. Google sheet printing to verify weights we are learning in position_pi's
+    encoder
+    layer = 0, lw = 0: position = 0, token = little
+    layer = 0, lw = 1: position = 0, token = big
+    layer = 1, lw = 0: position = 1, token = dog
+    layer = 1, lw = 1: position = 1, token = cat
+
+    decoder
+    layer = 1, lw = 0: position = 0, token = little
+    layer = 1, lw = 1: position = 0, token = big
+    layer = 0, lw = 0: position = 1, token = dog
+    layer = 0, lw = 1: position = 1, token = cat
+
+
+3. Google sheet print all the encoder and decoder activations:
+position_pi.rho, position_pi.x, token.pi.t
+    a) Look at self.rho
+    b) Fix the google-sheet to print with position in decoder
 
 # TODO:
 1. In encoder_bernoulli_categorical.py we have
@@ -30,9 +56,19 @@ Actually, we can probably just very simply delete that `v = torch.empty((self.hy
 `prob_weights = self.relu(self.weights) + 1e-9`
 This is not the only place this happens.
 
-3. 
+3. broadcast the weights in encoder_position_pi.py instead of stacking/catting them
 
 DONE
+0. Swap position indexing in weights we set in perturbation test:
+encoder: [1][1][0][0]. decoder: [0][0][1][1]
+1. TEST: python main.py training_text.txt inference_text.txt --train --num_layer 2 --layer_width 4 --num_data_points 10000 --silence_google_sheet
+2. Modify the decoder to also have position_pi
+3. Fix text_parsing output to also include position in the decoder, once that's done
+        ###########
+        # FIXME: The output doesn't have position yet, so we just drop the position dimension
+        output_tensor = input_tensor[:, 0, :, :]
+        ###########
+
 1. Format data input to be fed into the new position model
 1. Fix Ben's github
 2. Get layer_width=3 working
