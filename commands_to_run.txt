@@ -1,5 +1,5 @@
 First turn on the environment:
-source /Users/benvigoda/src/inductive_transformer/env/bin/activate
+source /Users/benvigoda/src/inductive_transformer_position/venv/bin/activate
 
 How we are currently running the system:
 python main.py training_text.txt inference_text.txt --train --num_layer 2 --layer_width 2 --num_data_points 1000
