@@ -140,10 +140,7 @@ class ProbTensors():
             if self.print_flag:
                 print(f"format_training_data for window {window}:\n{input_tensor}")
                 print(f"input_tensor.size():\n{input_tensor.size()}")
-            ###########
-            # FIXME: The output doesn't have position yet, so we just drop the position dimension
-            output_tensor = input_tensor[:, 0, :, :]
-            ###########
+            output_tensor = input_tensor
             if device:
                 training_data.append(
                     (input_tensor.to(device), output_tensor.to(device))

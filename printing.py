@@ -62,12 +62,12 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
         normalize_weights(model.encoder_layer_1.encoder_token_pi.weights),
     ], dim=0)
     decoder_attention_pi_weights = torch.stack([
-        normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights, dim=0),  # FIXME: norm on dim=1 when we have position
-        normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights, dim=0),  # FIXME: norm on dim=1 when we have position
+        normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights, dim=1),
+        normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights, dim=1),
     ], dim=0)
     decoder_token_pi_weights = torch.stack([
-        normalize_weights(model.decoder_layer_0.decoder_token_pi.weights, dim=0),  # FIXME: norm on dim=1 when we have position
-        normalize_weights(model.decoder_layer_1.decoder_token_pi.weights, dim=0),  # FIXME: norm on dim=1 when we have position
+        normalize_weights(model.decoder_layer_0.decoder_token_pi.weights, dim=1),
+        normalize_weights(model.decoder_layer_1.decoder_token_pi.weights, dim=1),
     ], dim=0)
     for sheet_number, prompt_tensor in enumerate(prompt_tensors):
         # write activations
@@ -169,8 +169,8 @@ def format_into_pred_truth_table(model, vocab, preds, truths, inputs, attention_
                 # ...
                 token_row = (1 + model.hyperparams.layer_width * 2) * k + 1 + lw
                 attention_row = token_row + model.hyperparams.layer_width
-                table[1 + n * 4][token_row] = format_prob_vocab(preds[k][n][:, lw], vocab)
-                table[1 + n * 4 + 1][token_row] = format_prob_vocab(truths[k][n][:, lw], vocab)
+                table[1 + n * 4][token_row] = format_prob_vocab(preds[k][n][0, :, lw], vocab)  # FIXME: print all positions not just the 0th one
+                table[1 + n * 4 + 1][token_row] = format_prob_vocab(truths[k][n][0, :, lw], vocab)  # FIXME: print all positions not just the 0th one
                 table[1 + n * 4 + 2][token_row] = format_prob_vocab(inputs[k][n][0, :, lw], vocab)  # FIXME: print all positions not just the 0th one
                 # For the attention output we are only interested in the 0th layer
                 # We are not training on any other layer
