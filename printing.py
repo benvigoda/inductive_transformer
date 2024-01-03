@@ -2,6 +2,7 @@ import torch  # type: ignore
 import pathlib
 import os
 import time
+from typing import List
 from torch import nn  # type: ignore
 from helper_functions import custom_normalize
 
@@ -44,9 +45,9 @@ def print_to_terminal(model, iter, epoch, start, loss_avg, toc, print_every):
     )
 
 
-def normalize_weights(weights):
+def normalize_weights(weights, dim=1):
     # return nn.functional.normalize(nn.ReLU()(weights), p=1, dim=0)
-    return custom_normalize(nn.ReLU()(weights), dim=0)
+    return custom_normalize(nn.ReLU()(weights), dim=dim)
 
 
 def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, model, attention_input, vocab):
@@ -61,19 +62,17 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
         normalize_weights(model.encoder_layer_1.encoder_token_pi.weights),
     ], dim=0)
     decoder_attention_pi_weights = torch.stack([
-        normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights),
-        normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights),
+        normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights, dim=0),  # FIXME: norm on dim=1 when we have position
+        normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights, dim=0),  # FIXME: norm on dim=1 when we have position
     ], dim=0)
     decoder_token_pi_weights = torch.stack([
-        normalize_weights(model.decoder_layer_0.decoder_token_pi.weights),
-        normalize_weights(model.decoder_layer_1.decoder_token_pi.weights),
+        normalize_weights(model.decoder_layer_0.decoder_token_pi.weights, dim=0),  # FIXME: norm on dim=1 when we have position
+        normalize_weights(model.decoder_layer_1.decoder_token_pi.weights, dim=0),  # FIXME: norm on dim=1 when we have position
     ], dim=0)
     for sheet_number, prompt_tensor in enumerate(prompt_tensors):
         # write activations
         y = model(attention_input, prompt_tensor)
-        # import pdb; pdb.set_trace()
         if sheet_number == 0:
-
             # write decoder weights
             res_decoder_weights = format_into_table(
                 output=decoder_token_pi_weights,
@@ -99,18 +98,23 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
             output_to_sheet(res_encoder_weights, "encoder_weights")
 
         prompt_preds.append(y)
+    ############################
+    # TODO: We currently do not track the attention_preds and attention_truths
+    # Should we?
+    # So, for now, we just keep them empty
+    attention_preds = [torch.empty(attention_input.shape) for _ in range(len(prompt_tensors))]
+    attention_truths = [torch.empty(attention_input.shape) for _ in range(len(prompt_tensors))]
+    ############################
     # With test data sentences running through inference
     # Print the input, pred, and truth (same as input) for each activation:
-    unpacked_prompt_preds = [torch.stack([p[i: i + model.vocab_size] for i in range(0, model.vocab_size * model.num_layers, model.vocab_size)], dim=0) for p in prompt_preds]
-    unpacked_attention_preds = [p[model.vocab_size * model.num_layers:] for p in prompt_preds]
     res_pred_truth_input = format_into_pred_truth_table(
         model=model,
         vocab=vocab,
-        preds=unpacked_prompt_preds,
-        truths=prompt_tensors,
+        preds=prompt_preds,
+        truths=truths,
         inputs=prompt_tensors,
-        attention_preds=unpacked_attention_preds,
-        attention_truths=[attention_input for _ in range(len(prompt_tensors))],
+        attention_preds=attention_preds,
+        attention_truths=attention_truths,
         attention_inputs=[attention_input for _ in range(len(prompt_tensors))],
         title="test prediction versus truth",
     )
@@ -118,20 +122,14 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
     output_to_sheet(res_pred_truth_input, "inference_input_pred")
 
     if preds is not None and truths is not None and token_prob_tensors is not None:
-        # With the last training data sentence running through inference
-        # Print the input, pred, and truth to google-sheet
-        unpacked_preds = [torch.stack([p[i: i + model.vocab_size] for i in range(0, model.vocab_size * model.num_layers, model.vocab_size)], dim=0) for p in preds]
-        unpacked_truths = [torch.stack([t[i: i + model.vocab_size] for i in range(0, model.vocab_size * model.num_layers, model.vocab_size)], dim=0) for t in truths]
-        unpacked_attention_preds = [p[model.vocab_size * model.num_layers:] for p in preds]
-        unpacked_attention_truths = [t[model.vocab_size * model.num_layers:] for t in truths]
         res_pred_truth_input = format_into_pred_truth_table(
             model=model,
             vocab=vocab,
-            preds=unpacked_preds,
-            truths=unpacked_truths,
+            preds=preds,
+            truths=truths,
             inputs=token_prob_tensors,
-            attention_preds=unpacked_attention_preds,
-            attention_truths=unpacked_attention_truths,
+            attention_preds=attention_preds,
+            attention_truths=attention_truths,
             attention_inputs=[attention_input for _ in range(len(prompt_tensors))],
             title="training prediction versus truth"
         )
@@ -173,7 +171,7 @@ def format_into_pred_truth_table(model, vocab, preds, truths, inputs, attention_
                 attention_row = token_row + model.hyperparams.layer_width
                 table[1 + n * 4][token_row] = format_prob_vocab(preds[k][n][:, lw], vocab)
                 table[1 + n * 4 + 1][token_row] = format_prob_vocab(truths[k][n][:, lw], vocab)
-                table[1 + n * 4 + 2][token_row] = format_prob_vocab(inputs[k][n][:, lw], vocab)
+                table[1 + n * 4 + 2][token_row] = format_prob_vocab(inputs[k][n][0, :, lw], vocab)  # FIXME: print all positions not just the 0th one
                 # For the attention output we are only interested in the 0th layer
                 # We are not training on any other layer
                 # So the `n` index is dropped
@@ -186,44 +184,56 @@ def format_into_pred_truth_table(model, vocab, preds, truths, inputs, attention_
 
 def format_into_table(output, model, vocab, top_row, top_row_label: str, decoder: bool = False):
     # Takes in the inference output of a model and formats it into a table
-    result = [[None for _ in range(model.hyperparams.layer_width + 1)] for _ in range(model.hyperparams.num_layers * 4)]
-    for n in range(model.hyperparams.num_layers):
 
+    ############################
+    # Legacy code to support the lack of position sensitivity
+    if output.shape == (model.hyperparams.num_layers, model.hyperparams.vocab_size, model.hyperparams.layer_width):
+        return format_into_table_no_position(output, model, vocab, top_row, top_row_label, decoder)
+    ############################
+
+    assert output.shape == (model.hyperparams.num_layers, model.hyperparams.num_positions, model.hyperparams.vocab_size, model.hyperparams.layer_width)
+    result: List = []
+    for n in range(model.hyperparams.num_layers):
+        # Label the left-most column with the layer number, and position number
+        # The top row has the attention pi weights which do not include position
+        result.append([f"layer number: {n}"] + [f"{top_row_label} = {['%.2f' % l.item() for l in top_row[n][:, lw]]}" for lw in range(model.hyperparams.layer_width)])
+        for p in range(model.hyperparams.num_positions):
+            result.append([f"layer number: {n}, position: {p}"] + [format_prob_vocab(output[n, p, :, lw], vocab) for lw in range(model.hyperparams.layer_width)])
+
+        # Add an empty row between each num_layer
+        result.append([None for _ in range(model.hyperparams.layer_width + 1)])
+    # Add comments to the bottom of the table:
+    if decoder:
+        result.append(["Read bottom to top"] + [None for _ in range(model.hyperparams.layer_width)])
+    else:
+        result.append(["Read top to bottom"] + [None for _ in range(model.hyperparams.layer_width)])
+    return result
+
+
+def format_into_table_no_position(output, model, vocab, top_row, top_row_label: str, decoder: bool = False):
+    assert output.shape == (model.hyperparams.num_layers, model.hyperparams.vocab_size, model.hyperparams.layer_width)
+    # Takes in the inference output of a model and formats it into a table
+    result: List = [[None for _ in range(model.hyperparams.layer_width + 1)] for _ in range(model.hyperparams.num_layers * 4)]
+    for n in range(model.hyperparams.num_layers):
         # Layer numbering in the left most column = 0
         # Starts at layer number 0 for the decision/all and for the token
         # Runs until n = num_layers - 1
         result[n * 2][0] = f"layer number: {n}"
         result[n * 2 + 1][0] = f"layer number: {n}"
-
         # Now fill-in each column of the table
         for lw in range(model.hyperparams.layer_width):
             # Format decoder token weights and activations from the encoder and the decoder
             # Extract the token_pi_encode's input tensor or the token_pi_decode's output tensor
             # We want to look at the n'th num_layer and lw'th column
-            # This assumes that the output is of size = (num_layers, layer_width, vocab_size)
+            # This assumes that the output is of size = (num_layers, vocab_size, layer_width)
             prob_outputs = output[n, :, lw]
             prob_token_pairs_str = format_prob_vocab(prob_outputs, vocab)
-
-            # Format decision weights and activations from the encoder and decoder
-            # For the decoder we print the attention_pi weights first
-            # For both the encoder and decoder, we index in a transposed way.
-            # Namely, we print encoder_attention_pi_w or decoder_attention_pi_w[:, lw] in the column lw
-            if decoder:
-                result[n * 2 + 1][lw + 1] = prob_token_pairs_str
-                result[n * 2][lw + 1] = f"{top_row_label} = {['%.2f' % l.item() for l in top_row[n][:, lw]]}"
-            else:
-                result[n * 2 + 1][lw + 1] = prob_token_pairs_str
-                # here we do top_row[n][:, lw] the same as above in the decoder, because
-                # the decision_weights question we want to answer for ourselves in the google sheet is
-                # "which concept has this encoder pi learned to listen to"
-                # the decision_activations question we want to answer for ourselves in the google sheet is
-                # "which concept IS this encoder pi listening to when we input a particular sentence"
-                result[n * 2][lw + 1] = f"{top_row_label} = {['%.2f' % l.item() for l in top_row[n][:, lw]]}"
-
+            result[n * 2 + 1][lw + 1] = prob_token_pairs_str
+            result[n * 2][lw + 1] = f"{top_row_label} = {['%.2f' % l.item() for l in top_row[n][:, lw]]}"
     # Add comments to the bottom of the table:
     empty_row = [None for _ in range(model.hyperparams.layer_width + 1)]
     result.append(empty_row)
-    comment = [None for _ in range(model.hyperparams.layer_width + 1)]
+    comment: List = [None for _ in range(model.hyperparams.layer_width + 1)]
     if decoder:
         comment[0] = "Read bottom to top"
     else:
@@ -237,6 +247,7 @@ def output_to_sheet(result, sheet_name="Sheet1"):
     from google_sheets_api.sheetsstart import Sheet  # type: ignore
     from googleapiclient.errors import HttpError  # type: ignore
     print("****************OUTPUTTING TO GOOGLE SHEET****************")
+    print("TAB:", sheet_name)
     spreadsheet_id = "1TpfTFWsFRRyXZU6pEtw1pqEaFpmO9VqXFqxnzpQQfCo"
     creds_dir = pathlib.Path(os.path.dirname(__file__)) / "google_sheets_api"
     sheet = Sheet(path_to_api_creds=creds_dir, sheet_name=sheet_name)

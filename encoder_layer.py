@@ -8,6 +8,11 @@ from encoder_categorical_bernoulli import EncoderCategoricalBernoulli
 from encoder_and import EncoderAnd
 
 
+# In terms of left side pi_t's
+# We need 3 left pi_t's going to the left pi_rho, one for each of the positions
+# PLUS 3 left pi_t's going to the right pi_rho, one for each of the positions
+
+
 class EncoderLayer(nn.Module):
 
     def __init__(self, hyperparams, active_layer: int):
@@ -45,12 +50,15 @@ class EncoderLayer(nn.Module):
         # now with position we have:
         assert t_categorical.shape == (self.hyperparams.num_positions, self.hyperparams.vocab_size, self.hyperparams.layer_width)
 
-        # TODO:
+        # Hook 3 pi_t's to their parent pi_rho, everywhere this occurs.
         # The encoder open-closed universe without backwards info from the decoder simply clones the input data for a given token and position
-        # and sends it to the corresponding pi_t in both the left and right columns.
-
+        # and sends it to the corresponding pi_t in both the the left and right columns.
         # We simply make the input data have the same values for every value of lw (which indexes layer_width).
         rho_categorical = self.encoder_token_pi(t_categorical)
+        # Encoder Position $\pi$
+        # without position, we had pi_t outputting x_categorical, with
+        # t_categorical.shape() = (vocab_size, layer_width)
+        # now this is the job of pi_rho which is replacing pi_t, so we have this:
         assert rho_categorical.shape == (self.hyperparams.num_positions, self.hyperparams.layer_width)
 
         # Encoder Word $\pi$

@@ -5,6 +5,7 @@ from helper_functions import custom_normalize
 
 class EncoderTokenPi(nn.Module):
 
+    # We have a token pi for each position pi, so we'll make num_positions clones of the token pi
     def __init__(self, hyperparams, active_layer: int):
         super(EncoderTokenPi, self).__init__()
         self.hyperparams = hyperparams
@@ -16,7 +17,7 @@ class EncoderTokenPi(nn.Module):
         if hyperparams.encoder_token_pi_weights is not None:
             self.weights = hyperparams.encoder_token_pi_weights[active_layer]
         else:
-            self.weights = nn.Parameter(torch.ones(self.vocab_size, self.layer_width), requires_grad=True)
+            self.weights = nn.Parameter(torch.ones(self.num_positions, self.vocab_size, self.layer_width), requires_grad=True)
             nn.init.normal_(self.weights, mean=1, std=0.1)
         self.relu = nn.ReLU()
 
