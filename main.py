@@ -115,6 +115,12 @@ def train_model(
     token_prob_tensors = training_input[0: batch_size]
     truths = torch.stack(training_output[0: batch_size], 0)
     preds = torch.stack([model(attention_input, text_window) for text_window in token_prob_tensors], 0)
+    assert truths.shape == (batch_size, model.hyperparams.num_layers, model.hyperparams.vocab_size, model.hyperparams.layer_width)
+    ##########
+    # FIXME: The output doesn't have position yet, so we just drop the position dimension for now, but we'll have to add it back in eventually
+    # assert truths.shape == (batch_size, model.hyperparams.num_layers, model.hyperparams.num_positions, model.hyperparams.vocab_size, model.hyperparams.layer_width)
+    ##########
+    assert truths.shape == preds.shape
     initial_loss = criterion(preds, truths)
     print("Initial loss:", initial_loss)
 
@@ -196,7 +202,7 @@ def train_model(
                 model.encoder_layer_0.encoder_universe.u
                 model.encoder_layer_0.encoder_bernoulli_categorical.v
                 model.encoder_layer_0.encoder_attention_pi.y
-                model.encoder_layer_0.encoder_token_pi.x
+                model.encoder_layer_0.encoder_token_pi.rho
                 # model.encoder_layer_0.encoder_categorical_bernoulli.bernoulli
                 model.encoder_layer_0.encoder_and.z
                 model.encoder_layer_0.encoder_and.y
@@ -205,7 +211,7 @@ def train_model(
                 model.encoder_layer_1.encoder_universe.u
                 model.encoder_layer_1.encoder_bernoulli_categorical.v
                 model.encoder_layer_1.encoder_attention_pi.y
-                model.encoder_layer_1.encoder_token_pi.x
+                model.encoder_layer_1.encoder_token_pi.rho
                 # model.encoder_layer_1.encoder_categorical_bernoulli.bernoulli
                 model.encoder_layer_1.encoder_and.z
                 model.encoder_layer_1.encoder_and.y
