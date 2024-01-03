@@ -293,6 +293,7 @@ def main():
     hyperparams = HyperParameters(
         layer_width=args.layer_width,
         vocab_size=data.vocab_size,
+        num_positions=prob_tensors.num_positions,
         num_layers=args.num_layers,
         weight_test=args.weight_test,
         perturbation_test=args.perturbation_test,
