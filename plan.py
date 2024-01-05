@@ -3,13 +3,71 @@
 TODO:
 The code does not converge
 
-
 1. Training output data is wrong?:
 Thomas to write what the training data looks like
 Ben write down what the symmetries are desired
 
     shape = (NUM_LAYERS, NUM_POSITIONS, VOCAB_SIZE, LAYER_WIDTH)
     input and target, for all layers:
+
+    decoder target output:
+    set all values = epsilon, then:
+    (layer = 1, position = 0, vocab[small] = 1, lw=0)
+    (layer = 1, position = 0, vocab[big] = 1, lw=1)
+    (layer = 0, position = 1, vocab[dog] = 1, lw=0)
+    (layer = 0, position = 1, vocab[cat] = 1, lw=1)
+
+
+
+    encoder input experiment #1:
+    (layer = 1, position = 0, vocab[small] = 1, lw=0)
+    (layer = 1, position = 0, vocab[big] = 1, lw=1)
+    (layer = 0, position = 1, vocab[dog] = 1, lw=0)
+    (layer = 0, position = 1, vocab[cat] = 1, lw=1)   
+
+
+    encoder input experiment #2:
+    (layer = 1, position = 0, vocab[small] = 1, lw=0)
+    (layer = 1, position = 0, vocab[small] = 1, lw=1)
+
+    (layer = 1, position = 0, vocab[big] = 1, lw=0)
+    (layer = 1, position = 0, vocab[big] = 1, lw=1)
+
+    (layer = 0, position = 1, vocab[dog] = 1, lw=0)
+    (layer = 0, position = 1, vocab[dog] = 1, lw=1)
+    
+    (layer = 0, position = 1, vocab[cat] = 1, lw=0)  
+    (layer = 0, position = 1, vocab[cat] = 1, lw=1)
+
+
+    encoder input experiment #3:
+    (layer = 1, position = 0, vocab[small] = 1, lw=0)
+    (layer = 1, position = 0, vocab[small] = 1, lw=1)
+    (layer = 0, position = 0, vocab[small] = 1, lw=0)
+    (layer = 0, position = 0, vocab[small] = 1, lw=1)
+
+    (layer = 1, position = 0, vocab[big] = 1, lw=0)
+    (layer = 1, position = 0, vocab[big] = 1, lw=1)
+    (layer = 0, position = 0, vocab[big] = 1, lw=0)
+    (layer = 0, position = 0, vocab[big] = 1, lw=1)
+
+    (layer = 0, position = 1, vocab[dog] = 1, lw=0)
+    (layer = 0, position = 1, vocab[dog] = 1, lw=1)
+    (layer = 1, position = 1, vocab[dog] = 1, lw=0)
+    (layer = 1, position = 1, vocab[dog] = 1, lw=1)
+    
+    (layer = 0, position = 1, vocab[cat] = 1, lw=0)  
+    (layer = 0, position = 1, vocab[cat] = 1, lw=1)   
+    (layer = 1, position = 1, vocab[cat] = 1, lw=0)  
+    (layer = 1, position = 1, vocab[cat] = 1, lw=1)   
+    
+
+
+
+
+
+
+
     position = 0, token = little
     position = 0, token = big
     position = 1, token = dog
