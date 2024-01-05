@@ -208,6 +208,7 @@ def train_model(
                 model.encoder_layer_0.encoder_universe.u
                 model.encoder_layer_0.encoder_bernoulli_categorical.v
                 model.encoder_layer_0.encoder_attention_pi.y
+                model.encoder_layer_0.encoder_position_pi.x
                 model.encoder_layer_0.encoder_token_pi.rho
                 # model.encoder_layer_0.encoder_categorical_bernoulli.bernoulli
                 model.encoder_layer_0.encoder_and.z
@@ -217,6 +218,7 @@ def train_model(
                 model.encoder_layer_1.encoder_universe.u
                 model.encoder_layer_1.encoder_bernoulli_categorical.v
                 model.encoder_layer_1.encoder_attention_pi.y
+                model.encoder_layer_1.encoder_position_pi.x
                 model.encoder_layer_1.encoder_token_pi.rho
                 # model.encoder_layer_1.encoder_categorical_bernoulli.bernoulli
                 model.encoder_layer_1.encoder_and.z
@@ -229,6 +231,7 @@ def train_model(
                 # model.decoder_layer_1.decoder_bernoulli_categorical.categorical
                 model.decoder_layer_1.decoder_attention_pi.y
                 model.decoder_layer_1.decoder_attention_pi.v
+                model.decoder_layer_1.decoder_position_pi.rho
                 model.decoder_layer_1.decoder_token_pi.t
                 model.decoder_layer_1.decoder_categorical_bernoulli.u
                 model.decoder_layer_1.decoder_universe.z
@@ -240,6 +243,7 @@ def train_model(
                 model.decoder_layer_0.decoder_attention_pi.y  # input
                 model.decoder_layer_0.decoder_attention_pi.v  # output
                 model.decoder_layer_0.decoder_token_pi.rho  # input
+                model.decoder_layer_0.decoder_position_pi.rho
                 model.decoder_layer_0.decoder_token_pi.t  # output
                 model.decoder_layer_0.decoder_categorical_bernoulli.u
                 model.decoder_layer_0.decoder_universe.z
