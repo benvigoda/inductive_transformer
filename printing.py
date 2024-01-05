@@ -62,20 +62,20 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
         normalize_weights(model.encoder_layer_1.encoder_token_pi.weights),
     ], dim=0)
     encoder_position_pi_weights = torch.stack([
-        normalize_weights(model.encoder_layer_0.encoder_position_pi.weights, dim=1),
-        normalize_weights(model.encoder_layer_1.encoder_position_pi.weights, dim=1),
+        normalize_weights(model.encoder_layer_0.encoder_position_pi.weights),
+        normalize_weights(model.encoder_layer_1.encoder_position_pi.weights),
     ], dim=0)
     decoder_attention_pi_weights = torch.stack([
-        normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights, dim=1),
-        normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights, dim=1),
+        normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights),
+        normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights),
     ], dim=0)
     decoder_token_pi_weights = torch.stack([
-        normalize_weights(model.decoder_layer_0.decoder_token_pi.weights, dim=1),
-        normalize_weights(model.decoder_layer_1.decoder_token_pi.weights, dim=1),
+        normalize_weights(model.decoder_layer_0.decoder_token_pi.weights),
+        normalize_weights(model.decoder_layer_1.decoder_token_pi.weights),
     ], dim=0)
     decoder_position_pi_weights = torch.stack([
-        normalize_weights(model.decoder_layer_0.decoder_position_pi.weights, dim=1),
-        normalize_weights(model.decoder_layer_1.decoder_position_pi.weights, dim=1),
+        normalize_weights(model.decoder_layer_0.decoder_position_pi.weights),
+        normalize_weights(model.decoder_layer_1.decoder_position_pi.weights),
     ], dim=0)
     for sheet_number, prompt_tensor in enumerate(prompt_tensors):
         # write activations
@@ -148,47 +148,58 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
 
 
 def format_into_pred_truth_table(model, vocab, preds, truths, inputs, attention_preds, attention_truths, attention_inputs, title=""):
-    # preds, truths, inputs are all size (num_sentences, num_layers, vocab_size, layer_width)
+    # preds, truths, inputs are all size (num_sentences, num_layers, num_positions, vocab_size, layer_width)
     # attention_preds, attention_truths, attention_inputs are all size (num_sentences, layer_width, layer_width)
     # The num_layers index is collapsed as we are only training on the 0th output layer
+    num_sentences = len(preds)
 
     # Initialize the table to None
-    table = [[None for _ in range(1 + len(preds) * (model.hyperparams.layer_width * 2 + 1))] for _ in range(model.hyperparams.num_layers * 4 + 1)]
-    # Title in the top left corner
-    table[0][0] = title
+    table = []
 
-    # Label each sentence
-    for k in range(len(preds)):
-        # sentence 0 is in column 1
-        # sentence 1 is in column 1 + layer_width + 1
-        # sentence 2 is in column 1 + layer_width + 1 + layer_width + 1
-        # ...
-        table[0][1 + k * (model.hyperparams.layer_width * 2 + 1)] = f"sentence {k}"
-    # Fill-in the token-lists
-    for n in range(model.hyperparams.num_layers):
-        table[1 + n * 4][0] = f"pred layer {n}"
-        table[1 + n * 4 + 1][0] = f"truth layer {n}"
-        table[1 + n * 4 + 2][0] = f"input layer {n}"
-        # Leave the 4th line blank
-        for lw in range(model.hyperparams.layer_width):
-            for k in range(len(preds)):
-                # row = n * 4
-                # for sentence 0: columns are 1 + lw
-                # for sentence 1: columns are 1 + layer_width + 1 + lw
-                # for sentence 2: columns are 1 + layer_width + 1 + num_layers + 1 + lw
-                # ...
-                token_row = (1 + model.hyperparams.layer_width * 2) * k + 1 + lw
-                attention_row = token_row + model.hyperparams.layer_width
-                table[1 + n * 4][token_row] = format_prob_vocab(preds[k][n][0, :, lw], vocab)  # FIXME: print all positions not just the 0th one
-                table[1 + n * 4 + 1][token_row] = format_prob_vocab(truths[k][n][0, :, lw], vocab)  # FIXME: print all positions not just the 0th one
-                table[1 + n * 4 + 2][token_row] = format_prob_vocab(inputs[k][n][0, :, lw], vocab)  # FIXME: print all positions not just the 0th one
-                # For the attention output we are only interested in the 0th layer
-                # We are not training on any other layer
-                # So the `n` index is dropped
-                if n == 0:
-                    table[1 + n * 4][attention_row] = format_attention_tensor(attention_preds[k][:, lw])
-                    table[1 + n * 4 + 1][attention_row] = format_attention_tensor(attention_truths[k][:, lw])
-                    table[1 + n * 4 + 2][attention_row] = format_attention_tensor(attention_inputs[k][:, lw])
+    # Title column
+    # For each sentence we have:
+    #   For each lw in the layer we have:
+    #       For each position we have:
+    #           weighted token outputs and attention activation outputs
+    # We repeat that for pred, truth, and input
+    # We get an empty line between each num_layer
+    token_start_index = 1
+    attention_start_index = 1 + model.hyperparams.num_layers * model.hyperparams.num_positions
+    num_cols = 1 + model.hyperparams.num_layers * model.hyperparams.num_positions + model.hyperparams.layer_width
+    row = [None] * num_cols
+    row[0] = title
+    table.append(row)
+
+    for k in range(num_sentences):
+        row = [None] * num_cols
+        row[1] = f"sentence {k}"
+        table.append(row)
+        row = [None] * num_cols
+        row[token_start_index] = "token"
+        row[attention_start_index] = "attention"
+        table.append(row)
+        row = [None] * num_cols
+        for n in range(model.hyperparams.num_layers):
+            for lw in range(model.hyperparams.layer_width):
+                row[token_start_index + lw * model.hyperparams.num_positions] = f"layer_width {lw}"
+                row[attention_start_index + lw] = f"layer_width {lw}"
+            table.append(row)
+
+            def add_output_to_row(token_output, attention_output, label):
+                row = [None] * num_cols
+                row[0] = label
+                for lw in range(model.hyperparams.layer_width):
+                    for p in range(model.hyperparams.num_positions):
+                        token_index = token_start_index + lw * model.hyperparams.num_positions + p
+                        attention_index = attention_start_index + lw
+                        row[token_index] = format_prob_vocab(token_output[k][n][p, :, lw], vocab)
+                        if p == 0:  # The attention not split by position, so we just print it once
+                            row[attention_index] = format_attention_tensor(attention_output[k][:, lw])
+                table.append(row)
+                row = [None] * num_cols
+            add_output_to_row(preds, attention_preds, f"pred layer {n}")
+            add_output_to_row(truths, attention_truths, f"truth layer {n}")
+            add_output_to_row(inputs, attention_inputs, f"truth layer {n}")
     return table
 
 

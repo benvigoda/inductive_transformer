@@ -3,6 +3,22 @@
 TODO:
 The code does not converge
 
+
+
+2. DONE: but the outputs don't look right (normalization is wrong) So needs further investigation
+ Google sheet printing to verify weights we are learning in position_pi's
+    encoder
+    layer = 0, lw = 0: position = 0, token = little
+    layer = 0, lw = 1: position = 0, token = big
+    layer = 1, lw = 0: position = 1, token = dog
+    layer = 1, lw = 1: position = 1, token = cat
+
+    decoder
+    layer = 1, lw = 0: position = 0, token = little
+    layer = 1, lw = 1: position = 0, token = big
+    layer = 0, lw = 0: position = 1, token = dog
+    layer = 0, lw = 1: position = 1, token = cat
+
 1. Training output data is wrong?:
 Thomas to write what the training data looks like
 Ben write down what the symmetries are desired
@@ -73,19 +89,6 @@ Ben write down what the symmetries are desired
     position = 1, token = dog
     position = 1, token = cat
 
-
-2. Google sheet printing to verify weights we are learning in position_pi's
-    encoder
-    layer = 0, lw = 0: position = 0, token = little
-    layer = 0, lw = 1: position = 0, token = big
-    layer = 1, lw = 0: position = 1, token = dog
-    layer = 1, lw = 1: position = 1, token = cat
-
-    decoder
-    layer = 1, lw = 0: position = 0, token = little
-    layer = 1, lw = 1: position = 0, token = big
-    layer = 0, lw = 0: position = 1, token = dog
-    layer = 0, lw = 1: position = 1, token = cat
 
 
 3. Google sheet print all the encoder and decoder activations:
