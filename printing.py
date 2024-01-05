@@ -61,6 +61,10 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
         normalize_weights(model.encoder_layer_0.encoder_token_pi.weights),
         normalize_weights(model.encoder_layer_1.encoder_token_pi.weights),
     ], dim=0)
+    encoder_position_pi_weights = torch.stack([
+        normalize_weights(model.encoder_layer_0.encoder_position_pi.weights, dim=1),
+        normalize_weights(model.encoder_layer_1.encoder_position_pi.weights, dim=1),
+    ], dim=0)
     decoder_attention_pi_weights = torch.stack([
         normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights, dim=1),
         normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights, dim=1),
@@ -68,6 +72,10 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
     decoder_token_pi_weights = torch.stack([
         normalize_weights(model.decoder_layer_0.decoder_token_pi.weights, dim=1),
         normalize_weights(model.decoder_layer_1.decoder_token_pi.weights, dim=1),
+    ], dim=0)
+    decoder_position_pi_weights = torch.stack([
+        normalize_weights(model.decoder_layer_0.decoder_position_pi.weights, dim=1),
+        normalize_weights(model.decoder_layer_1.decoder_position_pi.weights, dim=1),
     ], dim=0)
     for sheet_number, prompt_tensor in enumerate(prompt_tensors):
         # write activations
@@ -81,6 +89,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
                 top_row=decoder_attention_pi_weights,
                 top_row_label="decoder attention pi weights",
                 decoder=True,
+                position_row=decoder_position_pi_weights,
             )
             print("decoder weights")
             output_to_sheet(res_decoder_weights, "decoder_weights")
@@ -93,6 +102,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
                 top_row=encoder_attention_pi_weights,
                 top_row_label="encoder attention pi weights",
                 decoder=False,
+                position_row=encoder_position_pi_weights,
             )
             print("encoder weights")
             output_to_sheet(res_encoder_weights, "encoder_weights")
@@ -182,7 +192,7 @@ def format_into_pred_truth_table(model, vocab, preds, truths, inputs, attention_
     return table
 
 
-def format_into_table(output, model, vocab, top_row, top_row_label: str, decoder: bool = False):
+def format_into_table(output, model, vocab, top_row, top_row_label: str, decoder: bool = False, position_row: List = []):
     # Takes in the inference output of a model and formats it into a table
 
     ############################
@@ -197,6 +207,8 @@ def format_into_table(output, model, vocab, top_row, top_row_label: str, decoder
         # Label the left-most column with the layer number, and position number
         # The top row has the attention pi weights which do not include position
         result.append([f"layer number: {n}"] + [f"{top_row_label} = {['%.2f' % l.item() for l in top_row[n][:, lw]]}" for lw in range(model.hyperparams.layer_width)])
+        # Followed by the position pi weights
+        result.append([None] + [f"position weights = {['%.2f' % p.item() for p in position_row[n][:, lw]]}" for lw in range(model.hyperparams.layer_width)])
         for p in range(model.hyperparams.num_positions):
             result.append([f"layer number: {n}, position: {p}"] + [format_prob_vocab(output[n, p, :, lw], vocab) for lw in range(model.hyperparams.layer_width)])
 
