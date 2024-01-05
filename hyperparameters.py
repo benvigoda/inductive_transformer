@@ -91,6 +91,7 @@ class HyperParameters:
 
     def construct_weights(self):
         # FIXME: update with position
+        raise NotImplementedError("construct_weights() is not implemented with the new position pi")
         self.encoder_token_pi_weights = torch.full((self.num_layers, self.vocab_size, self.layer_width), WEAK)
         self.decoder_token_pi_weights = torch.full((self.num_layers, self.vocab_size, self.layer_width), WEAK)
         self.encoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), WEAK)
