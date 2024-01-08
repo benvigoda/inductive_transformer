@@ -18,10 +18,13 @@ class EncoderAnd(nn.Module):
         self.x = x
         self.y = y
         z = torch.empty((2, self.hyperparams.layer_width), device=x.device)
-        z[1] = x[1] * y[1]
-        z[0] = x[0] * y[1] + x[1] * y[0] + x[0] * y[0]
+        z[1] = x[1] * y[1]  # x[1] = [0, 1], y[1] = [0.5, 0.5] ==> for lw=0: 0 * 0.5 = 0, for lw=1 1*0.5 = 0.5
+        z[0] = x[0] * y[1] + x[1] * y[0] + x[0] * y[0]  # x[0] = [1, 0], y[0] = [0.5, 0.5] ==> for lw=0: 1 * 0.5 + 0 * 0.5 + 1 * 0.5 = 1, for lw=1 0 * 0.5 + 1 * 0.5 + 0 * 0.5 = 0.5
+        # z[1] = [0, 0.5]
+        # z[0] = [1, 0.5]
+        # z[:, 0] = [0, 1]
+        # z[:, 1] = [0.5, 0.5]
 
-        # z = nn.functional.normalize(z, p=1, dim=0)
-        z = custom_normalize(z, dim=0)
         self.z = z
+        z = custom_normalize(z, dim=0)
         return z

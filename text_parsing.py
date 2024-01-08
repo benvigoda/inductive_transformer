@@ -166,7 +166,10 @@ class ProbTensors():
         attention_input[i=0, l=1] = 0.5
         attention_input[i=1, l=1] = 0.5
         '''
-        attention_input = torch.full((2, self.layer_width), 0.5)  # A bernoulli input
+        # attention_input = torch.full((2, self.layer_width), 0.5)  # A bernoulli input
+        attention_input = torch.full((2, self.layer_width), self.improbable)  # A bernoulli input
+        attention_input[1, 0] = self.probable
+        attention_input[0, 1] = self.probable
         return attention_input
 
     def make_inference_prompt_tensors(self, num_layers: int = 1) -> List[torch.Tensor]:

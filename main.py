@@ -189,7 +189,7 @@ def train_model(
                             vocab=vocab,
                         )
 
-                # import pdb; pdb.set_trace()
+                import pdb; pdb.set_trace()
                 #############################
                 # Use this to print the model parameters
                 # encoder printing
