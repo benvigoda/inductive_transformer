@@ -7,6 +7,8 @@ PERTURBATION_TEST_WEIGHTS_TO_LEARN: Dict = {
     'encoder_token': True,
     'decoder_attention': False,
     'decoder_token': True,
+    'encoder_position': True,
+    'decoder_position': True,
 }  # Set to True to manually set weights. Set to False to learn weights
 
 STRONG = 1.  # Amplify the signal
@@ -88,6 +90,20 @@ class HyperParameters:
             # Set the layer_1 straight connection weights to strong and leave the cross connection weights at 0
             self.decoder_attention_pi_weights[1][0][0] = self.strong
             self.decoder_attention_pi_weights[1][1][1] = self.strong
+        if self.perturbation_test_encoder_position:
+            self.encoder_position_pi_weights = torch.full((self.num_layers, self.num_positions, self.layer_width), WEAK)
+            # Set the position weights to diagonal activations in both layers of the encoder
+            self.encoder_position_pi_weights[0][0][0] = self.strong
+            self.encoder_position_pi_weights[0][0][1] = self.strong
+            self.encoder_position_pi_weights[1][1][0] = self.strong
+            self.encoder_position_pi_weights[1][1][1] = self.strong
+        if self.perturbation_test_decoder_position:
+            self.decoder_position_pi_weights = torch.full((self.num_layers, self.num_positions, self.layer_width), WEAK)
+            # Set the position weights to diagonal activations in both layers of the decoder
+            self.decoder_position_pi_weights[0][0][0] = self.strong
+            self.decoder_position_pi_weights[0][0][1] = self.strong
+            self.decoder_position_pi_weights[1][1][0] = self.strong
+            self.decoder_position_pi_weights[1][1][1] = self.strong
 
     def construct_weights(self):
         # FIXME: update with position
