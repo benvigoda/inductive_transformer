@@ -39,7 +39,7 @@ Ben write down what the symmetries are desired
     (layer = 1, position = 0, vocab[small] = 1, lw=0)
     (layer = 1, position = 0, vocab[big] = 1, lw=1)
     (layer = 0, position = 1, vocab[dog] = 1, lw=0)
-    (layer = 0, position = 1, vocab[cat] = 1, lw=1)   
+    (layer = 0, position = 1, vocab[cat] = 1, lw=1)
 
 
     encoder input experiment #2:
@@ -51,8 +51,8 @@ Ben write down what the symmetries are desired
 
     (layer = 0, position = 1, vocab[dog] = 1, lw=0)
     (layer = 0, position = 1, vocab[dog] = 1, lw=1)
-    
-    (layer = 0, position = 1, vocab[cat] = 1, lw=0)  
+
+    (layer = 0, position = 1, vocab[cat] = 1, lw=0)
     (layer = 0, position = 1, vocab[cat] = 1, lw=1)
 
 
@@ -71,12 +71,12 @@ Ben write down what the symmetries are desired
     (layer = 0, position = 1, vocab[dog] = 1, lw=1)
     (layer = 1, position = 1, vocab[dog] = 1, lw=0)
     (layer = 1, position = 1, vocab[dog] = 1, lw=1)
-    
-    (layer = 0, position = 1, vocab[cat] = 1, lw=0)  
-    (layer = 0, position = 1, vocab[cat] = 1, lw=1)   
-    (layer = 1, position = 1, vocab[cat] = 1, lw=0)  
-    (layer = 1, position = 1, vocab[cat] = 1, lw=1)   
-    
+
+    (layer = 0, position = 1, vocab[cat] = 1, lw=0)
+    (layer = 0, position = 1, vocab[cat] = 1, lw=1)
+    (layer = 1, position = 1, vocab[cat] = 1, lw=0)
+    (layer = 1, position = 1, vocab[cat] = 1, lw=1)
+
 
 
 

@@ -199,7 +199,7 @@ def format_into_pred_truth_table(model, vocab, preds, truths, inputs, attention_
                 row = [None] * num_cols
             add_output_to_row(preds, attention_preds, f"pred layer {n}")
             add_output_to_row(truths, attention_truths, f"truth layer {n}")
-            add_output_to_row(inputs, attention_inputs, f"truth layer {n}")
+            add_output_to_row(inputs, attention_inputs, f"input layer {n}")
     return table
 
 
