@@ -3,6 +3,36 @@
 TODO:
 The code does not converge
 
+Our overall strategy is to set everything, both weights and inputs and targets and
+get "correct behavior"
+Then we plan to slowly "loosen" up the weights and see if we learn back to the correct behavior
+This led us to want to make sure the attention stack was doing "correct behavior"
+
+In a new branch off main called "testing-understanding-attention-input"
+Instead of our old inputs to the encoder attention in layer 0 being 0.5, 0.5,
+we tested [1, 0] = [0, 1] = self.probable; [0, 1] = [1, 0] = self.improbable
+
+The result in the attention weights was to learn to tilt the encoder layer 1 weights 80-20
+instead of 50-50 as we got before.  The decoder attention weights seemed more or less unaffected.
+
+QUESTION: Did the encoder layer 1 attention learned to "untilt" the activations flowing
+out of the encoder to the decoder?
+
+The decoder attention stack has no target that it is trying to hit.  This starts to beg the
+question, why do we have the attention stack at all?  What role are we going to want it
+to play?
+
+We should think about that.  What is the correct behavior for the attention stack?
+
+That said, we can also proceed without settling this issue.  The main goal is to see what
+we can learn in the position pi's.
+
+So next time we could focus on trying to learn a subset of the position weights.
+
+
+
+
+
 
 
 2. DONE: but the outputs don't look right (normalization is wrong) So needs further investigation
