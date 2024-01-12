@@ -61,59 +61,65 @@ class HyperParameters:
         print("Constructing some weights for perturbation test")
 
         if self.perturbation_test_encoder_token or all_weights_override:
-            self.encoder_token_pi_weights = torch.full((self.num_layers, self.num_positions, self.vocab_size, self.layer_width), WEAK)
-            self.encoder_token_pi_weights[0][0][0][0] = self.strong  # big in layer 0, left column
-            self.encoder_token_pi_weights[0][0][3][1] = self.strong  # small in layer 0, right column
-            self.encoder_token_pi_weights[1][1][1][0] = self.strong  # cat in layer 1, left column
-            self.encoder_token_pi_weights[1][1][4][1] = self.strong  # dog in layer 1, right column
+            self.encoder_token_pi_weights = torch.full((self.num_layers, self.num_positions, self.vocab_size, self.layer_width), self.weak)
+            self.encoder_token_pi_weights[0][0][3][0] = self.strong  # small in layer 0, left column
+            self.encoder_token_pi_weights[1][1][4][0] = self.strong  # dog in layer 1, left column
+            # self.encoder_token_pi_weights[0][0][0][1] = self.strong  # small in layer 0, right column
+            # self.encoder_token_pi_weights[1][1][1][1] = self.strong  # dog in layer 1, right column
         if self.perturbation_test_decoder_token or all_weights_override:
-            self.decoder_token_pi_weights = torch.full((self.num_layers, self.num_positions, self.vocab_size, self.layer_width), WEAK)
-            self.decoder_token_pi_weights[0][0][0][0] = self.strong  # big in layer 0, left column
-            self.decoder_token_pi_weights[0][0][3][1] = self.strong  # small in layer 0, right column
-            self.decoder_token_pi_weights[1][1][1][0] = self.strong  # cat in layer 1, left column
-            self.decoder_token_pi_weights[1][1][4][1] = self.strong  # dog in layer 1, right column
+            self.decoder_token_pi_weights = torch.full((self.num_layers, self.num_positions, self.vocab_size, self.layer_width), self.weak)
+            self.decoder_token_pi_weights[0][0][3][0] = self.strong  # small in layer 0, left column
+            self.decoder_token_pi_weights[1][1][4][0] = self.strong  # dog in layer 1, left column
+            # self.decoder_token_pi_weights[0][0][3][1] = self.strong  # big in layer 0, right column
+            # self.decoder_token_pi_weights[1][1][4][1] = self.strong  # cat in layer 1, right column
+        if self.perturbation_test_encoder_position or all_weights_override:
+            self.encoder_position_pi_weights = torch.full((self.num_layers, self.num_positions, self.layer_width), self.weak)
+            # Set the position weights to diagonal activations in both layers of the encoder
+            self.encoder_position_pi_weights[0][0][0] = self.strong  # small in layer 0, position 0, left column
+            self.encoder_position_pi_weights[1][1][0] = self.strong  # dog in layer 1, position 1, left column
+            # self.encoder_position_pi_weights[0][0][1] = self.strong
+            # self.encoder_position_pi_weights[1][1][1] = self.strong
+        if self.perturbation_test_decoder_position or all_weights_override:
+            self.decoder_position_pi_weights = torch.full((self.num_layers, self.num_positions, self.layer_width), self.weak)
+            # Set the position weights to diagonal activations in both layers of the decoder
+            self.decoder_position_pi_weights[0][0][0] = self.strong  # small in layer 0, position 0, left column
+            self.decoder_position_pi_weights[1][1][0] = self.strong  # dog in layer 1, position 1, left column
+            # self.decoder_position_pi_weights[0][0][1] = self.strong
+            # self.decoder_position_pi_weights[1][1][1] = self.strong
+
         if self.perturbation_test_encoder_attention or all_weights_override:
-            self.encoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), WEAK)
-            # Set the layer_0 attention weights to 0.5
-            self.encoder_attention_pi_weights[0][0][0] = self.strong / 2
-            self.encoder_attention_pi_weights[0][1][0] = self.strong / 2
-            self.encoder_attention_pi_weights[0][0][1] = self.strong / 2
-            self.encoder_attention_pi_weights[0][1][1] = self.strong / 2
+            self.encoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), self.weak)
+            # Set the layer_0 straight connection weights to strong and leave the cross connection weights at 0
+            self.encoder_attention_pi_weights[0][0][0] = self.strong
+            # self.encoder_attention_pi_weights[0][1][0] = self.strong / 2
+            # self.encoder_attention_pi_weights[0][0][1] = self.strong / 2
+            # self.encoder_attention_pi_weights[0][1][1] = self.strong
+            # self.encoder_attention_pi_weights[0][2][2] = self.strong
+
             # Set the layer_1 straight connection weights to strong and leave the cross connection weights at 0
             self.encoder_attention_pi_weights[1][0][0] = self.strong
-            self.encoder_attention_pi_weights[1][1][1] = self.strong
+            # self.encoder_attention_pi_weights[1][1][1] = self.strong
+            # self.encoder_attention_pi_weights[1][2][2] = self.strong
         if self.perturbation_test_decoder_attention or all_weights_override:
-            self.decoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), WEAK)
+            self.decoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), self.weak)
             # Set the layer_0 attention weights to 0.5
-            self.decoder_attention_pi_weights[0][0][0] = self.strong / 2
-            self.decoder_attention_pi_weights[0][1][0] = self.strong / 2
-            self.decoder_attention_pi_weights[0][0][1] = self.strong / 2
-            self.decoder_attention_pi_weights[0][1][1] = self.strong / 2
+            self.decoder_attention_pi_weights[0][0][0] = self.strong
+            # self.decoder_attention_pi_weights[0][1][0] = self.strong / 2
+            # self.decoder_attention_pi_weights[0][0][1] = self.strong / 2
+            # self.decoder_attention_pi_weights[0][1][1] = self.strong
+            # self.decoder_attention_pi_weights[0][2][2] = self.strong
             # Set the layer_1 straight connection weights to strong and leave the cross connection weights at 0
             self.decoder_attention_pi_weights[1][0][0] = self.strong
-            self.decoder_attention_pi_weights[1][1][1] = self.strong
-        if self.perturbation_test_encoder_position or all_weights_override:
-            self.encoder_position_pi_weights = torch.full((self.num_layers, self.num_positions, self.layer_width), WEAK)
-            # Set the position weights to diagonal activations in both layers of the encoder
-            self.encoder_position_pi_weights[0][0][0] = self.strong
-            self.encoder_position_pi_weights[0][0][1] = self.strong
-            self.encoder_position_pi_weights[1][1][0] = self.strong
-            self.encoder_position_pi_weights[1][1][1] = self.strong
-        if self.perturbation_test_decoder_position or all_weights_override:
-            self.decoder_position_pi_weights = torch.full((self.num_layers, self.num_positions, self.layer_width), WEAK)
-            # Set the position weights to diagonal activations in both layers of the decoder
-            self.decoder_position_pi_weights[0][0][0] = self.strong
-            self.decoder_position_pi_weights[0][0][1] = self.strong
-            self.decoder_position_pi_weights[1][1][0] = self.strong
-            self.decoder_position_pi_weights[1][1][1] = self.strong
+            # self.decoder_attention_pi_weights[1][1][1] = self.strong
+            # self.decoder_attention_pi_weights[1][2][2] = self.strong
 
     def construct_weights(self):
         # FIXME: update with position
         raise NotImplementedError("construct_weights() is not implemented with the new position pi")
-        self.encoder_token_pi_weights = torch.full((self.num_layers, self.vocab_size, self.layer_width), WEAK)
-        self.decoder_token_pi_weights = torch.full((self.num_layers, self.vocab_size, self.layer_width), WEAK)
-        self.encoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), WEAK)
-        self.decoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), WEAK)
+        self.encoder_token_pi_weights = torch.full((self.num_layers, self.vocab_size, self.layer_width), self.weak)
+        self.decoder_token_pi_weights = torch.full((self.num_layers, self.vocab_size, self.layer_width), self.weak)
+        self.encoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), self.weak)
+        self.decoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), self.weak)
 
         self.encoder_token_pi_weights[1][0][0] = self.strong  # cat in layer 0, left column
         self.encoder_token_pi_weights[1][3][1] = self.strong  # dog in layer 0, right column
