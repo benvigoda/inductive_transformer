@@ -197,9 +197,12 @@ def format_into_pred_truth_table(model, vocab, preds, truths, inputs, attention_
                             row[attention_index] = format_attention_tensor(attention_output[k][:, lw])
                 table.append(row)
                 row = [None] * num_cols
-            add_output_to_row(preds, attention_preds, f"pred layer {n}")
-            add_output_to_row(truths, attention_truths, f"truth layer {n}")
-            add_output_to_row(inputs, attention_inputs, f"input layer {n}")
+            if preds:
+                add_output_to_row(preds, attention_preds, f"pred layer {n}")
+            if truths:
+                add_output_to_row(truths, attention_truths, f"truth layer {n}")
+            if inputs:
+                add_output_to_row(inputs, attention_inputs, f"input layer {n}")
     return table
 
 
