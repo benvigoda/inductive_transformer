@@ -1,5 +1,16 @@
 '''
 # Project Plan:
+
+TODO: 
+
+DONE: weights code and printing look good
+
+We need to make sure the input is correct in code and in printing
+
+Then hopefully our output of inference will be good
+
+
+
 TODO:
 The code does not converge
 

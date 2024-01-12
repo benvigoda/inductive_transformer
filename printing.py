@@ -54,28 +54,28 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
     # token_prob_tensors are the training inputs
     prompt_preds = []  # Store the predictions from each prompt_tensor
     encoder_attention_pi_weights = torch.stack([
-        normalize_weights(model.encoder_layer_0.encoder_attention_pi.weights),
-        normalize_weights(model.encoder_layer_1.encoder_attention_pi.weights),
+        normalize_weights(model.encoder_layer_0.encoder_attention_pi.weights, dim=0),
+        normalize_weights(model.encoder_layer_1.encoder_attention_pi.weights, dim=0),
     ], dim=0)
     encoder_token_pi_weights = torch.stack([
         normalize_weights(model.encoder_layer_0.encoder_token_pi.weights),
         normalize_weights(model.encoder_layer_1.encoder_token_pi.weights),
     ], dim=0)
     encoder_position_pi_weights = torch.stack([
-        normalize_weights(model.encoder_layer_0.encoder_position_pi.weights),
-        normalize_weights(model.encoder_layer_1.encoder_position_pi.weights),
+        normalize_weights(model.encoder_layer_0.encoder_position_pi.weights, dim=0),
+        normalize_weights(model.encoder_layer_1.encoder_position_pi.weights, dim=0),
     ], dim=0)
     decoder_attention_pi_weights = torch.stack([
-        normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights),
-        normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights),
+        normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights, dim=0),
+        normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights, dim=0),
     ], dim=0)
     decoder_token_pi_weights = torch.stack([
         normalize_weights(model.decoder_layer_0.decoder_token_pi.weights),
         normalize_weights(model.decoder_layer_1.decoder_token_pi.weights),
     ], dim=0)
     decoder_position_pi_weights = torch.stack([
-        normalize_weights(model.decoder_layer_0.decoder_position_pi.weights),
-        normalize_weights(model.decoder_layer_1.decoder_position_pi.weights),
+        normalize_weights(model.decoder_layer_0.decoder_position_pi.weights, dim=0),
+        normalize_weights(model.decoder_layer_1.decoder_position_pi.weights, dim=0),
     ], dim=0)
     for sheet_number, prompt_tensor in enumerate(prompt_tensors):
         # write activations
