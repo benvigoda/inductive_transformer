@@ -27,7 +27,9 @@ We should think about that.  What is the correct behavior for the attention stac
 That said, we can also proceed without settling this issue.  The main goal is to see what
 we can learn in the position pi's.
 
-So next time we could focus on trying to learn a subset of the position weights.
+So next time we could focus on trying to learn one layer of position weights in the decoder.
+
+Fix printing for inference
 
 
 

@@ -288,6 +288,7 @@ def parse_args():
     parser.add_argument("--silence_google_sheet", help="Whether to output to google sheet", action="store_true")
     parser.add_argument("--use_gpu", help="Whether to run on a GPU if available", action="store_true")
     parser.add_argument("--silence_matplot", help="Whether to output matplotlib plots", action="store_true")
+    parser.add_argument("--inference_match_training_data", help="Whether to match training data when running inference (instead of using the inference text)", action="store_true")
     return parser.parse_args()
 
 
@@ -300,8 +301,7 @@ def main():
     prob_tensors = ProbTensors(data=data, layer_width=args.layer_width)
     prob_tensors.to(device)
     training_data = prob_tensors.format_training_data(num_layers=args.num_layers, device=device)
-    inference_match_training = True  # Toggle to match training data or not
-    if inference_match_training:
+    if args.inference_match_training_data:  # Toggle to match training data or not
         prompt_tensors = [input_training for input_training, _ in training_data]
     else:
         prompt_tensors = prob_tensors.make_inference_prompt_tensors(num_layers=args.num_layers)
@@ -385,15 +385,15 @@ def main():
     # Inference:
     elif prompt_tensors is not None:
         model.eval()  # set the model to inference mode
-        # printing.send_to_google_sheet(
-        #     prompt_tensors,
-        #     preds=None,
-        #     truths=None,
-        #     token_prob_tensors=None,
-        #     model=model,
-        #     attention_input=prob_tensors.attention_input,
-        #     vocab=data.vocab,
-        # )
+        printing.send_to_google_sheet(
+            prompt_tensors,
+            preds=None,
+            truths=None,
+            token_prob_tensors=None,
+            model=model,
+            attention_input=prob_tensors.attention_input,
+            vocab=data.vocab,
+        )
     else:
         print("No inference prompt tensors found, so no inference will be run")
 
