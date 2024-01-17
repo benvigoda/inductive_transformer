@@ -32,7 +32,7 @@ class EncoderTokenPi(nn.Module):
         prob_weights = self.relu(self.weights) + 1e-9
         # NOTE: we decided not to normalize the weights (it shouldn't matter)
         # prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)
-        prob_weights = custom_normalize(prob_weights, dim=0)
+        # prob_weights = custom_normalize(prob_weights, dim=0)
 
         # element-wise product of weight vector and token vector for each column in the layer
         rho = prob_weights * t
@@ -43,7 +43,7 @@ class EncoderTokenPi(nn.Module):
         # after summing it is size = (num_positions, 1, layer_width)
         rho = rho.squeeze(dim=1)
         # and now it will just be size = (num_positions, layer_width)
-        rho = custom_normalize(rho, dim=1)
+        # rho = custom_normalize(rho, dim=1)
 
         self.rho = rho
         return rho  # rho is categorical

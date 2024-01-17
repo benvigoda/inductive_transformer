@@ -36,7 +36,7 @@ class DecoderAttentionPi(nn.Module):
         # each categorical will be normalized, not to 1, but to the y value at this lw
         # an easy way to do this is to normalize the prob weights in advance in dim=0
         # prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)
-        prob_weights = custom_normalize(prob_weights, dim=0)
+        # prob_weights = custom_normalize(prob_weights, dim=0)
 
         # and then since y comes in as categorical of size (1, layer_width)
         assert y.shape == (1, self.layer_width)

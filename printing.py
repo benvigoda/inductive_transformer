@@ -18,11 +18,19 @@ def format_prob_vocab(prob_outputs, vocab):
     to the list of formatted tuples linking each prob to it's corresponding
     token, sorted from highest prob to lowest
     """
-    # Pair each prob with it's corresponding token string in the vocab
-    prob_token_pairs = [(round(x.item() * 100) / 100, v) for x, v in zip(prob_outputs, vocab)]
-    # Sort from highest probability to lowest, so we have the most likely token on top
-    prob_token_pairs.sort(key=lambda x: x[0], reverse=True)
-    prob_token_pairs_str = "\n".join([str(pw) for pw in prob_token_pairs])
+    try:
+        # Pair each prob with it's corresponding token string in the vocab
+        prob_token_pairs = [(round(x.item() * 100) / 100, v) for x, v in zip(prob_outputs, vocab)]
+        # Sort from highest probability to lowest, so we have the most likely token on top
+        prob_token_pairs.sort(key=lambda x: x[0], reverse=True)
+        prob_token_pairs_str = "\n".join([str(pw) for pw in prob_token_pairs])
+    except Exception as e:
+        print("ERROR IN format_prob_vocab:", e)
+        print("prob_outputs.shape", prob_outputs.shape)
+        print("vocab.shape", len(vocab))
+        print("vocab", vocab)
+        print("prob_outputs", prob_outputs)
+        prob_token_pairs_str = "NA"
     return prob_token_pairs_str
 
 
@@ -114,6 +122,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
     # So, for now, we just keep them empty
     attention_preds = [torch.empty(attention_input.shape) for _ in range(len(prompt_tensors))]
     attention_truths = [torch.empty(attention_input.shape) for _ in range(len(prompt_tensors))]
+    attention_inputs = [attention_input for _ in range(len(prompt_tensors))]
     ############################
     # With test data sentences running through inference
     # Print the input, pred, and truth (same as input) for each activation:
@@ -121,16 +130,18 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
         model=model,
         vocab=vocab,
         preds=prompt_preds,
-        truths=truths,
+        truths=[truths[i] for i in range(len(prompt_tensors))] if truths is not None else None,
         inputs=prompt_tensors,
         attention_preds=attention_preds,
         attention_truths=attention_truths,
-        attention_inputs=[attention_input for _ in range(len(prompt_tensors))],
+        attention_inputs=attention_inputs,
         title="test prediction versus truth",
     )
     print("inference_input_pred")
     output_to_sheet(res_pred_truth_input, "inference_input_pred")
-
+    attention_preds = [torch.empty(attention_input.shape) for _ in range(len(preds))] if preds is not None else None
+    attention_truths = [torch.empty(attention_input.shape) for _ in range(len(preds))] if preds is not None else None
+    attention_inputs = [attention_input for _ in range(len(preds))] if preds is not None else None
     if preds is not None and truths is not None and token_prob_tensors is not None:
         res_pred_truth_input = format_into_pred_truth_table(
             model=model,
@@ -140,7 +151,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
             inputs=token_prob_tensors,
             attention_preds=attention_preds,
             attention_truths=attention_truths,
-            attention_inputs=[attention_input for _ in range(len(prompt_tensors))],
+            attention_inputs=attention_inputs,
             title="training prediction versus truth"
         )
         print("training_input_pred_truth")
@@ -169,7 +180,6 @@ def format_into_pred_truth_table(model, vocab, preds, truths, inputs, attention_
     row = [None] * num_cols
     row[0] = title
     table.append(row)
-
     for k in range(num_sentences):
         row = [None] * num_cols
         row[1] = f"sentence {k}"
@@ -197,11 +207,11 @@ def format_into_pred_truth_table(model, vocab, preds, truths, inputs, attention_
                             row[attention_index] = format_attention_tensor(attention_output[k][:, lw])
                 table.append(row)
                 row = [None] * num_cols
-            if preds:
+            if preds is not None and preds != []:
                 add_output_to_row(preds, attention_preds, f"pred layer {n}")
-            if truths:
+            if truths is not None and preds != []:
                 add_output_to_row(truths, attention_truths, f"truth layer {n}")
-            if inputs:
+            if inputs is not None and preds != []:
                 add_output_to_row(inputs, attention_inputs, f"input layer {n}")
     return table
 
