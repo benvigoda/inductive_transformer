@@ -34,7 +34,7 @@ class DecoderTokenPi(nn.Module):
         # each categorical will be normalized, not to 1, but to the x value at this lw
         # an easy way to do this is to normalize the prob weights in advance in dim=0
         # prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)
-        prob_weights = custom_normalize(prob_weights, dim=0)
+        # prob_weights = custom_normalize(prob_weights, dim=0)
 
         # rho = custom_normalize(rho, dim=1)  #FIXME: do we want this? We already do it in the decoder_position_pi
 

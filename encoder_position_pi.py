@@ -48,7 +48,7 @@ class EncoderPositionPi(nn.Module):
     def forward(self, rho):
         assert rho.shape == (self.num_positions, self.layer_width)
         # we need to normalize rho
-        rho = custom_normalize(rho, dim=0)
+        # rho = custom_normalize(rho, dim=0)
         self.rho = rho
 
         prob_weights = self.relu(self.weights) + 1e-9  # FIXME? Do we need the 1e-9?

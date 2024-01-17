@@ -32,7 +32,7 @@ class EncoderAttentionPi(nn.Module):
         prob_weights = self.relu(self.weights) + 1e-9
         # NOTE: we decided not to normalize the weights (it shouldn't matter)
         # prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)
-        prob_weights = custom_normalize(prob_weights, dim=0)
+        # prob_weights = custom_normalize(prob_weights, dim=0)
 
         # element-wise product of weight vector and token vector for each column in the layer
         y = prob_weights * v
