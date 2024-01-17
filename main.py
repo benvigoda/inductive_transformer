@@ -315,7 +315,7 @@ def main():
         perturbation_test=args.perturbation_test,
     )
     model = Model(hyperparams=hyperparams)
-
+    import pdb; pdb.set_trace()
     # Train:
     if args.train:
         encoder_attention_pi_weights = []
