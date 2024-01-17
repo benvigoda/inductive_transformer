@@ -1,14 +1,25 @@
 '''
 # Project Plan:
 
-TODO: 
+TODO:
 
 DONE: weights code and printing look good
 
 We need to make sure the input is correct in code and in printing
 
+The input is shape num_layers=2, num_positions=2, vocab=6, layer_width=3
+
+we want little dog, on the left column, little in position=0, layer_num=0 and dog in position 1, layer_num=1
+let's make sure we are matching how we set the weights up
+small in num_layer=0, position=0, lw=0  # small is word #3 in the vocab
+dog in num_layer=1, position=1, lw=0  # dog is word #4
+
+input[0] == input[1] for both num_layers
+input[0][0][:][0] = [0, 0, 0, 1, 0, 0]
+
 Then hopefully our output of inference will be good
 
+TODO: Make the input match exactly the weights
 
 
 TODO:
