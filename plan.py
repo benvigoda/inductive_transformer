@@ -1,7 +1,7 @@
 '''
 # Project Plan:
 
-TODO:
+TODO: train on at least 3 sentences AND add an open-close universe layer to flatten the output so that it can properly symmetry break.
 
 DONE: weights code and printing look good
 
