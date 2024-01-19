@@ -55,6 +55,7 @@ def print_to_terminal(model, iter, epoch, start, loss_avg, toc, print_every):
 
 def normalize_weights(weights, dim=1):
     # return nn.functional.normalize(nn.ReLU()(weights), p=1, dim=0)
+    return weights  # WARNING: this is a hack to avoid normalizing the weights so the google-sheet really reflects reality
     return custom_normalize(nn.ReLU()(weights), dim=dim)
 
 
