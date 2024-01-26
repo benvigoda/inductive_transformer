@@ -194,6 +194,7 @@ def format_into_pred_truth_table(model, vocab, model_outputs, preds, truths, inp
         row[attention_start_index] = "attention"
         table.append(row)
         row = [None] * num_cols
+        row[0] = "Final model output (after summation)"
         for p_index in range(model.hyperparams.num_positions):
             row[1 + p_index] = format_prob_vocab(model_outputs[k][p_index], vocab)
         table.append(row)

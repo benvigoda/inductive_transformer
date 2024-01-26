@@ -401,6 +401,7 @@ def main():
             truths=None,
             token_prob_tensors=None,
             model=model,
+            model_outputs=None,
             attention_input=prob_tensors.attention_input,
             vocab=data.vocab,
         )

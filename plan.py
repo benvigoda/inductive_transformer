@@ -1,9 +1,14 @@
 '''
 # Project Plan:
 TODO:
+
+It is not outputting 1,0,0 it is outputting .3, .3, .3. 
+It could minimize its loss much better, why isn't it?
+Do a perturbation experiment where we set the weights.
+
 1. fix training (output seems wrong even when setting most of the weights by hand)
 DONE: 2. fix printing for attention columns in google-sheets
-3. fix printing to show final output and truth
+DONE. fix printing to show final output and truth
 
 
 DONE (a bit hacky): adjust the training and printing shapes of the output data based off the improvements made in model.py
