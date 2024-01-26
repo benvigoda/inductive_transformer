@@ -129,18 +129,17 @@ class ProbTensors():
         # We train on the expected_output to be the same as the input
         for window in self.windows:  # self.windows is a list of lists of vocab indices
             # For example, the first window is [0, 1] corresponding to "small dog"
-            training_element = torch.full((self.num_positions, self.vocab_size), self.improbable)
+            output_tensor = torch.full((self.num_positions, self.vocab_size), self.improbable)
             for word_position, vocab_index in enumerate(window):
-                training_element[word_position, vocab_index] = self.probable
+                output_tensor[word_position, vocab_index] = self.probable
             # Reshape the training element to be (1, num_positions, vocab_size, 1)
-            training_element = training_element.unsqueeze(0).unsqueeze(-1)
+            training_element = output_tensor.unsqueeze(0).unsqueeze(-1)
             # Make copies along the num_layer and layer_width dimensions
             input_tensor = training_element.repeat(self.num_layers, 1, 1, self.layer_width)
             assert input_tensor.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
             if self.print_flag:
                 print(f"format_training_data for window {window}:\n{input_tensor}")
                 print(f"input_tensor.size():\n{input_tensor.size()}")
-            output_tensor = input_tensor
             if device:
                 training_data.append(
                     (input_tensor.to(device), output_tensor.to(device))
