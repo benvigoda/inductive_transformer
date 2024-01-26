@@ -2,7 +2,7 @@
 # Project Plan:
 TODO:
 1. fix training (output seems wrong even when setting most of the weights by hand)
-2. fix printing for attention columns in google-sheets
+DONE: 2. fix printing for attention columns in google-sheets
 3. fix printing to show final output and truth
 
 

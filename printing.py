@@ -59,9 +59,10 @@ def normalize_weights(weights, dim=1):
     return custom_normalize(nn.ReLU()(weights), dim=dim)
 
 
-def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, model, attention_input, vocab):
+def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, model, model_outputs, attention_input, vocab):
     # token_prob_tensors are the training inputs
     prompt_preds = []  # Store the predictions from each prompt_tensor
+    model_output_prompts = []  # Store the model outputs from each prompt_tensor
     encoder_attention_pi_weights = torch.stack([
         normalize_weights(model.encoder_layer_0.encoder_attention_pi.weights, dim=0),
         normalize_weights(model.encoder_layer_1.encoder_attention_pi.weights, dim=0),
@@ -88,7 +89,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
     ], dim=0)
     for sheet_number, prompt_tensor in enumerate(prompt_tensors):
         # write activations
-        model_output = model(attention_input, prompt_tensor)
+        model_output_prompt = model(attention_input, prompt_tensor)
         y = model.decoder_pre_output_details  # Actually use the decoder_pre_output_details
         if sheet_number == 0:
             # write decoder weights
@@ -118,6 +119,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
             output_to_sheet(res_encoder_weights, "encoder_weights")
 
         prompt_preds.append(y)
+        model_output_prompts.append(model_output_prompt)
     ############################
     # TODO: We currently do not track the attention_preds and attention_truths
     # Should we?
@@ -131,6 +133,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
     res_pred_truth_input = format_into_pred_truth_table(
         model=model,
         vocab=vocab,
+        model_outputs=model_output_prompts,
         preds=prompt_preds,
         truths=[truths[i] for i in range(len(prompt_tensors))] if truths is not None else None,
         inputs=prompt_tensors,
@@ -148,6 +151,7 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
         res_pred_truth_input = format_into_pred_truth_table(
             model=model,
             vocab=vocab,
+            model_outputs=model_outputs,
             preds=preds,
             truths=truths,
             inputs=token_prob_tensors,
@@ -160,12 +164,11 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
         output_to_sheet(res_pred_truth_input, "training_input_pred_truth")
 
 
-def format_into_pred_truth_table(model, vocab, preds, truths, inputs, attention_preds, attention_truths, attention_inputs, title=""):
+def format_into_pred_truth_table(model, vocab, model_outputs, preds, truths, inputs, attention_preds, attention_truths, attention_inputs, title=""):
     # preds, truths, inputs are all size (num_sentences, num_layers, num_positions, vocab_size, layer_width)
     # attention_preds, attention_truths, attention_inputs are all size (num_sentences, layer_width, layer_width)
     # The num_layers index is collapsed as we are only training on the 0th output layer
     num_sentences = len(preds)
-
     # Initialize the table to None
     table = []
 
@@ -189,6 +192,10 @@ def format_into_pred_truth_table(model, vocab, preds, truths, inputs, attention_
         row = [None] * num_cols
         row[token_start_index] = "token"
         row[attention_start_index] = "attention"
+        table.append(row)
+        row = [None] * num_cols
+        for p_index in range(model.hyperparams.num_positions):
+            row[1 + p_index] = format_prob_vocab(model_outputs[k][p_index], vocab)
         table.append(row)
         row = [None] * num_cols
         for n in range(model.hyperparams.num_layers):

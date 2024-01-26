@@ -134,6 +134,7 @@ def train_model(
     preds = torch.stack(preds_list, 0)
     output_print_tensors = torch.stack(output_print_list, 0)
     assert output_print_tensors.shape == (batch_size, model.num_layers, model.hyperparams.num_positions, model.hyperparams.vocab_size, model.hyperparams.layer_width)
+    assert preds.shape == (batch_size, model.hyperparams.num_positions, model.hyperparams.vocab_size)
     assert truths.shape == (batch_size, model.hyperparams.num_positions, model.hyperparams.vocab_size)
     assert truths.shape == preds.shape
     initial_loss = criterion(preds, truths)
@@ -206,6 +207,7 @@ def train_model(
                             truths=truths,
                             token_prob_tensors=token_prob_tensors,
                             model=model,
+                            model_outputs=preds,
                             attention_input=attention_input,
                             vocab=vocab,
                         )
