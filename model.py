@@ -27,6 +27,7 @@ class Model(nn.Module):
         # This can then be easily accessed for printing
         self.encoder_output = tuple()
         self.decoder_output = tuple()
+        self.decoder_pre_output_details = tuple()
 
     # two layer model
     def forward(self, z_input, t):
@@ -57,6 +58,7 @@ class Model(nn.Module):
         assert t_decode_layer_1.shape == (self.num_positions, self.vocab_size, self.layer_width)
 
         self.encoder_output = (z1_encode, z2_encode)
+        self.decoder_pre_output_details = torch.stack([t_decode_layer_0, t_decode_layer_1], dim=0)
         # this sum performs the open-to-closed universe for the decoder
         # FIXME: could move this to its own file and generalize for num_layers > 2
         self.decoder_output = t_decode_layer_0 + t_decode_layer_1

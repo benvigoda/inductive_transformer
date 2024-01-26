@@ -88,7 +88,8 @@ def send_to_google_sheet(prompt_tensors, preds, truths, token_prob_tensors, mode
     ], dim=0)
     for sheet_number, prompt_tensor in enumerate(prompt_tensors):
         # write activations
-        y = model(attention_input, prompt_tensor)
+        # y = model(attention_input, prompt_tensor)
+        y = model.decoder_pre_output_details  # Actually use the decoder_pre_output_details
         if sheet_number == 0:
             # write decoder weights
             res_decoder_weights = format_into_table(
@@ -210,8 +211,8 @@ def format_into_pred_truth_table(model, vocab, preds, truths, inputs, attention_
                 row = [None] * num_cols
             if preds is not None and preds != []:
                 add_output_to_row(preds, attention_preds, f"pred layer {n}")
-            if truths is not None and preds != []:
-                add_output_to_row(truths, attention_truths, f"truth layer {n}")
+            # if truths is not None and preds != []:
+            #     add_output_to_row(truths, attention_truths, f"truth layer {n}")
             if inputs is not None and preds != []:
                 add_output_to_row(inputs, attention_inputs, f"input layer {n}")
     return table
