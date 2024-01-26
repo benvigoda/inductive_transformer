@@ -124,7 +124,16 @@ def train_model(
     # Get the initial loss by running the model on the first batch
     token_prob_tensors = training_input[0: batch_size]
     truths = torch.stack(training_output[0: batch_size], 0)
-    preds = torch.stack([model(attention_input, text_window) for text_window in token_prob_tensors], 0)
+    preds_list = []
+    output_print_list = []
+    for text_window in token_prob_tensors:
+        model_output = model(attention_input, text_window)
+        preds_list.append(model_output)
+        output_print_list.append(model.decoder_pre_output_details)
+
+    preds = torch.stack(preds_list, 0)
+    output_print_tensors = torch.stack(output_print_list, 0)
+    assert output_print_tensors.shape == (batch_size, model.num_layers, model.hyperparams.num_positions, model.hyperparams.vocab_size, model.hyperparams.layer_width)
     assert truths.shape == (batch_size, model.hyperparams.num_positions, model.hyperparams.vocab_size)
     assert truths.shape == preds.shape
     initial_loss = criterion(preds, truths)
@@ -193,7 +202,7 @@ def train_model(
                     if output_to_google_sheet:
                         printing.send_to_google_sheet(
                             prompt_tensors=prompt_tensors,
-                            preds=preds,
+                            preds=output_print_tensors,
                             truths=truths,
                             token_prob_tensors=token_prob_tensors,
                             model=model,

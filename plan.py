@@ -1,7 +1,12 @@
 '''
 # Project Plan:
+TODO:
+1. fix training (output seems wrong even when setting most of the weights by hand)
+2. fix printing for attention columns in google-sheets
+3. fix printing to show final output and truth
 
-TODO: adjust the training and printing shapes of the output data based off the improvements made in model.py
+
+DONE (a bit hacky): adjust the training and printing shapes of the output data based off the improvements made in model.py
 which now sum on num_layer and layer_width (so the output is now shape (num_positions, vocab_size))
 
 TODO: train on at least 3 sentences AND add an open-close universe layer to flatten the output so that it can properly symmetry break.
