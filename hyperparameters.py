@@ -5,8 +5,8 @@ from torch import Tensor  # type: ignore
 PERTURBATION_TEST_WEIGHTS_TO_LEARN: Dict = {
     'encoder_attention': False,
     'encoder_token': True,
-    'encoder_position': False,
-    'decoder_attention': False,
+    'encoder_position': True,
+    'decoder_attention': True,
     'decoder_token': True,
     'decoder_position': False,
 }  # Set to True to manually set weights. Set to False to learn weights
