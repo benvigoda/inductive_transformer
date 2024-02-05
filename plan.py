@@ -1,8 +1,21 @@
 '''
 # Project Plan:
+TODO: train on a larger dataset
+Setting all the weights manually shows that it is theoretically possible to reach 0 loss
+Setting all but the token weights for 2 sentences and layer_width=2 also shows that 0 loss can be reached
+Training on 4 sentences and layer_width=4 shows some decent progress, but not quite convergence.
+It is quite possible that we simply do not have sufficient data to train on and cleanly converge.
+But I don't know that there are any clear mathematical/algorithmic bugs in the code that would explain the lack of convergence.
+It is possible we need to mess around with the learning rate and gradient descent algorithm like AdamOptimizer, but that's a separate problem
+we should try and address with scale.
+So, I think the next step is to just throw a lot of data at this and see if we can make it converge.
+
+TODO: One last thing maybe to do before that would be to finally generalize the code to more than 2 num_layers.
+
+
 DONE: THE TEST WEIGHTS WERE IMPROPERLY SET FOR 2 SENTENCES
 
-It is not outputting 1,0,0 it is outputting .3, .3, .3. 
+It is not outputting 1,0,0 it is outputting .3, .3, .3.
 It could minimize its loss much better, why isn't it?
 Do a perturbation experiment where we set the weights.
 

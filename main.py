@@ -344,7 +344,7 @@ def main():
                 train_data=training_data,
                 print_every=20,
                 batch_size=len(prob_tensors.windows),  # Batch all the different sentences together
-                lr=1e-3,
+                lr=1e-4,
                 vocab=data.vocab,
                 prompt_tensors=prompt_tensors,
                 output_to_google_sheet=not args.silence_google_sheet,
