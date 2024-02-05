@@ -59,7 +59,8 @@ class HyperParameters:
     def construct_some_test_weights(self, all_weights_override: bool = False):
         # Don't set the token weights, we can just let training take care of them
         print("Constructing some weights for perturbation test")
-        sentences = "small dog. big cat."
+        # sentences = "small dog. big cat."
+        sentences = "small dog. big cat. medium bird. large elephant."
         if sentences == "small dog. big cat.":
             if self.perturbation_test_encoder_token or all_weights_override:
                 self.encoder_token_pi_weights = torch.full((self.num_layers, self.num_positions, self.vocab_size, self.layer_width), self.weak)
@@ -109,3 +110,96 @@ class HyperParameters:
                 # Set the layer_0 straight connection weights to strong and leave the cross connection weights at 0
                 self.decoder_attention_pi_weights[0][0][0] = self.strong
                 self.decoder_attention_pi_weights[0][1][1] = self.strong
+        if sentences == "small dog. big cat. medium bird. large elephant.":
+            if self.perturbation_test_encoder_token or all_weights_override:
+                self.encoder_token_pi_weights = torch.full((self.num_layers, self.num_positions, self.vocab_size, self.layer_width), self.weak)
+                self.encoder_token_pi_weights[0][0][3][0] = self.strong  # small in layer 0, left column
+                self.encoder_token_pi_weights[1][1][4][0] = self.strong  # dog in layer 1, left column
+                self.encoder_token_pi_weights[0][0][0][1] = self.strong
+                self.encoder_token_pi_weights[1][1][1][1] = self.strong
+                self.encoder_token_pi_weights[0][0][5][2] = self.strong  # medium
+                self.encoder_token_pi_weights[1][1][6][2] = self.strong  # bird
+                self.encoder_token_pi_weights[0][0][7][3] = self.strong  # large
+                self.encoder_token_pi_weights[1][1][8][3] = self.strong  # elephant
+            if self.perturbation_test_decoder_token or all_weights_override:
+                self.decoder_token_pi_weights = torch.full((self.num_layers, self.num_positions, self.vocab_size, self.layer_width), self.weak)
+                self.decoder_token_pi_weights[0][0][3][0] = self.strong  # small in layer 0, left column
+                self.decoder_token_pi_weights[1][1][4][0] = self.strong  # dog in layer 1, left column
+                self.decoder_token_pi_weights[0][0][0][1] = self.strong  # big in layer 0, right column
+                self.decoder_token_pi_weights[1][1][1][1] = self.strong  # cat in layer 1, right column
+                self.decoder_token_pi_weights[0][0][5][2] = self.strong  # medium
+                self.decoder_token_pi_weights[1][1][6][2] = self.strong  # bird
+                self.decoder_token_pi_weights[0][0][7][3] = self.strong  # large
+                self.decoder_token_pi_weights[1][1][8][3] = self.strong  # elephant
+            if self.perturbation_test_encoder_position or all_weights_override:
+                self.encoder_position_pi_weights = torch.full((self.num_layers, self.num_positions, self.layer_width), self.weak)
+                # Set the position weights to diagonal activations in both layers of the encoder
+                self.encoder_position_pi_weights[0][0][0] = self.strong  # small in layer 0, position 0, left column
+                self.encoder_position_pi_weights[0][0][1] = self.strong
+                self.encoder_position_pi_weights[0][0][2] = self.strong
+                self.encoder_position_pi_weights[0][0][3] = self.strong
+                self.encoder_position_pi_weights[1][1][0] = self.strong  # dog in layer 1, position 1, left column
+                self.encoder_position_pi_weights[1][1][1] = self.strong
+                self.encoder_position_pi_weights[1][1][2] = self.strong
+                self.encoder_position_pi_weights[1][1][3] = self.strong
+            if self.perturbation_test_decoder_position or all_weights_override:
+                self.decoder_position_pi_weights = torch.full((self.num_layers, self.num_positions, self.layer_width), self.weak)
+                # Set the position weights to diagonal activations in both layers of the decoder
+                self.decoder_position_pi_weights[0][0][0] = self.strong  # small in layer 0, position 0, left column
+                self.decoder_position_pi_weights[0][0][1] = self.strong
+                self.decoder_position_pi_weights[0][0][2] = self.strong
+                self.decoder_position_pi_weights[0][0][3] = self.strong
+                self.decoder_position_pi_weights[1][1][0] = self.strong  # dog in layer 1, position 1, left column
+                self.decoder_position_pi_weights[1][1][1] = self.strong
+                self.decoder_position_pi_weights[1][1][2] = self.strong
+                self.decoder_position_pi_weights[1][1][3] = self.strong
+
+            if self.perturbation_test_encoder_attention or all_weights_override:
+                self.encoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), self.weak)
+                # Set the layer_0 straight connection weights to strong and leave the cross connection weights at 0
+                self.encoder_attention_pi_weights[0][0][0] = self.strong / 4
+                self.encoder_attention_pi_weights[0][0][1] = self.strong / 4
+                self.encoder_attention_pi_weights[0][0][2] = self.strong / 4
+                self.encoder_attention_pi_weights[0][0][3] = self.strong / 4
+                self.encoder_attention_pi_weights[0][1][0] = self.strong / 4
+                self.encoder_attention_pi_weights[0][1][1] = self.strong / 4
+                self.encoder_attention_pi_weights[0][1][2] = self.strong / 4
+                self.encoder_attention_pi_weights[0][1][3] = self.strong / 4
+                self.encoder_attention_pi_weights[0][2][0] = self.strong / 4
+                self.encoder_attention_pi_weights[0][2][1] = self.strong / 4
+                self.encoder_attention_pi_weights[0][2][2] = self.strong / 4
+                self.encoder_attention_pi_weights[0][2][3] = self.strong / 4
+                self.encoder_attention_pi_weights[0][3][0] = self.strong / 4
+                self.encoder_attention_pi_weights[0][3][1] = self.strong / 4
+                self.encoder_attention_pi_weights[0][3][2] = self.strong / 4
+                self.encoder_attention_pi_weights[0][3][3] = self.strong / 4
+
+                # Set the layer_1 straight connection weights to strong and leave the cross connection weights at 0
+                self.encoder_attention_pi_weights[1][0][0] = self.strong
+                self.encoder_attention_pi_weights[1][1][1] = self.strong
+                self.encoder_attention_pi_weights[1][2][2] = self.strong
+                self.encoder_attention_pi_weights[1][3][3] = self.strong
+            if self.perturbation_test_decoder_attention or all_weights_override:
+                self.decoder_attention_pi_weights = torch.full((self.num_layers, self.layer_width, self.layer_width), self.weak)
+                # Set the layer_1 attention weights to 0.5
+                self.decoder_attention_pi_weights[1][0][0] = self.strong / 4
+                self.decoder_attention_pi_weights[1][0][1] = self.strong / 4
+                self.decoder_attention_pi_weights[1][0][2] = self.strong / 4
+                self.decoder_attention_pi_weights[1][0][3] = self.strong / 4
+                self.decoder_attention_pi_weights[1][1][0] = self.strong / 4
+                self.decoder_attention_pi_weights[1][1][1] = self.strong / 4
+                self.decoder_attention_pi_weights[1][1][2] = self.strong / 4
+                self.decoder_attention_pi_weights[1][1][3] = self.strong / 4
+                self.decoder_attention_pi_weights[1][2][0] = self.strong / 4
+                self.decoder_attention_pi_weights[1][2][1] = self.strong / 4
+                self.decoder_attention_pi_weights[1][2][2] = self.strong / 4
+                self.decoder_attention_pi_weights[1][2][3] = self.strong / 4
+                self.decoder_attention_pi_weights[1][3][0] = self.strong / 4
+                self.decoder_attention_pi_weights[1][3][1] = self.strong / 4
+                self.decoder_attention_pi_weights[1][3][2] = self.strong / 4
+                self.decoder_attention_pi_weights[1][3][3] = self.strong / 4
+                # Set the layer_0 straight connection weights to strong and leave the cross connection weights at 0
+                self.decoder_attention_pi_weights[0][0][0] = self.strong
+                self.decoder_attention_pi_weights[0][1][1] = self.strong
+                self.decoder_attention_pi_weights[0][2][2] = self.strong
+                self.decoder_attention_pi_weights[0][3][3] = self.strong
