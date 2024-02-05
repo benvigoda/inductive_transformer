@@ -1,6 +1,6 @@
 '''
 # Project Plan:
-TODO:
+DONE: THE TEST WEIGHTS WERE IMPROPERLY SET FOR 2 SENTENCES
 
 It is not outputting 1,0,0 it is outputting .3, .3, .3. 
 It could minimize its loss much better, why isn't it?
