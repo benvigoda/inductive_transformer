@@ -12,7 +12,15 @@ class DecoderPositionPi(nn.Module):
         self.layer_width = self.hyperparams.layer_width
         self.active_layer = active_layer
         if hyperparams.decoder_position_pi_weights is not None:
-            self.weights = hyperparams.decoder_position_pi_weights[active_layer]
+            initial_weights = hyperparams.decoder_position_pi_weights[active_layer]
+            if hyperparams.init_perturb_weights:
+                random_noise = torch.randn(self.num_positions, self.layer_width) * 0.1
+                self.weights = nn.Parameter(
+                    torch.zeros(self.num_positions, self.layer_width) + initial_weights + random_noise,
+                    requires_grad=True
+                )
+            else:
+                self.weights = initial_weights
         else:
             self.weights = nn.Parameter(torch.ones(self.num_positions, self.layer_width), requires_grad=True)
             nn.init.normal_(self.weights, mean=1, std=0.1)
