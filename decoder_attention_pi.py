@@ -11,7 +11,15 @@ class DecoderAttentionPi(nn.Module):
         self.layer_width = self.hyperparams.layer_width
         self.active_layer = active_layer
         if hyperparams.decoder_attention_pi_weights is not None:
-            self.weights = hyperparams.decoder_attention_pi_weights[active_layer]
+            initial_weights = hyperparams.decoder_attention_pi_weights[active_layer]
+            if hyperparams.init_perturb_weights:
+                random_noise = torch.randn(self.layer_width, self.layer_width) * 0.1
+                self.weights = nn.Parameter(
+                    torch.zeros(self.layer_width, self.layer_width) + initial_weights + random_noise,
+                    requires_grad=True
+                )
+            else:
+                self.weights = initial_weights
         else:
             # self.weights[below_lw][above_lw], where below in the decoder is towards the output, and above is from the encoder
             if self.active_layer == 0:

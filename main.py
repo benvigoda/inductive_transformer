@@ -292,6 +292,9 @@ def parse_args():
     parser.add_argument(
         "--perturbation_test", help="Whether to use only some weights for perturbation", action="store_true",
     )
+    parser.add_argument(
+        "--init_perturb_weights", help="Whether to use test weights as starting points rather than setting them permanently", action="store_true",
+    )
     parser.add_argument("--layer_width", type=int, default=4)
     parser.add_argument("--num_data_points", type=int, default=100)
     parser.add_argument("--num_layers", type=int, default=3)
@@ -324,6 +327,7 @@ def main():
         num_layers=args.num_layers,
         weight_test=args.weight_test,
         perturbation_test=args.perturbation_test,
+        init_perturb_weights=args.init_perturb_weights,
     )
     model = Model(hyperparams=hyperparams)
     # Train:

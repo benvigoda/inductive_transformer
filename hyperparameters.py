@@ -3,13 +3,13 @@ import torch  # type: ignore
 from torch import Tensor  # type: ignore
 
 PERTURBATION_TEST_WEIGHTS_TO_LEARN: Dict = {
-    'encoder_attention': False,
+    'encoder_attention': True,
     'encoder_token': True,
     'encoder_position': True,
     'decoder_attention': True,
     'decoder_token': True,
-    'decoder_position': False,
-}  # Set to True to manually set weights. Set to False to learn weights
+    'decoder_position': True,
+}  # Set to True to manually set weights. Set to False to learn weights from scratch
 
 STRONG = 1.  # Amplify the signal
 WEAK = 1e-9  # Dampen the signal
@@ -25,6 +25,7 @@ class HyperParameters:
             unittest: bool = False,
             weight_test: bool = False,
             perturbation_test: bool = False,
+            init_perturb_weights: bool = False,
     ):
         self.layer_width = layer_width
         self.vocab_size = vocab_size
@@ -33,6 +34,10 @@ class HyperParameters:
         self.unittest = unittest
         self.weight_test = weight_test
         self.perturbation_test = perturbation_test
+        # Set `init_perturb_weights` to True to actually perturb the set test weights
+        # and let the system learn
+        # The PERTURBATION_TEST_WEIGHTS_TO_LEARN weights are thus only initial weights
+        self.init_perturb_weights = init_perturb_weights
 
         self.perturbation_test_encoder_attention = PERTURBATION_TEST_WEIGHTS_TO_LEARN['encoder_attention']
         self.perturbation_test_encoder_token = PERTURBATION_TEST_WEIGHTS_TO_LEARN['encoder_token']
