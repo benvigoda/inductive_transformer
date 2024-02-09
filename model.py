@@ -15,6 +15,7 @@ class Model(nn.Module):
         self.layer_width = hyperparams.layer_width
         self.vocab_size = hyperparams.vocab_size
         self.num_layers = hyperparams.num_layers
+        self.num_positions = hyperparams.num_positions
 
         self.encoder_layer_0 = EncoderLayer(hyperparams=hyperparams, active_layer=0)
         self.encoder_layer_1 = EncoderLayer(hyperparams=hyperparams, active_layer=1)
@@ -26,10 +27,11 @@ class Model(nn.Module):
         # This can then be easily accessed for printing
         self.encoder_output = tuple()
         self.decoder_output = tuple()
+        self.decoder_pre_output_details = tuple()
 
     # two layer model
     def forward(self, z_input, t):
-        assert t.shape == (self.num_layers, self.vocab_size, self.layer_width)
+        assert t.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
         assert z_input.shape == (2, self.layer_width)
         if t[1].numel() == 0:
             z1_encode = z_input
@@ -52,8 +54,16 @@ class Model(nn.Module):
         t_decode_layer_1, z1_decode = self.decoder_layer_1(z2_decode, x_encoder_1, y_encoder_1)
         t_decode_layer_0, z0_decode = self.decoder_layer_0(z1_decode, x_encoder_0, y_encoder_0)
 
+        assert t_decode_layer_0.shape == (self.num_positions, self.vocab_size, self.layer_width)
+        assert t_decode_layer_1.shape == (self.num_positions, self.vocab_size, self.layer_width)
+
         self.encoder_output = (z1_encode, z2_encode)
-        self.decoder_output = torch.cat([t_decode_layer_0, t_decode_layer_1], dim=0)
+        self.decoder_pre_output_details = torch.stack([t_decode_layer_0, t_decode_layer_1], dim=0)
+        # this sum performs the open-to-closed universe for the decoder
+        # FIXME: could move this to its own file and generalize for num_layers > 2
+        self.decoder_output = t_decode_layer_0 + t_decode_layer_1
+        self.decoder_output = torch.sum(self.decoder_output, dim=-1)
+        assert self.decoder_output.shape == (self.num_positions, self.vocab_size)
         return self.decoder_output
 
     '''

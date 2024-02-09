@@ -52,6 +52,10 @@ def get_model_weights(model):
         normalize_weights(model.encoder_layer_0.encoder_attention_pi.weights),
         normalize_weights(model.encoder_layer_1.encoder_attention_pi.weights),
     ], dim=0)
+    encoder_position_pi_weights = torch.stack([
+        normalize_weights(model.encoder_layer_0.encoder_position_pi.weights),
+        normalize_weights(model.encoder_layer_1.encoder_position_pi.weights),
+    ], dim=0)
     encoder_token_pi_weights = torch.stack([
         normalize_weights(model.encoder_layer_0.encoder_token_pi.weights),
         normalize_weights(model.encoder_layer_1.encoder_token_pi.weights),
@@ -60,14 +64,20 @@ def get_model_weights(model):
         normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights),
         normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights),
     ], dim=0)
+    decoder_position_pi_weights = torch.stack([
+        normalize_weights(model.decoder_layer_0.decoder_position_pi.weights),
+        normalize_weights(model.decoder_layer_1.decoder_position_pi.weights),
+    ], dim=0)
     decoder_token_pi_weights = torch.stack([
         normalize_weights(model.decoder_layer_0.decoder_token_pi.weights),
         normalize_weights(model.decoder_layer_1.decoder_token_pi.weights),
     ], dim=0)
     model_weights = {
         'encoder_attention_pi_weights': encoder_attention_pi_weights,
+        'encoder_position_pi_weights': encoder_position_pi_weights,
         'encoder_token_pi_weights': encoder_token_pi_weights,
         'decoder_attention_pi_weights': decoder_attention_pi_weights,
+        'decoder_position_pi_weights': decoder_position_pi_weights,
         'decoder_token_pi_weights': decoder_token_pi_weights,
     }
     return model_weights
@@ -114,7 +124,19 @@ def train_model(
     # Get the initial loss by running the model on the first batch
     token_prob_tensors = training_input[0: batch_size]
     truths = torch.stack(training_output[0: batch_size], 0)
-    preds = torch.stack([model(attention_input, text_window) for text_window in token_prob_tensors], 0)
+    preds_list = []
+    output_print_list = []
+    for text_window in token_prob_tensors:
+        model_output = model(attention_input, text_window)
+        preds_list.append(model_output)
+        output_print_list.append(model.decoder_pre_output_details)
+
+    preds = torch.stack(preds_list, 0)
+    output_print_tensors = torch.stack(output_print_list, 0)
+    assert output_print_tensors.shape == (batch_size, model.num_layers, model.hyperparams.num_positions, model.hyperparams.vocab_size, model.hyperparams.layer_width)
+    assert preds.shape == (batch_size, model.hyperparams.num_positions, model.hyperparams.vocab_size)
+    assert truths.shape == (batch_size, model.hyperparams.num_positions, model.hyperparams.vocab_size)
+    assert truths.shape == preds.shape
     initial_loss = criterion(preds, truths)
     print("Initial loss:", initial_loss)
 
@@ -181,10 +203,11 @@ def train_model(
                     if output_to_google_sheet:
                         printing.send_to_google_sheet(
                             prompt_tensors=prompt_tensors,
-                            preds=preds,
+                            preds=output_print_tensors,
                             truths=truths,
                             token_prob_tensors=token_prob_tensors,
                             model=model,
+                            model_outputs=preds,
                             attention_input=attention_input,
                             vocab=vocab,
                         )
@@ -196,7 +219,8 @@ def train_model(
                 model.encoder_layer_0.encoder_universe.u
                 model.encoder_layer_0.encoder_bernoulli_categorical.v
                 model.encoder_layer_0.encoder_attention_pi.y
-                model.encoder_layer_0.encoder_token_pi.x
+                model.encoder_layer_0.encoder_position_pi.x
+                model.encoder_layer_0.encoder_token_pi.rho
                 # model.encoder_layer_0.encoder_categorical_bernoulli.bernoulli
                 model.encoder_layer_0.encoder_and.z
                 model.encoder_layer_0.encoder_and.y
@@ -205,7 +229,8 @@ def train_model(
                 model.encoder_layer_1.encoder_universe.u
                 model.encoder_layer_1.encoder_bernoulli_categorical.v
                 model.encoder_layer_1.encoder_attention_pi.y
-                model.encoder_layer_1.encoder_token_pi.x
+                model.encoder_layer_1.encoder_position_pi.x
+                model.encoder_layer_1.encoder_token_pi.rho
                 # model.encoder_layer_1.encoder_categorical_bernoulli.bernoulli
                 model.encoder_layer_1.encoder_and.z
                 model.encoder_layer_1.encoder_and.y
@@ -217,6 +242,7 @@ def train_model(
                 # model.decoder_layer_1.decoder_bernoulli_categorical.categorical
                 model.decoder_layer_1.decoder_attention_pi.y
                 model.decoder_layer_1.decoder_attention_pi.v
+                model.decoder_layer_1.decoder_position_pi.rho
                 model.decoder_layer_1.decoder_token_pi.t
                 model.decoder_layer_1.decoder_categorical_bernoulli.u
                 model.decoder_layer_1.decoder_universe.z
@@ -227,7 +253,8 @@ def train_model(
                 model.decoder_layer_0.decoder_attention_pi.y
                 model.decoder_layer_0.decoder_attention_pi.y  # input
                 model.decoder_layer_0.decoder_attention_pi.v  # output
-                model.decoder_layer_0.decoder_token_pi.x  # input
+                model.decoder_layer_0.decoder_token_pi.rho  # input
+                model.decoder_layer_0.decoder_position_pi.rho
                 model.decoder_layer_0.decoder_token_pi.t  # output
                 model.decoder_layer_0.decoder_categorical_bernoulli.u
                 model.decoder_layer_0.decoder_universe.z
@@ -265,6 +292,9 @@ def parse_args():
     parser.add_argument(
         "--perturbation_test", help="Whether to use only some weights for perturbation", action="store_true",
     )
+    parser.add_argument(
+        "--init_perturb_weights", help="Whether to use test weights as starting points rather than setting them permanently", action="store_true",
+    )
     parser.add_argument("--layer_width", type=int, default=4)
     parser.add_argument("--num_data_points", type=int, default=100)
     parser.add_argument("--num_layers", type=int, default=3)
@@ -272,6 +302,7 @@ def parse_args():
     parser.add_argument("--silence_google_sheet", help="Whether to output to google sheet", action="store_true")
     parser.add_argument("--use_gpu", help="Whether to run on a GPU if available", action="store_true")
     parser.add_argument("--silence_matplot", help="Whether to output matplotlib plots", action="store_true")
+    parser.add_argument("--inference_match_training_data", help="Whether to match training data when running inference (instead of using the inference text)", action="store_true")
     return parser.parse_args()
 
 
@@ -284,8 +315,7 @@ def main():
     prob_tensors = ProbTensors(data=data, layer_width=args.layer_width)
     prob_tensors.to(device)
     training_data = prob_tensors.format_training_data(num_layers=args.num_layers, device=device)
-    inference_match_training = True  # Toggle to match training data or not
-    if inference_match_training:
+    if args.inference_match_training_data:  # Toggle to match training data or not
         prompt_tensors = [input_training for input_training, _ in training_data]
     else:
         prompt_tensors = prob_tensors.make_inference_prompt_tensors(num_layers=args.num_layers)
@@ -293,17 +323,20 @@ def main():
     hyperparams = HyperParameters(
         layer_width=args.layer_width,
         vocab_size=data.vocab_size,
+        num_positions=prob_tensors.num_positions,
         num_layers=args.num_layers,
         weight_test=args.weight_test,
         perturbation_test=args.perturbation_test,
+        init_perturb_weights=args.init_perturb_weights,
     )
     model = Model(hyperparams=hyperparams)
-
     # Train:
     if args.train:
         encoder_attention_pi_weights = []
+        encoder_position_pi_weights = []
         encoder_token_pi_weights = []
         decoder_attention_pi_weights = []
+        decoder_position_pi_weights = []
         decoder_token_pi_weights = []
         for i in range(args.num_train):
             print(f"Training run {i + 1} of {args.num_train}")
@@ -315,7 +348,7 @@ def main():
                 train_data=training_data,
                 print_every=20,
                 batch_size=len(prob_tensors.windows),  # Batch all the different sentences together
-                lr=1e-3,
+                lr=1e-4,
                 vocab=data.vocab,
                 prompt_tensors=prompt_tensors,
                 output_to_google_sheet=not args.silence_google_sheet,
@@ -324,19 +357,27 @@ def main():
             )
             model_weights = get_model_weights(model=model)
             encoder_attention_pi_weights.append(model_weights['encoder_attention_pi_weights'])
+            encoder_position_pi_weights.append(model_weights['encoder_position_pi_weights'])
             encoder_token_pi_weights.append(model_weights['encoder_token_pi_weights'])
             decoder_attention_pi_weights.append(model_weights['decoder_attention_pi_weights'])
+            decoder_position_pi_weights.append(model_weights['decoder_position_pi_weights'])
             decoder_token_pi_weights.append(model_weights['decoder_token_pi_weights'])
         # Stack-up the lists to make tensors we can run stats on
         encoder_attention_pi_weights = torch.stack(encoder_attention_pi_weights, dim=0)
+        encoder_position_pi_weights = torch.stack(encoder_position_pi_weights, dim=0)
         encoder_token_pi_weights = torch.stack(encoder_token_pi_weights, dim=0)
         decoder_attention_pi_weights = torch.stack(decoder_attention_pi_weights, dim=0)
+        decoder_position_pi_weights = torch.stack(decoder_position_pi_weights, dim=0)
         decoder_token_pi_weights = torch.stack(decoder_token_pi_weights, dim=0)
         # Print the mean and standard deviation of the weights
         print("encoder_attention_pi_weights:")
         print(encoder_attention_pi_weights.mean(dim=0))
         print("+/-")
         print(encoder_attention_pi_weights.std(dim=0))
+        print("encoder_position_pi_weights:")
+        print(encoder_position_pi_weights.mean(dim=0))
+        print("+/-")
+        print(encoder_position_pi_weights.std(dim=0))
         print("encoder_token_pi_weights:")
         print(encoder_token_pi_weights.mean(dim=0))
         print("+/-")
@@ -345,6 +386,10 @@ def main():
         print(decoder_attention_pi_weights.mean(dim=0))
         print("+/-")
         print(decoder_attention_pi_weights.std(dim=0))
+        print("decoder_position_pi_weights:")
+        print(decoder_position_pi_weights.mean(dim=0))
+        print("+/-")
+        print(decoder_position_pi_weights.std(dim=0))
         print("decoder_token_pi_weights:")
         print(decoder_token_pi_weights.mean(dim=0))
         print("+/-")
@@ -354,15 +399,16 @@ def main():
     # Inference:
     elif prompt_tensors is not None:
         model.eval()  # set the model to inference mode
-        # printing.send_to_google_sheet(
-        #     prompt_tensors,
-        #     preds=None,
-        #     truths=None,
-        #     token_prob_tensors=None,
-        #     model=model,
-        #     attention_input=prob_tensors.attention_input,
-        #     vocab=data.vocab,
-        # )
+        printing.send_to_google_sheet(
+            prompt_tensors,
+            preds=None,
+            truths=None,
+            token_prob_tensors=None,
+            model=model,
+            model_outputs=None,
+            attention_input=prob_tensors.attention_input,
+            vocab=data.vocab,
+        )
     else:
         print("No inference prompt tensors found, so no inference will be run")
 

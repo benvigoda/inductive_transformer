@@ -13,7 +13,15 @@ class EncoderAttentionPi(nn.Module):
         self.active_layer = active_layer
 
         if hyperparams.encoder_attention_pi_weights is not None:
-            self.weights = hyperparams.encoder_attention_pi_weights[active_layer]
+            initial_weights = hyperparams.encoder_attention_pi_weights[active_layer]
+            if hyperparams.init_perturb_weights:
+                random_noise = torch.randn(self.layer_width, self.layer_width) * 0.1
+                self.weights = nn.Parameter(
+                    torch.zeros(self.layer_width, self.layer_width) + initial_weights + random_noise,
+                    requires_grad=True
+                )
+            else:
+                self.weights = initial_weights
         else:
             if self.active_layer == 0:
                 self.weights = nn.Parameter(torch.ones(self.layer_width, self.layer_width), requires_grad=True)
@@ -32,7 +40,7 @@ class EncoderAttentionPi(nn.Module):
         prob_weights = self.relu(self.weights) + 1e-9
         # NOTE: we decided not to normalize the weights (it shouldn't matter)
         # prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)
-        prob_weights = custom_normalize(prob_weights, dim=0)
+        prob_weights = custom_normalize(prob_weights, dim=1)
 
         # element-wise product of weight vector and token vector for each column in the layer
         y = prob_weights * v
