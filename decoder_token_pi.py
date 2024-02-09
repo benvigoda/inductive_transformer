@@ -8,22 +8,32 @@ class DecoderTokenPi(nn.Module):
     def __init__(self, hyperparams, active_layer: int):
         super(DecoderTokenPi, self).__init__()
         self.hyperparams = hyperparams
+        self.num_positions = self.hyperparams.num_positions
         self.layer_width = self.hyperparams.layer_width
         self.vocab_size = self.hyperparams.vocab_size
         self.active_layer = active_layer
         if hyperparams.decoder_token_pi_weights is not None:
-            self.weights = hyperparams.decoder_token_pi_weights[active_layer]
+            initial_weights = hyperparams.decoder_token_pi_weights[active_layer]
+            if hyperparams.init_perturb_weights:
+                random_noise = torch.randn(self.num_positions, self.vocab_size, self.layer_width) * 0.1
+                self.weights = nn.Parameter(
+                    torch.zeros(self.num_positions, self.vocab_size, self.layer_width) + initial_weights + random_noise,
+                    requires_grad=True
+                )
+            else:
+                self.weights = initial_weights
         else:
-            self.weights = nn.Parameter(torch.ones(self.vocab_size, self.layer_width), requires_grad=True)
+            self.weights = nn.Parameter(torch.ones(self.num_positions, self.vocab_size, self.layer_width), requires_grad=True)
             nn.init.normal_(self.weights, mean=1, std=0.1)
         self.relu = nn.ReLU()
 
-        self.x = None
+        self.rho = None
         self.t = None
 
-    def forward(self, x):
-        self.x = x
-        # we expect x to be already normalized categorical
+    def forward(self, rho):
+        self.rho = rho
+        assert rho.shape == (self.num_positions, self.layer_width)
+        # we expect rho to be already normalized categorical
 
         prob_weights = self.relu(self.weights) + 1e-9
 
@@ -32,18 +42,18 @@ class DecoderTokenPi(nn.Module):
         # each categorical will be normalized, not to 1, but to the x value at this lw
         # an easy way to do this is to normalize the prob weights in advance in dim=0
         # prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)
-        prob_weights = custom_normalize(prob_weights, dim=0)
+        prob_weights = custom_normalize(prob_weights, dim=1)
 
-        # and then since x comes in as categorical of size (1, layer_width)
-        assert x.shape == (1, self.layer_width)
-        # x = nn.functional.normalize(x, p=1, dim=1)
-        x = custom_normalize(x, dim=1)
+        # rho = custom_normalize(rho, dim=1)  #FIXME: do we want this? We already do it in the decoder_position_pi
+
         # we want to stack x in dim = 0
-        x_stacked = torch.cat([x for vs in range(self.vocab_size)], dim=0)
+        rho_stacked = torch.stack([rho for vs in range(self.vocab_size)], dim=1)
 
         # element-wise product of weight tensor and y_stacked
-        t = prob_weights * x_stacked
-        assert t.shape == (self.vocab_size, self.layer_width)
+        t = prob_weights * rho_stacked
+        assert t.shape == (self.num_positions, self.vocab_size, self.layer_width)
+
+        # t = custom_normalize(t, dim=1)
 
         self.t = t
         return t

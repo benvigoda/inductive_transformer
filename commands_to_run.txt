@@ -10,3 +10,9 @@ python main.py training_text.txt inference_text.txt --weight_test --num_layer 2 
 
 To run perturbation tests and only set some of the weights, add the --perturbation flag and keep the --train flag
 python main.py training_text.txt inference_text.txt --perturbation --train --num_layer 2 --layer_width 2 --num_data_points 1000
+
+
+To get printing to google-sheet working you need to add a credentials.json file in the google_sheets_api directory.
+The credentials.json should be in LastPass
+The first time you try to print to google-sheet it will ask for some permissions and add a token.json file to the same directory
+So long as this token.json file is there, you won't need to approve the permissions again.

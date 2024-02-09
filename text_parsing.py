@@ -3,7 +3,7 @@ import pathlib
 import string
 import re
 import torch  # type: ignore
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 PROBABLE = 1 - 1e-9
 IMPROBABLE = 1e-5
@@ -91,6 +91,7 @@ class ProbTensors():
         self.layer_width = layer_width
         self.vocab_size = data.vocab_size
         self.num_positions = data.window_size
+        self.num_layers = data.window_size
         self.windows = data.training_windows
         self.improbable = IMPROBABLE
         self.probable = PROBABLE
@@ -98,63 +99,54 @@ class ProbTensors():
 
         self.attention_input = self.make_attention_input()
 
-    def format_training_data(self, num_layers: int = 1, device = None):
+    def format_training_data(self, num_layers: int = 1, device=None) -> List[Tuple[torch.Tensor, torch.Tensor]]:
         '''
-        EXAMPLE:
+        EXAMPLE INPUT DATA:
+        2 sentences "small dog. big cat." in the `text_training.txt` file
+        vocab: ['small', 'dog', '.', 'big', 'cat', '<PADDING>'],
 
-        2 sentences "the dog. a cat." in the `text_training.txt` file
-        vocab: ['the', 'dog', '.', 'cat', 'a', '<PADDING>'],
+        Input data size = (num_positions, vocab_size, layer_width)
+        However we will have the same values for every value of lw (which indexes layer_width),
+        so our example is just size = (num_positions=2, vocab_size=5)
+        We will also have the same values in every layer.
 
-        sentence 1 "the dog":
-        layer 1 left = "the" = (0., -5., -5., -5., -5., -5.)
-        layer 0 left  = "dog" = (-5, 0., -5., -5., -5., -5.)
-        layer 1 right = NA = (-5., -5., -5., -5., -5., -5.)
-        layer 0 right = NA = (-5., -5., -5., -5., -5., -5.)
+       FOR THE DECODER AND ENCODER
+        "small dog" = [0, 1]
+        [
+            (0., -5., -5., -5., -5., -5.)
+            (-5., 0., -5., -5., -5., -5.)
+        ]
+        "big cat" = [3, 4]
+        [
+            (-5., -5., -5., 0., -5., -5.)
+            (-5., -5., -5., -5., 0., -5.)
+        ]
 
-        sentence 2 "a cat":
-        layer 1 left = NA = (-5., -5., -5., -5., -5., -5.)
-        layer 0 left = NA = (-5., -5., -5., -5., -5., -5.)
-        layer 1 right = "a" = (-5, -5., -5., -5., 0., -5.)
-        layer 0 right  = "cat" = (-5, -5., -5., 0., -5., -5.)
+        Repeat this same data for every l (indexing layer) and lw (indexing layer width)
         '''
         training_data = []  # A list of tuples of (input, expected_output)
         # Each window corresponds to a sentence. Each sentence is processed individually and appended to the training data
-        # We put one sentence per "column" across the layer_width
-        for lw, window in enumerate(self.windows):
-            if lw >= self.layer_width:
-                print(f"WARNING: there are more sentences than layer width. Cannot place more than {self.layer_width} sentences.")
-                effective_lw = lw % self.layer_width
-            training_output = torch.full((num_layers, self.layer_width, self.vocab_size), self.improbable)
-            training_input = torch.full((num_layers, self.layer_width, self.vocab_size), self.improbable)
-            # Within a given column, we put one word in each layer
-            for word_position_and_layer_num, vocab_index in enumerate(window):
-                if word_position_and_layer_num >= num_layers:
-                    print(f"WARNING: there are more words in the sentence than num layers. Cannot place more than {num_layers} words.")
-                word_prob_tensor = torch.full((self.vocab_size, ), self.improbable)
-                word_prob_tensor[vocab_index] = self.probable
-                if lw >= self.layer_width:
-                    effective_lw = lw % self.layer_width + word_position_and_layer_num
-                    training_input[word_position_and_layer_num, effective_lw] = word_prob_tensor
-                    training_output[word_position_and_layer_num, effective_lw] = word_prob_tensor
-                else:
-                    training_input[word_position_and_layer_num, lw] = word_prob_tensor
-                    training_output[word_position_and_layer_num, lw] = word_prob_tensor
-            training_input = torch.transpose(training_input, 1, 2)
-            training_output = torch.transpose(training_output, 1, 2)
-            training_output_reshaped = torch.cat([to for to in training_output], dim=0)
-            # Add the z_decode_0 output to the training output data
-            full_training_output = torch.cat([training_output_reshaped], dim=0)
-            assert full_training_output.shape == (num_layers*self.vocab_size, self.layer_width)
+        # We train on the expected_output to be the same as the input
+        for window in self.windows:  # self.windows is a list of lists of vocab indices
+            # For example, the first window is [0, 1] corresponding to "small dog"
+            output_tensor = torch.full((self.num_positions, self.vocab_size), self.improbable)
+            for word_position, vocab_index in enumerate(window):
+                output_tensor[word_position, vocab_index] = self.probable
+            # Reshape the training element to be (1, num_positions, vocab_size, 1)
+            training_element = output_tensor.unsqueeze(0).unsqueeze(-1)
+            # Make copies along the num_layer and layer_width dimensions
+            input_tensor = training_element.repeat(self.num_layers, 1, 1, self.layer_width)
+            assert input_tensor.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
             if self.print_flag:
-                print(f"word_prob_tensors/training_input in whole model for sentence #{lw + 1}:\n{training_input}")
-                print(f"training_input.size():\n{training_input.size()}")
+                print(f"format_training_data for window {window}:\n{input_tensor}")
+                print(f"input_tensor.size():\n{input_tensor.size()}")
             if device:
                 training_data.append(
-                    (training_input.to(device), full_training_output.to(device))
+                    (input_tensor.to(device), output_tensor.to(device))
                 )
             else:
                 training_data.append(
-                    (training_input, full_training_output)
+                    (input_tensor, output_tensor)
                 )
         return training_data
 
@@ -170,37 +162,22 @@ class ProbTensors():
         return attention_input
 
     def make_inference_prompt_tensors(self, num_layers: int = 1) -> List[torch.Tensor]:
-        prompt_tensors = []
-        empty_word_prob_tensor = torch.full((self.vocab_size, ), self.improbable)
-        empty_layer_prob_tensor = torch.empty((self.vocab_size, self.layer_width))
-        for window in self.data.inference_windows:
-            inference_word_prob_tensor = torch.full((self.vocab_size, ), self.improbable)
-            for index_of_probable_word in window:
-                inference_word_prob_tensor[index_of_probable_word] = self.probable
-            if window[0] == self.data.tokenizer_dict["big"]:
-                inference_word_prob_tensor_stacked = torch.stack([
-                    torch.stack([inference_word_prob_tensor, empty_word_prob_tensor], dim=1),  # Stack up on layer_width
-                    empty_layer_prob_tensor
-                ], dim=0)  # Stack up on num_layers
-            elif window[0] == self.data.tokenizer_dict["small"]:
-                inference_word_prob_tensor_stacked = torch.stack([
-                    torch.stack([empty_word_prob_tensor, inference_word_prob_tensor], dim=1),  # Stack up on layer_width
-                    empty_layer_prob_tensor,
-                ], dim=0)  # Stack up on num_layers
-            elif window[0] == self.data.tokenizer_dict["cat"]:
-                inference_word_prob_tensor_stacked = torch.stack([
-                    empty_layer_prob_tensor,
-                    torch.stack([inference_word_prob_tensor, empty_word_prob_tensor], dim=1),  # Stack up on layer_width
-                ], dim=0)  # Stack up on num_layers
-            elif window[0] == self.data.tokenizer_dict["dog"]:
-                inference_word_prob_tensor_stacked = torch.stack([
-                    empty_layer_prob_tensor,
-                    torch.stack([empty_word_prob_tensor, inference_word_prob_tensor], dim=1),  # Stack up on layer_width
-                ], dim=0)  # Stack up on num_layers
-
-            assert inference_word_prob_tensor_stacked.shape == (num_layers, self.vocab_size, self.layer_width)
-            prompt_tensors.append(inference_word_prob_tensor_stacked)
-        return prompt_tensors
+        inference_data = []  # A list of tuples of (input, expected_output)
+        # We train on the expected_output to be the same as the input
+        for window in self.data.inference_windows:  # self.windows is a list of lists of vocab indices
+            # For example, the first window is [0, 1] corresponding to "small dog"
+            inference_element = torch.full((self.num_positions, self.vocab_size), self.improbable)
+            for word_position, vocab_index in enumerate(window):
+                inference_element[word_position, vocab_index] = self.probable
+            # Reshape the training element to be (1, num_positions, vocab_size, 1)
+            inference_element = inference_element.unsqueeze(0).unsqueeze(-1)
+            # Make copies along the num_layer and layer_width dimensions
+            input_tensor = inference_element.repeat(self.num_layers, 1, 1, self.layer_width)
+            assert input_tensor.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
+            inference_data.append(
+                input_tensor
+            )
+        return inference_data
 
     def to(self, device):
         # TODO Are there other tensors that should be moved as well?
