@@ -19,3 +19,17 @@ def custom_normalize(tensor, dim=0, default_constant=0.5):
     result = torch.where(mask, torch.full_like(result, fill_value=default_constant), result)
 
     return result
+
+
+if __name__ == "__main__":
+    import time
+
+    n_iterations = 1_000_000
+
+    # python for loop
+    tensor = torch.ones((2, 2, 10, 2))
+    start = time.time()
+    for _ in range(n_iterations):
+        tensor = custom_normalize(tensor)
+    end = time.time()
+    print("python for loop:", end - start)
