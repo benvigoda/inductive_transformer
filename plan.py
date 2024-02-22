@@ -1,5 +1,13 @@
 '''
 # Project Plan:
+TODO:
+Understand why the loss seems to get stuck and why layer_width doesn't make any difference
+Make code more robust to longer data sets and adjust batch size and remove data duplication.
+
+DONE: made a larger dataset
+DONE: looked at running on GPU but it seems very slow. CPU should be faster for now.
+
+
 TODO: train on a larger dataset
 Setting all the weights manually shows that it is theoretically possible to reach 0 loss
 Setting all but the token weights for 2 sentences and layer_width=2 also shows that 0 loss can be reached
