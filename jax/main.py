@@ -4,6 +4,7 @@ import numpy as np
 from decoder_and import DecoderAnd
 from decoder_attention_pi import DecoderAttentionPi
 from decoder_bernoulli_categorical import DecoderBernoulliCategorical
+from decoder_categorical_bernoulli import DecoderCategoricalBernoulli
 from decoder_position_pi import DecoderPositionPi
 from decoder_token_pi import DecoderTokenPi
 from decoder_universe import DecoderUniverse
@@ -53,6 +54,15 @@ if __name__ == "__main__":
     categorical = decoder_categorical_bernoulli(bernoulli)
     print("bernoulli", bernoulli)
     print("categorical", categorical)
+    print("")
+
+    print("Decoder Categorical Bernoulli")
+    key, subkey = jax.random.split(key)
+    decoder_categorical_bernoulli = DecoderCategoricalBernoulli(layer_width=layer_width)
+    v = jax.random.normal(subkey, (layer_width, layer_width))
+    u = decoder_categorical_bernoulli(v)
+    print("v", v)
+    print("u", u)
     print("")
 
     print("Decoder Position Pi")
