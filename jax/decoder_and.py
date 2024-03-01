@@ -1,7 +1,6 @@
-import jax.numpy as jnp  # type: ignore
 from dataclasses import dataclass
-# from flax import linen as nn
 from helper_functions import custom_normalize
+import jax.numpy as jnp
 
 
 @dataclass
