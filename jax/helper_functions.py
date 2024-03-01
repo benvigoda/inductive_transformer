@@ -1,13 +1,13 @@
 import jax.numpy as jnp
 
 
-def custom_normalize(tensor, dim=0, default_constant=0.5):
+def custom_normalize(tensor, axis=0, default_constant=0.5):
     '''
-    dim is the dimension on which to normalize
+    axis is the dimension on which to normalize
     default_constant is the value to use when the sum is zero
     '''
-    # Compute the sum along dim=dim and keepdim=True to maintain the dimensions for broadcasting
-    sum_tensor = jnp.sum(tensor, axis=dim, keepdims=True)
+    # Compute the sum along axis=axis and keepdims=True to maintain the dimensions for broadcasting
+    sum_tensor = jnp.sum(tensor, axis=axis, keepdims=True)
 
     # Create a mask where the sum is zero
     mask = sum_tensor == 0
