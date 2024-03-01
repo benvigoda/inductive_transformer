@@ -8,6 +8,7 @@ from decoder_categorical_bernoulli import DecoderCategoricalBernoulli
 from decoder_position_pi import DecoderPositionPi
 from decoder_token_pi import DecoderTokenPi
 from decoder_universe import DecoderUniverse
+from decoder_layer import DecoderLayer
 
 
 if __name__ == "__main__":
@@ -98,4 +99,24 @@ if __name__ == "__main__":
     z = decoder_universe(u)
     print("u", u)
     print("z", z)
+    print("")
+
+    print("Decoder Layer")
+    key, subkey_0, subkey_1, subkey_2, subkey_3 = jax.random.split(key, 5)
+    decoder_layer = DecoderLayer(
+        layer_width=layer_width,
+        num_positions=num_positions,
+        vocab_size=vocab_size,
+    )
+    z_prime = jax.random.normal(subkey_0, (bernoulli_width, layer_width))
+    x_encoder = jax.random.normal(subkey_1, (bernoulli_width, layer_width))
+    y_encoder = jax.random.normal(subkey_2, (bernoulli_width, layer_width))
+    params = decoder_layer.init(subkey_3, z_prime, x_encoder, y_encoder)
+    x, y = decoder_layer.apply(params, z_prime, x_encoder, y_encoder)
+    print("params", params["params"])
+    print("z_prime", z_prime)
+    print("x_encoder", x_encoder)
+    print("y_encoder", y_encoder)
+    print("x", x)
+    print("y", y)
     print("")
