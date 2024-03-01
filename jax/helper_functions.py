@@ -1,7 +1,7 @@
 import jax.numpy as jnp
 
 
-def custom_normalize(tensor, axis=0, default_constant=0.5):
+def custom_normalize(tensor: jnp.ndarray, axis=0, default_constant=0.5) -> jnp.ndarray:
     '''
     axis is the dimension on which to normalize
     default_constant is the value to use when the sum is zero
