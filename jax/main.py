@@ -6,6 +6,7 @@ from decoder_attention_pi import DecoderAttentionPi
 from decoder_bernoulli_categorical import DecoderBernoulliCategorical
 from decoder_position_pi import DecoderPositionPi
 from decoder_token_pi import DecoderTokenPi
+from decoder_universe import DecoderUniverse
 
 
 if __name__ == "__main__":
@@ -78,4 +79,13 @@ if __name__ == "__main__":
     print("params", params["params"])
     print("rho", rho)
     print("t", t)
+    print("")
+
+    print("Decoder Universe")
+    key, subkey = jax.random.split(key)
+    decoder_universe = DecoderUniverse(layer_width=layer_width)
+    u = jax.random.normal(subkey, (2, layer_width, layer_width))
+    z = decoder_universe(u)
+    print("u", u)
+    print("z", z)
     print("")
