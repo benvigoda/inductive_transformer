@@ -32,13 +32,13 @@ class InputData():
         self.window_size = max(len(w) for w in self.training_windows + self.inference_windows)
 
         # Returns an ordered list of all the words that appear in the file
-        if print_vals:
-            print('INPUT DATA')
-            print(f'vocab_size: {self.vocab_size}')
-            print(f'vocab: {self.vocab}')
-            print(f'training sentences: {self.training_windows}')
-            print(f'inference sentences: {self.inference_windows}')
-            print(f'tokenizer_dict: {self.tokenizer_dict}')
+        # if print_vals:
+        #     print('INPUT DATA')
+        #     print(f'vocab_size: {self.vocab_size}')
+        #     print(f'vocab: {self.vocab}')
+        #     print(f'training sentences: {self.training_windows}')
+        #     print(f'inference sentences: {self.inference_windows}')
+        #     print(f'tokenizer_dict: {self.tokenizer_dict}')
 
     @staticmethod
     def clean(text: str) -> str:
@@ -137,9 +137,9 @@ class ProbTensors():
             # Make copies along the num_layer and layer_width dimensions
             input_tensor = training_element.repeat(self.num_layers, 1, 1, self.layer_width)
             assert input_tensor.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
-            if self.print_flag:
-                print(f"format_training_data for window {window}:\n{input_tensor}")
-                print(f"input_tensor.size():\n{input_tensor.size()}")
+            # if self.print_flag:
+            #     print(f"format_training_data for window {window}:\n{input_tensor}")
+            #     print(f"input_tensor.size():\n{input_tensor.size()}")
             if device:
                 training_data.append(
                     (input_tensor.to(device), output_tensor.to(device))
