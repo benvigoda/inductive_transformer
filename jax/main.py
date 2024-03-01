@@ -4,6 +4,7 @@ import numpy as np
 from decoder_and import DecoderAnd
 from decoder_attention_pi import DecoderAttentionPi
 from decoder_bernoulli_categorical import DecoderBernoulliCategorical
+from decoder_position_pi import DecoderPositionPi
 
 
 if __name__ == "__main__":
@@ -14,6 +15,7 @@ if __name__ == "__main__":
     print(f"seed: {seed}\n")
 
     bernoulli_width = 2
+    num_positions = 2
     layer_width = 2
 
     print("Decoder And")
@@ -48,4 +50,15 @@ if __name__ == "__main__":
     categorical = decoder_categorical_bernoulli(bernoulli)
     print("bernoulli", bernoulli)
     print("categorical", categorical)
+    print("")
+
+    print("Decoder Position Pi")
+    key, subkey_0, subkey_1 = jax.random.split(key, 3)
+    decoder_position = DecoderPositionPi(num_positions=num_positions, layer_width=layer_width)
+    x = jax.random.normal(subkey_0, (1, layer_width))
+    params = decoder_position.init(subkey_1, x)
+    rho = decoder_position.apply(params, x)
+    print("params", params["params"])
+    print("x", x)
+    print("rho", rho)
     print("")

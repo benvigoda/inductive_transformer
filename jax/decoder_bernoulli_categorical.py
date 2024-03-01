@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-import jax.numpy as jnp
 
 from helper_functions import custom_normalize
 

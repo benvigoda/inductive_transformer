@@ -29,7 +29,7 @@ class DecoderAttentionPi(nn.Module):
         # and then since y comes in as categorical of size (1, layer_width)
         y = custom_normalize(y, axis=1)
 
-        # element-wise product of weight tensor and y_stacked
+        # element-wise product of weight tensor and y
         v = prob_weights * y
         assert v.shape == (self.layer_width, self.layer_width)
         return v
