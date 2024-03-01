@@ -24,6 +24,10 @@ def custom_normalize(tensor, dim=0, default_constant=0.5):
 if __name__ == "__main__":
     import time
 
+    print(f"cuda is available: {torch.cuda.is_available()}")
+    print(f"device count: {torch.cuda.device_count()}")
+    print(f"current device: {torch.cuda.current_device()}")
+
     n_iterations = 1_000_000
 
     # python for loop

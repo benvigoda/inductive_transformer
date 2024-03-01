@@ -33,6 +33,7 @@ if __name__ == "__main__":
     n_iterations = 1_000_000
 
     # python for loop
+    """
     tensor = jnp.ones((2, 2, 10, 2))
     # custom_normalize(tensor) # run it once to compile the function
     start = time.time()
@@ -40,16 +41,21 @@ if __name__ == "__main__":
         tensor = custom_normalize(tensor)
     end = time.time()
     print("python for loop:", end - start)
+    """
 
     # vmap
-    # custom_normalize_vmap(tensor) # run it once to compile the function
+    print("making tensor")
     tensor = jnp.ones((n_iterations, 2, 2, 10, 2))
+    print("compiling")
+    custom_normalize_vmap(tensor) # run it once to compile the function
+    print("running")
     start = time.time()
     tensor = custom_normalize_vmap(tensor)
     end = time.time()
     print("vmap:", end - start)
 
     # jax for loop
+    """
     @jax.jit
     def custom_normalize_for_loop(tensor):
         return jax.lax.fori_loop(0, n_iterations, lambda i, x: custom_normalize(x), tensor)
@@ -60,3 +66,4 @@ if __name__ == "__main__":
     tensor = custom_normalize_for_loop(tensor)
     end = time.time()
     print("jax for loop:", end - start)
+    """
