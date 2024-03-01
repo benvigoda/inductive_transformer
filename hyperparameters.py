@@ -3,11 +3,11 @@ import torch  # type: ignore
 from torch import Tensor  # type: ignore
 
 PERTURBATION_TEST_WEIGHTS_TO_LEARN: Dict = {
-    'encoder_attention': True,
-    'encoder_token': True,
+    'encoder_attention': False,
+    'encoder_token': False,
     'encoder_position': True,
-    'decoder_attention': True,
-    'decoder_token': True,
+    'decoder_attention': False,
+    'decoder_token': False,
     'decoder_position': True,
 }  # Set to True to manually set weights. Set to False to learn weights from scratch
 
@@ -64,8 +64,8 @@ class HyperParameters:
     def construct_some_test_weights(self, all_weights_override: bool = False):
         # Don't set the token weights, we can just let training take care of them
         print("Constructing some weights for perturbation test")
-        # sentences = "small dog. big cat."
-        sentences = "small dog. big cat. medium bird. large elephant."
+        sentences = "small dog. big cat."
+        # sentences = "small dog. big cat. medium bird. large elephant."
         if sentences == "small dog. big cat.":
             if self.perturbation_test_encoder_token or all_weights_override:
                 self.encoder_token_pi_weights = torch.full((self.num_layers, self.num_positions, self.vocab_size, self.layer_width), self.weak)

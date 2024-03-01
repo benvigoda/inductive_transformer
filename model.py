@@ -63,6 +63,8 @@ class Model(nn.Module):
         # FIXME: could move this to its own file and generalize for num_layers > 2
         self.decoder_output = t_decode_layer_0 + t_decode_layer_1
         self.decoder_output = torch.sum(self.decoder_output, dim=-1)
+        # self.decoder_output = t_decode_layer_1
+        # self.decoder_output = self.decoder_output[:,:,0]
         assert self.decoder_output.shape == (self.num_positions, self.vocab_size)
         return self.decoder_output
 
