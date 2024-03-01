@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from helper_functions import custom_normalize
 import jax.numpy as jnp
+
+from helper_functions import custom_normalize
 
 
 @dataclass
@@ -75,39 +76,35 @@ class DecoderAnd:
             # x[1] = y_encoder[0] * z[0] + y_encoder[1] * z[1]
 
             y0_z0 = y_encoder[0] * z[0]
-            x = jnp.stack([
-                y0_z0 + y_encoder[1] * z[0],
-                y0_z0 + y_encoder[1] * z[1],
-            ])
+            x_0 = y0_z0 + y_encoder[1] * z[0]
+            x_1 = y0_z0 + y_encoder[1] * z[1]
+            x = jnp.stack([x_0, x_1])
 
             # torch
             # y[0] = x_encoder[0] * z[0] + x_encoder[1] * z[0]
             # y[1] = x_encoder[0] * z[0] + x_encoder[1] * z[1]
 
             x0_z0 = x_encoder[0] * z[0]
-            y = jnp.stack([
-                x0_z0 + x_encoder[1] * z[0],
-                x0_z0 + x_encoder[1] * z[1],
-            ])
+            y_0 = x0_z0 + x_encoder[1] * z[0]
+            y_1 = x0_z0 + x_encoder[1] * z[1]
+            y = jnp.stack([y_0, y_1])
 
         else:
             # torch
             # x[0] = z[0] + z[0]
             # x[1] = z[0] + z[1]
 
-            x = jnp.stack([
-                z[0] + z[0],
-                z[0] + z[1],
-            ])
+            x_0 = z[0] + z[0]
+            x_1 = z[0] + z[1]
+            x = jnp.stack([x_0, x_1])
 
             # torch
             # y[0] = z[0] + z[0]
             # y[1] = z[0] + z[1]
 
-            y = jnp.stack([
-                z[0] + z[0],
-                z[0] + z[1],
-            ])
+            y_0 = z[0] + z[0]
+            y_1 = z[0] + z[1]
+            y = jnp.stack([y_0, y_1])
 
         x = custom_normalize(x, axis=0)
         y = custom_normalize(y, axis=0)
