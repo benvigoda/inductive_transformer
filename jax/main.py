@@ -5,6 +5,7 @@ from decoder_and import DecoderAnd
 from decoder_attention_pi import DecoderAttentionPi
 from decoder_bernoulli_categorical import DecoderBernoulliCategorical
 from decoder_position_pi import DecoderPositionPi
+from decoder_token_pi import DecoderTokenPi
 
 
 if __name__ == "__main__":
@@ -16,6 +17,7 @@ if __name__ == "__main__":
 
     bernoulli_width = 2
     num_positions = 2
+    vocab_size = 4
     layer_width = 2
 
     print("Decoder And")
@@ -54,11 +56,26 @@ if __name__ == "__main__":
 
     print("Decoder Position Pi")
     key, subkey_0, subkey_1 = jax.random.split(key, 3)
-    decoder_position = DecoderPositionPi(num_positions=num_positions, layer_width=layer_width)
+    decoder_position_pi = DecoderPositionPi(
+        num_positions=num_positions, layer_width=layer_width
+    )
     x = jax.random.normal(subkey_0, (1, layer_width))
-    params = decoder_position.init(subkey_1, x)
-    rho = decoder_position.apply(params, x)
+    params = decoder_position_pi.init(subkey_1, x)
+    rho = decoder_position_pi.apply(params, x)
     print("params", params["params"])
     print("x", x)
     print("rho", rho)
+    print("")
+
+    print("Decoder Token Pi")
+    key, subkey_0, subkey_1 = jax.random.split(key, 3)
+    decoder_token_pi = DecoderTokenPi(
+        num_positions=num_positions, vocab_size=vocab_size, layer_width=layer_width
+    )
+    rho = jax.random.normal(subkey_0, (num_positions, layer_width))
+    params = decoder_token_pi.init(subkey_1, rho)
+    t = decoder_token_pi.apply(params, rho)
+    print("params", params["params"])
+    print("rho", rho)
+    print("t", t)
     print("")
