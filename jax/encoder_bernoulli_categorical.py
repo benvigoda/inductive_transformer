@@ -1,0 +1,26 @@
+from flax import linen as nn
+from typing import Callable
+import jax.numpy as jnp
+
+from helper_functions import custom_normalize
+
+
+class EncoderBernoulliCategorical(nn.Module):
+
+    @nn.compact
+    def __call__(self, u):
+
+        # there's four coins coming in
+        # to convert coins to categorical, it's always head divided by tails
+        # and then normalize the categoricals
+        # v[below_lw][above_lw] = u[heads][below_lw][above_lw] / u[tails][below_lw][above_lw]
+        
+        # FIXME: ERIK, IS THIS OKAY IN JAX?
+        v = u[1] / (u[0] + 1e-9)
+
+        # we want to normalize is the inputs to a specific pi_a, remember from the encoder universe factor:
+        # v[0][0] + v[1][0] = 1
+        # v[0][1] + v[1][1] = 1
+
+        v = custom_normalize(v, axis=0)
+        return v
