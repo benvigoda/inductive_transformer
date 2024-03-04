@@ -1,22 +1,23 @@
-from flax import linen as nn
-import jax.numpy as jnp
+from flax import linen as nn  # type: ignore
+import jax.numpy as jnp  # type: ignore
+from typing import Callable
 from helper_functions import custom_normalize
 
 
 class EncoderAttentionPi(nn.Module):
     vocab_size: int
     layer_width: int
-    hyperparams.
+    weight_init: Callable = nn.initializers.uniform(scale=1.0, dtype=jnp.float32)
 
     @nn.compact
     def __call__(self, v):
 
         assert v.shape == (self.layer_width, self.layer_width)
         # we expect v to be already normalized categorical
+        weights = self.param('weights', self.weight_init, (self.num_positions, self.layer_width))
+        prob_weights = nn.relu(weights) + 1e-9
 
-        prob_weights = nn.relu(self.weights) + 1e-9
-
-        prob_weights = custom_normalize(prob_weights, dim=1)
+        prob_weights = custom_normalize(prob_weights, axis=1)
 
         # element-wise product of weight vector and token vector for each column in the layer
         y = prob_weights * v

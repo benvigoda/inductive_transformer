@@ -1,6 +1,6 @@
-from flax import linen as nn
+from flax import linen as nn  # type: ignore
 from typing import Callable
-import jax.numpy as jnp
+import jax.numpy as jnp  # type: ignore
 
 from helper_functions import custom_normalize
 

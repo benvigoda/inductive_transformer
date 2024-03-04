@@ -1,15 +1,12 @@
 from dataclasses import dataclass
-
-from flax import linen as nn
-from typing import Callable
-import jax.numpy as jnp
+import jax.numpy as jnp  # type: ignore
 
 from helper_functions import custom_normalize
 
-@dataclass
-class EncoderCategoricalBernoulli(nn.Module):
-    layer_width: int
 
+@dataclass
+class EncoderCategoricalBernoulli:
+    layer_width: int
 
     def __call__(self, categorical):
 
@@ -28,9 +25,7 @@ class EncoderCategoricalBernoulli(nn.Module):
         # method of performing the calculation introduces a lot of rounding error.
 
         bernoulli_0 = categorical.sum(axis=-1, keepdim=True) - categorical
-
         bernoulli = jnp.stack([bernoulli_0, bernoulli_1])
-
         bernoulli = custom_normalize(bernoulli, axis=0)
 
         return bernoulli
