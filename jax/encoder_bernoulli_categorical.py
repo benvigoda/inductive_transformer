@@ -12,7 +12,6 @@ class EncoderBernoulliCategorical:
         # and then normalize the categoricals
         # v[below_lw][above_lw] = u[heads][below_lw][above_lw] / u[tails][below_lw][above_lw]
 
-        # FIXME: ERIK, IS THIS OKAY IN JAX?
         v = u[1] / (u[0] + 1e-9)
 
         # we want to normalize is the inputs to a specific pi_a, remember from the encoder universe factor:
