@@ -1,4 +1,4 @@
-import jax.numpy as jnp
+import jax.numpy as jnp  # type: ignore
 
 
 def custom_normalize(tensor: jnp.ndarray, axis=0, default_constant=0.5) -> jnp.ndarray:

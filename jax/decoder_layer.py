@@ -1,6 +1,6 @@
-from flax import linen as nn
+from flax import linen as nn  # type: ignore
 from typing import Callable
-import jax.numpy as jnp
+import jax.numpy as jnp  # type: ignore
 
 from decoder_universe import DecoderUniverse
 from decoder_bernoulli_categorical import DecoderBernoulliCategorical
