@@ -24,7 +24,7 @@ class EncoderCategoricalBernoulli:
         # Note: if categorical[i][j] is much larger than categorical[i][k] for k != j, then this
         # method of performing the calculation introduces a lot of rounding error.
 
-        bernoulli_0 = categorical.sum(axis=-1, keepdim=True) - categorical
+        bernoulli_0 = categorical.sum(axis=-1, keepdims=True) - categorical
         bernoulli = jnp.stack([bernoulli_0, bernoulli_1])
         bernoulli = custom_normalize(bernoulli, axis=0)
 

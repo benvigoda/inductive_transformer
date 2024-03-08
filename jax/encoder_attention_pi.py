@@ -14,7 +14,7 @@ class EncoderAttentionPi(nn.Module):
 
         assert v.shape == (self.layer_width, self.layer_width)
         # we expect v to be already normalized categorical
-        weights = self.param('weights', self.weight_init, (self.num_positions, self.layer_width))
+        weights = self.param('weights', self.weight_init, (self.layer_width, self.layer_width))
         prob_weights = nn.relu(weights) + 1e-9
 
         prob_weights = custom_normalize(prob_weights, axis=1)
@@ -23,7 +23,7 @@ class EncoderAttentionPi(nn.Module):
         y = prob_weights * v
 
         # make it an inner product by taking a sum along the choice dimension
-        y = jnp.sum(y, axis=0, keepdim=True)  # after summing it is size = (1, layer_width)
+        y = jnp.sum(y, axis=0, keepdims=True)  # after summing it is size = (1, layer_width)
         assert y.shape == (1, self.layer_width)
 
         y = custom_normalize(y, axis=1)

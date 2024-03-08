@@ -171,6 +171,6 @@ class EncoderUniverse:
         # u = nn.functional.normalize(u, p=1, dim=0)
         u = custom_normalize(u, dim=0)
         """
-        u = jnp.stack([z] * self.hyperparams.layer_width, dim=-1)
+        u = jnp.stack([z] * self.layer_width, axis=-1)
 
         return u
