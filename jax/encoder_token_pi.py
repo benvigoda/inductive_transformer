@@ -15,7 +15,7 @@ class EncoderTokenPi(nn.Module):
         assert t.shape == (self.num_positions, self.vocab_size, self.layer_width)
         # we expect t to be already normalized
 
-        weights = self.param('weights', self.weight_init, (self.num_positions, self.layer_width))
+        weights = self.param('weights', self.weight_init, (self.num_positions, self.vocab_size, self.layer_width))
         prob_weights = nn.relu(weights) + 1e-9
         # NOTE: we decided not to normalize the weights (it shouldn't matter)
         # prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)

@@ -47,6 +47,6 @@ class EncoderPositionPi(nn.Module):
         x = prob_weights * rho
 
         # make it an inner product by taking a sum along the token dimension
-        x = jnp.sum(x, dim=0, keepdim=True)  # after summing it is size = (1, layer_width)
+        x = jnp.sum(x, axis=0, keepdims=True)  # after summing it is size = (1, layer_width)
         x = custom_normalize(x, axis=1)
         return x  # x is categorical
