@@ -1,3 +1,4 @@
+from pprint import pprint
 import jax
 import numpy as np
 
@@ -19,6 +20,8 @@ from encoder_token_pi import EncoderTokenPi
 from encoder_universe import EncoderUniverse
 from encoder_layer import EncoderLayer
 
+from model import InductiveTransformer
+
 
 def main():
     # Initialize RNG state.
@@ -31,6 +34,7 @@ def main():
     num_positions = 2
     vocab_size = 4
     layer_width = 2
+    num_layers = 2
 
     print("Decoder And")
     key, subkey_0, subkey_1, subkey_2 = jax.random.split(key, 4)
@@ -121,33 +125,13 @@ def main():
     x_encoder = jax.random.normal(subkey_1, (bernoulli_width, layer_width))
     y_encoder = jax.random.normal(subkey_2, (bernoulli_width, layer_width))
     params = decoder_layer.init(subkey_3, z_prime, x_encoder, y_encoder)
-    x, y = decoder_layer.apply(params, z_prime, x_encoder, y_encoder)
+    z, t = decoder_layer.apply(params, z_prime, x_encoder, y_encoder)
     print("params", params["params"])
     print("z_prime", z_prime)
     print("x_encoder", x_encoder)
     print("y_encoder", y_encoder)
-    print("x", x)
-    print("y", y)
-    print("")
-
-    print("Decoder Layer")
-    key, subkey_0, subkey_1, subkey_2, subkey_3 = jax.random.split(key, 5)
-    decoder_layer = DecoderLayer(
-        layer_width=layer_width,
-        num_positions=num_positions,
-        vocab_size=vocab_size,
-    )
-    z_prime = jax.random.normal(subkey_0, (bernoulli_width, layer_width))
-    x_encoder = jax.random.normal(subkey_1, (bernoulli_width, layer_width))
-    y_encoder = jax.random.normal(subkey_2, (bernoulli_width, layer_width))
-    params = decoder_layer.init(subkey_3, z_prime, x_encoder, y_encoder)
-    x, y = decoder_layer.apply(params, z_prime, x_encoder, y_encoder)
-    print("params", params["params"])
-    print("z_prime", z_prime)
-    print("x_encoder", x_encoder)
-    print("y_encoder", y_encoder)
-    print("x", x)
-    print("y", y)
+    print("z", z)
+    print("t", t)
     print("")
 
     print("Encoder And")
@@ -231,12 +215,34 @@ def main():
     z = jax.random.normal(subkey_0, (bernoulli_width, layer_width))
     t = jax.random.normal(subkey_1, (num_positions, vocab_size, layer_width))
     params = encoder_layer.init(subkey_2, z, t)
-    z_prime = encoder_layer.apply(params, z, t)
+    z_prime, x_bernoulli, y_bernoulli = encoder_layer.apply(params, z, t)
     print("params", params["params"])
     print("z", z)
     print("t", t)
     print("z_prime", z_prime)
+    print("x_bernoulli", x_bernoulli)
+    print("y_bernoulli", y_bernoulli)
     print("")
+
+    print("Inductive Transformer")
+    key, subkey_0, subkey_1, subkey_2 = jax.random.split(key, 4)
+    inductive_transformer = InductiveTransformer(
+        layer_width=layer_width,
+        num_positions=num_positions,
+        vocab_size=vocab_size,
+        num_layers=num_layers,
+    )
+    z_in = jax.random.normal(subkey_0, (bernoulli_width, layer_width))
+    t_in = jax.random.normal(subkey_1, (num_layers, num_positions, vocab_size, layer_width))
+    params = inductive_transformer.init(subkey_2, z_in, t_in)
+    z_out, t_out = inductive_transformer.apply(params, z_in, t_in)
+    param_shapes = jax.tree_map(lambda x: x.shape, params)
+    print("params (shapes)")
+    pprint(param_shapes["params"])
+    print("z_in", z_in)
+    print("t_in", t_in)
+    print("z_out", z_out)
+    print("t_out", t_out)
 
 
 if __name__ == "__main__":

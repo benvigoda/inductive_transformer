@@ -73,4 +73,4 @@ class DecoderLayer(nn.Module):
         # Decoder Open Closed Universe
         z = self.decoder_universe(u)
 
-        return t_categorical, z
+        return z, t_categorical
