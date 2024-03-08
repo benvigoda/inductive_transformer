@@ -13,5 +13,5 @@ class EncoderAnd:
         z_0 = x[0] * y[1] + x[1] * y[0] + x[0] * y[0]
         z = jnp.stack([z_0, z_1])
 
-        z = custom_normalize(z, dim=0)
+        z = custom_normalize(z, axis=0)
         return z
