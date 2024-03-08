@@ -1,5 +1,6 @@
 from flax import linen as nn  # type: ignore
 from typing import Callable
+import jax
 import jax.numpy as jnp  # type: ignore
 
 from decoder_layer import DecoderLayer
@@ -30,6 +31,10 @@ class InductiveTransformer(nn.Module):
         ) for _ in range(self.num_layers)]
 
     def __call__(self, z, t_categorical):
+        """
+        This is the forward pass of the model, defined without batches.
+        """
+
         assert z.shape == (2, self.layer_width)
         assert t_categorical.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
 
@@ -57,4 +62,10 @@ class InductiveTransformer(nn.Module):
 
         decoder_z = jnp.stack(decoder_z, axis=0)
         decoder_t = jnp.stack(decoder_t, axis=0)
+        assert decoder_z.shape == (self.num_layers, 2, self.layer_width)
+        assert decoder_t.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
         return decoder_z, decoder_t
+
+    # TODO Can we vmap here or does that confuse flax?
+    # def __call__(self, z, t_categorical):
+    #     forward_with_batches = jax.vmap(self.forward, in_axes=(0, 0))
