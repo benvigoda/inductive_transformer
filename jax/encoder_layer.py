@@ -38,8 +38,8 @@ class EncoderLayer(nn.Module):
             weight_init=self.weight_init,  # FIXME: @Erik is this right? Shouldn't it be a different weight_init?
         )
         self.encoder_attention_pi = EncoderAttentionPi(
-            vocab_size=self.vocab_size, 
-            layer_width=self.layer_width, 
+            vocab_size=self.vocab_size,
+            layer_width=self.layer_width,
             weight_init=self.weight_init
         )
         self.encoder_categorical_bernoulli = EncoderCategoricalBernoulli(
