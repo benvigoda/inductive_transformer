@@ -27,10 +27,10 @@ class DecoderLayer(nn.Module):
             num_positions=self.num_positions,
             vocab_size=self.vocab_size,
             layer_width=self.layer_width,
-            weight_init=self.weight_init,
+            weight_init=self.weight_init,  # FIXME: @Erik is this right? Shouldn't it be a different weight_init?
         )
         self.decoder_attention_pi = DecoderAttentionPi(
-            layer_width=self.layer_width, weight_init=self.weight_init
+            layer_width=self.layer_width, weight_init=self.weight_init  # FIXME: @Erik is this right? Shouldn't it be a different weight_init?
         )
         self.decoder_position_pi = DecoderPositionPi(
             num_positions=self.num_positions,
