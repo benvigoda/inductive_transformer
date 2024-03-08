@@ -50,9 +50,9 @@ if __name__ == "__main__":
 
     print("Decoder Bernoulli Categorical")
     key, subkey = jax.random.split(key)
-    decoder_categorical_bernoulli = DecoderBernoulliCategorical(layer_width=layer_width)
+    decoder_bernoulli_categorical = DecoderBernoulliCategorical(layer_width=layer_width)
     bernoulli = jax.random.normal(subkey, (bernoulli_width, layer_width))
-    categorical = decoder_categorical_bernoulli(bernoulli)
+    categorical = decoder_bernoulli_categorical(bernoulli)
     print("bernoulli", bernoulli)
     print("categorical", categorical)
     print("")
