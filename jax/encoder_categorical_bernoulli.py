@@ -25,7 +25,8 @@ class EncoderCategoricalBernoulli:
         # method of performing the calculation introduces a lot of rounding error.
 
         bernoulli_0 = categorical.sum(axis=-1, keepdims=True) - categorical
-        bernoulli = jnp.stack([bernoulli_0, bernoulli_1])
+        bernoulli = jnp.concatenate([bernoulli_0, bernoulli_1])
         bernoulli = custom_normalize(bernoulli, axis=0)
+        assert bernoulli.shape == (2, self.layer_width)
 
         return bernoulli

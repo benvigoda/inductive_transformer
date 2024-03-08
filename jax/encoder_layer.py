@@ -48,11 +48,15 @@ class EncoderLayer(nn.Module):
         self.encoder_and = EncoderAnd()
 
     def __call__(self, z, t_categorical):
+        assert z.shape == (2, self.layer_width)
+        assert t_categorical.shape == (self.num_positions, self.vocab_size, self.layer_width)
+
         # axis=0 indexes the state of the variable e.g. cat or dog, 0 or 1, etc.
         # axis=1 indexes the layer width
 
         # Encoder Open Closed Universe
         u = self.encoder_universe(z)
+        assert u.shape == (2, self.layer_width, self.layer_width)
 
         # Encoder Bernoulli-Categorical
         # u is bernoulli, v is categorical
@@ -86,8 +90,11 @@ class EncoderLayer(nn.Module):
         # Encoder Categorical-Bernoulli
         y_bernoulli = self.encoder_categorical_bernoulli(y_categorical)
         x_bernoulli = self.encoder_categorical_bernoulli(x_categorical)
+        assert y_bernoulli.shape == (2, self.layer_width)
+        assert x_bernoulli.shape == (2, self.layer_width)
 
         # Encoder $\land$
         z_prime = self.encoder_and(x_bernoulli, y_bernoulli)
+        assert z_prime.shape == (2, self.layer_width)
 
-        return z_prime
+        return z_prime, x_bernoulli, y_bernoulli
