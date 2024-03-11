@@ -99,7 +99,7 @@ class ProbTensors():
 
         self.attention_input = self.make_attention_input()
 
-    def format_training_data(self, num_layers: int = 1, device=None) -> List[Tuple[np.ndarray, np.ndarray]]:
+    def format_training_data(self, num_layers: int = 1) -> List[Tuple[np.ndarray, np.ndarray]]:
         '''
         EXAMPLE INPUT DATA:
         2 sentences "small dog. big cat." in the `text_training.txt` file
@@ -138,15 +138,10 @@ class ProbTensors():
             input_tensor = np.broadcast_to(training_element, (self.num_layers, self.num_positions, self.vocab_size, self.layer_width))
             if self.print_flag:
                 print(f"format_training_data for window {window}:\n{input_tensor}")
-                print(f"input_tensor.size():\n{input_tensor.size()}")
-            if device:
-                training_data.append(
-                    (input_tensor.to(device), output_tensor.to(device))
-                )
-            else:
-                training_data.append(
-                    (input_tensor, output_tensor)
-                )
+                print(f"input_tensor.size:\n{input_tensor.size}")
+            training_data.append(
+                (input_tensor, output_tensor)
+            )
         return training_data
 
     def make_attention_input(self):

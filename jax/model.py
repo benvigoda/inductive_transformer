@@ -66,6 +66,14 @@ class InductiveTransformer(nn.Module):
         assert decoder_t.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
         return decoder_z, decoder_t
 
-    # TODO Can we vmap here or does that confuse flax?
-    # def __call__(self, z, t_categorical):
-    #     forward_with_batches = jax.vmap(self.forward, in_axes=(0, 0))
+
+# JAX vmap takes a function and maps it over an additional axis.
+# Flax has a lifted version of vmap that works with modules.
+# We use the latter here to add a batch axis.
+BatchedInductiveTransformer = nn.vmap(
+    InductiveTransformer,
+    in_axes=(None, 0),
+    out_axes=(0, 0),
+    variable_axes={'params': None},
+    split_rngs={'params': False},
+)
