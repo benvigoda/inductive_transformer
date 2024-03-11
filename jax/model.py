@@ -1,10 +1,10 @@
 from flax import linen as nn  # type: ignore
 from typing import Callable
-import jax
 import jax.numpy as jnp  # type: ignore
 
 from decoder_layer import DecoderLayer
 from encoder_layer import EncoderLayer
+
 
 class InductiveTransformer(nn.Module):
     layer_width: int
