@@ -21,6 +21,7 @@ from encoder_universe import EncoderUniverse
 from encoder_layer import EncoderLayer
 
 from model import InductiveTransformer
+from weights import update_weights
 
 
 def main():
@@ -34,7 +35,7 @@ def main():
     num_positions = 2
     vocab_size = 4
     layer_width = 2
-    num_layers = 2
+    num_layers = 3
 
     print("Decoder And")
     key, subkey_0, subkey_1, subkey_2 = jax.random.split(key, 4)
@@ -237,6 +238,27 @@ def main():
     params = inductive_transformer.init(subkey_2, z_in, t_in)
     z_out, t_out = inductive_transformer.apply(params, z_in, t_in)
     param_shapes = jax.tree_map(lambda x: x.shape, params)
+    print("params (shapes)")
+    pprint(param_shapes["params"])
+    print("z_in", z_in)
+    print("t_in", t_in)
+    print("z_out", z_out)
+    print("t_out", t_out)
+
+    print("Inductive Transformer Weights Set")
+    key, subkey_0, subkey_1, subkey_2 = jax.random.split(key, 4)
+    inductive_transformer = InductiveTransformer(
+        layer_width=layer_width,
+        num_positions=num_positions,
+        vocab_size=vocab_size,
+        num_layers=num_layers,
+    )
+    z_in = jax.random.normal(subkey_0, (bernoulli_width, layer_width))
+    t_in = jax.random.normal(subkey_1, (num_layers, num_positions, vocab_size, layer_width))
+    params = inductive_transformer.init(subkey_2, z_in, t_in)
+    updated_params, set_weights = update_weights(params)
+    z_out, t_out = inductive_transformer.apply(updated_params, z_in, t_in)
+    param_shapes = jax.tree_map(lambda x: x.shape, updated_params)
     print("params (shapes)")
     pprint(param_shapes["params"])
     print("z_in", z_in)
