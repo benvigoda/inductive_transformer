@@ -1,8 +1,8 @@
 import argparse
+import numpy as np
 import pathlib
-import string
 import re
-import torch  # type: ignore
+import string
 from typing import List, Dict, Tuple
 
 PROBABLE = 1 - 1e-9
@@ -99,7 +99,7 @@ class ProbTensors():
 
         self.attention_input = self.make_attention_input()
 
-    def format_training_data(self, num_layers: int = 1, device=None) -> List[Tuple[torch.Tensor, torch.Tensor]]:
+    def format_training_data(self, num_layers: int = 1, device=None) -> List[Tuple[np.ndarray, np.ndarray]]:
         '''
         EXAMPLE INPUT DATA:
         2 sentences "small dog. big cat." in the `text_training.txt` file
@@ -129,14 +129,13 @@ class ProbTensors():
         # We train on the expected_output to be the same as the input
         for window in self.windows:  # self.windows is a list of lists of vocab indices
             # For example, the first window is [0, 1] corresponding to "small dog"
-            output_tensor = torch.full((self.num_positions, self.vocab_size), self.improbable)
+            output_tensor = np.full((self.num_positions, self.vocab_size), self.improbable)
             for word_position, vocab_index in enumerate(window):
                 output_tensor[word_position, vocab_index] = self.probable
             # Reshape the training element to be (1, num_positions, vocab_size, 1)
-            training_element = output_tensor.unsqueeze(0).unsqueeze(-1)
+            training_element = output_tensor[None, :, :, None]
             # Make copies along the num_layer and layer_width dimensions
-            input_tensor = training_element.repeat(self.num_layers, 1, 1, self.layer_width)
-            assert input_tensor.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
+            input_tensor = np.broadcast_to(training_element, (self.num_layers, self.num_positions, self.vocab_size, self.layer_width))
             if self.print_flag:
                 print(f"format_training_data for window {window}:\n{input_tensor}")
                 print(f"input_tensor.size():\n{input_tensor.size()}")
@@ -158,30 +157,25 @@ class ProbTensors():
         attention_input[i=0, l=1] = 0.5
         attention_input[i=1, l=1] = 0.5
         '''
-        attention_input = torch.full((2, self.layer_width), 0.5)  # A bernoulli input
+        attention_input = np.full((2, self.layer_width), 0.5)  # A bernoulli input
         return attention_input
 
-    def make_inference_prompt_tensors(self, num_layers: int = 1) -> List[torch.Tensor]:
+    def make_inference_prompt_tensors(self, num_layers: int = 1) -> List[np.ndarray]:
         inference_data = []  # A list of tuples of (input, expected_output)
         # We train on the expected_output to be the same as the input
         for window in self.data.inference_windows:  # self.windows is a list of lists of vocab indices
             # For example, the first window is [0, 1] corresponding to "small dog"
-            inference_element = torch.full((self.num_positions, self.vocab_size), self.improbable)
+            inference_element = np.full((self.num_positions, self.vocab_size), self.improbable)
             for word_position, vocab_index in enumerate(window):
                 inference_element[word_position, vocab_index] = self.probable
             # Reshape the training element to be (1, num_positions, vocab_size, 1)
-            inference_element = inference_element.unsqueeze(0).unsqueeze(-1)
+            inference_element = inference_element[None, :, :, None]
             # Make copies along the num_layer and layer_width dimensions
-            input_tensor = inference_element.repeat(self.num_layers, 1, 1, self.layer_width)
-            assert input_tensor.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
+            input_tensor = np.broadcast_to(inference_element, (self.num_layers, self.num_positions, self.vocab_size, self.layer_width))
             inference_data.append(
                 input_tensor
             )
         return inference_data
-
-    def to(self, device):
-        # TODO Are there other tensors that should be moved as well?
-        self.attention_input = self.attention_input.to(device)
 
 
 def parse_args():
