@@ -9,6 +9,7 @@ import pathlib
 
 from model import BatchedInductiveTransformer
 from text_parsing import InputData, ProbTensors
+from weights import update_weights
 
 
 def create_train_state(key, num_positions, vocab_size, layer_width, num_layers):
@@ -35,8 +36,9 @@ def create_train_state(key, num_positions, vocab_size, layer_width, num_layers):
         shape=(1, num_layers, num_positions, vocab_size, layer_width),
     )
     params = model.init(subkey_2, z_in, t_in)
-    # TODO We can manipulate our initial params here.
-    # pprint(params)
+
+    # Update weights.
+    params, set_weights = update_weights(params)
 
     tx = optax.adam(learning_rate=1.0e-3)
 
