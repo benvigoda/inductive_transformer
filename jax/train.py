@@ -47,7 +47,9 @@ def create_train_state(key, num_positions, vocab_size, layer_width, num_layers):
 
     tx = optax.adam(learning_rate=1.0e-4)
 
-    return TrainState.create(apply_fn=model.apply, params=params, tx=tx, grad_mask=set_weights)
+    return TrainState.create(
+        apply_fn=model.apply, params=params, tx=tx, grad_mask=set_weights
+    )
 
 
 @jax.jit
@@ -97,7 +99,9 @@ if __name__ == "__main__":
 
     # Load training data.
     data = InputData(args.training_text, args.inference_text, print_vals=False)
-    prob_tensors = ProbTensors(data=data, layer_width=args.layer_width, print_flag=False)
+    prob_tensors = ProbTensors(
+        data=data, layer_width=args.layer_width, print_flag=False
+    )
     training_data = prob_tensors.format_training_data(num_layers=args.num_layers)
     # Collect all input t tensors.
     all_t_tensors = jnp.stack([example[0] for example in training_data], axis=0)
@@ -118,7 +122,6 @@ if __name__ == "__main__":
         layer_width=args.layer_width,
         num_layers=args.num_layers,
     )
-    # print(apply_model(state, prob_tensors.attention_input, all_t_tensors))
 
     # Train the model.
     n_training_steps = 20000
@@ -132,8 +135,16 @@ if __name__ == "__main__":
 
     decoder_layers = ["decoders_0", "decoders_1"]
     encoder_layers = ["encoders_0", "encoders_1"]
-    decoder_sublayers = ["decoder_attention_pi", "decoder_position_pi", "decoder_token_pi"]
-    encoder_sublayers = ["encoder_attention_pi", "encoder_position_pi", "encoder_token_pi"]
+    decoder_sublayers = [
+        "decoder_attention_pi",
+        "decoder_position_pi",
+        "decoder_token_pi",
+    ]
+    encoder_sublayers = [
+        "encoder_attention_pi",
+        "encoder_position_pi",
+        "encoder_token_pi",
+    ]
 
     for layer in decoder_layers:
         print(layer)
@@ -150,6 +161,44 @@ if __name__ == "__main__":
             print(sublayer)
             print(layer_params[sublayer]["weights"])
         print("")
+
+    inference_data = prob_tensors.make_inference_prompt_tensors(
+        num_layers=args.num_layers
+    )
+    all_inference_data = jnp.stack(inference_data, axis=0)
+    n_examples = len(inference_data)
+    assert all_inference_data.shape == (
+        n_examples,
+        args.num_layers,
+        prob_tensors.num_positions,
+        prob_tensors.vocab_size,
+        args.layer_width,
+    )
+
+    decoder_z, decoder_t, activations = state.apply_fn(
+        state.params, prob_tensors.attention_input, all_inference_data
+    )
+
+    activation_keys = [
+        "x_bernoulli",
+        "y_bernoulli",
+        "x_categorical",
+        "y_categorical",
+        "v",
+        "rho_categorical",
+        "t_categorical",
+        "u",
+        "z",
+    ]
+
+    for idx in range(n_examples):
+        print(f"Inference example {idx}")
+        for layer_idx, layer_activation in enumerate(activations):
+            print(f"Layer {layer_idx}")
+            for key in activation_keys:
+                print(key)
+                print(layer_activation[key][idx])
+                print("")
 
     # import pdb
     # pdb.set_trace()
