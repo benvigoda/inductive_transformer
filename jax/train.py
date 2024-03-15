@@ -11,6 +11,12 @@ from text_parsing import InputData, ProbTensors
 from weights import update_weights
 
 
+class TrainState(train_state.TrainState):
+    """A custom TrainState class that includes a `grad_mask` attribute."""
+
+    grad_mask: jnp.ndarray
+
+
 def create_train_state(key, num_positions, vocab_size, layer_width, num_layers):
     """Creates initial `TrainState`."""
     bernoulli_width = 2
@@ -41,7 +47,7 @@ def create_train_state(key, num_positions, vocab_size, layer_width, num_layers):
 
     tx = optax.adam(learning_rate=1.0e-4)
 
-    return train_state.TrainState.create(apply_fn=model.apply, params=params, tx=tx)
+    return TrainState.create(apply_fn=model.apply, params=params, tx=tx, grad_mask=set_weights)
 
 
 @jax.jit
@@ -61,7 +67,8 @@ def apply_model(state, z_in, t_in):
 
 @jax.jit
 def update_model(state, grads):
-    # TODO We can zero out gradients here if there are parameters we don't want to update.
+    # Zero out the gradients of parameters that we don't want to update.
+    grads = jax.tree_util.tree_map(lambda x, y: x * y, grads, state.grad_mask)
     return state.apply_gradients(grads=grads)
 
 
