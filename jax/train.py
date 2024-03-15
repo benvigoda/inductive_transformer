@@ -38,9 +38,9 @@ def create_train_state(key, num_positions, vocab_size, layer_width, num_layers):
     params = model.init(subkey_2, z_in, t_in)
 
     # Update weights.
-    params, set_weights = update_weights(params)
+    # params, set_weights = update_weights(params)
 
-    tx = optax.adam(learning_rate=1.0e-3)
+    tx = optax.adam(learning_rate=1.0e-4)
 
     return train_state.TrainState.create(apply_fn=model.apply, params=params, tx=tx)
 
@@ -74,8 +74,8 @@ def parse_args():
     parser.add_argument(
         "inference_text", type=pathlib.Path
     )  # A text file of sentences to run inference on
-    parser.add_argument("--layer_width", type=int, default=4)
-    parser.add_argument("--num_layers", type=int, default=3)
+    parser.add_argument("--layer_width", type=int, default=2)
+    parser.add_argument("--num_layers", type=int, default=2)
     return parser.parse_args()
 
 
@@ -123,3 +123,7 @@ if __name__ == "__main__":
         state = update_model(state, grads)
         if step % print_every == 0:
             print(f"step {step}, loss: {loss:.3e}")
+
+    pprint(state.params)
+    import pdb
+    pdb.set_trace()
