@@ -119,7 +119,6 @@ if __name__ == "__main__":
     print_every = 100
     key, train_key = jax.random.split(key)
     for step in range(0, n_training_steps):
-        subkey = jax.random.fold_in(train_key, step)
         grads, loss = apply_model(state, prob_tensors.attention_input, all_t_tensors)
         state = update_model(state, grads)
         if step % print_every == 0:
