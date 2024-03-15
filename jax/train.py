@@ -1,5 +1,4 @@
 from flax.training import train_state
-from pprint import pprint
 import argparse
 import jax
 import jax.numpy as jnp
@@ -38,7 +37,7 @@ def create_train_state(key, num_positions, vocab_size, layer_width, num_layers):
     params = model.init(subkey_2, z_in, t_in)
 
     # Update weights.
-    # params, set_weights = update_weights(params)
+    params, set_weights = update_weights(params)
 
     tx = optax.adam(learning_rate=1.0e-4)
 
@@ -124,6 +123,26 @@ if __name__ == "__main__":
         if step % print_every == 0:
             print(f"step {step}, loss: {loss:.3e}")
 
-    pprint(state.params)
-    import pdb
-    pdb.set_trace()
+    decoder_layers = ["decoders_0", "decoders_1"]
+    encoder_layers = ["encoders_0", "encoders_1"]
+    decoder_sublayers = ["decoder_attention_pi", "decoder_position_pi", "decoder_token_pi"]
+    encoder_sublayers = ["encoder_attention_pi", "encoder_position_pi", "encoder_token_pi"]
+
+    for layer in decoder_layers:
+        print(layer)
+        layer_params = state.params["params"][layer]
+        for sublayer in decoder_sublayers:
+            print(sublayer)
+            print(layer_params[sublayer]["weights"])
+        print("")
+
+    for layer in encoder_layers:
+        print(layer)
+        layer_params = state.params["params"][layer]
+        for sublayer in encoder_sublayers:
+            print(sublayer)
+            print(layer_params[sublayer]["weights"])
+        print("")
+
+    # import pdb
+    # pdb.set_trace()
