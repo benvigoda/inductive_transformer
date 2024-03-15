@@ -73,4 +73,15 @@ class DecoderLayer(nn.Module):
         # Decoder Open Closed Universe
         z = self.decoder_universe(u)
 
-        return z, t_categorical
+        activations = {
+            "x_bernoulli": x_bernoulli,
+            "y_bernoulli": y_bernoulli,
+            "x_categorical": x_categorical,
+            "y_categorical": y_categorical,
+            "v": v,
+            "rho_categorical": rho_categorical,
+            "t_categorical": t_categorical,
+            "u": u,
+            "z": z,
+        }
+        return z, t_categorical, activations
