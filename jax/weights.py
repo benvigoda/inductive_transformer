@@ -2,40 +2,47 @@ import jax
 import jax.numpy as jnp  # type: ignore
 import numpy as np
 
-STRONG = 1.  # Amplify the signal
-WEAK = 1e-9  # Dampen the signal
+strong = 1.  # Amplify the signal
+weak = 1e-9  # Dampen the signal
+
+mask_type = int
+
+
+def update_position_pi_weights(layer, params, updated_params, set_weights, prefix, layer_width):
+    layer_key = f"{prefix}s_{layer}"
+    position_pi = f"{prefix}_position_pi"
+    if layer_key in updated_params["params"]:
+        # Get the shape of the original weights
+        old_weights = updated_params["params"][layer_key][position_pi]["weights"]
+        weights_shape = old_weights.shape  # (num_positions, layer_width)
+        # Set the weights to all "weak" values
+        new_weight = jnp.full(weights_shape, weak)
+        new_weight = new_weight.at[layer].set(jnp.full(layer_width, strong))  # Match num_layer to the position in the weights
+        updated_params["params"][layer_key][position_pi]["weights"] = new_weight
+        # Note: We have constrained the model such that num_positions needs to be equal to num_layers for this setup to work right now.
+        # In the future we'll have to remove that constraint
+
+        set_weights["params"][layer_key][position_pi]["weights"] = jnp.zeros_like(old_weights, dtype=mask_type)
 
 
 def update_weights(params):
-    strong = STRONG  # Amplify the signal
-    weak = WEAK  # Dampen the signal
     # Get shapes:
     num_positions, vocab_size, layer_width = params["params"]["encoders_0"]["encoder_token_pi"]["weights"].shape
 
     """Update weights."""
     updated_params = params
-    mask_type = int
     set_weights = jax.tree_util.tree_map(lambda x: jnp.ones_like(x, dtype=mask_type), params)
-    num_layer = 0
-    done = False
-    while not done:
-        encoder_layer_key = f"encoders_{num_layer}"
-        if encoder_layer_key in updated_params["params"]:
-            # Get the shape of the original weights
-            old_weights = updated_params["params"][encoder_layer_key]["encoder_position_pi"]["weights"]
-            weights_shape = old_weights.shape  # (num_positions, layer_width)
-            # Set the weights to all "weak" values
-            new_weight = jnp.full(weights_shape, weak)
-            new_weight = new_weight.at[num_layer].set(jnp.full(layer_width, strong))  # Match num_layer to the position in the weights
-            updated_params["params"][encoder_layer_key]["encoder_position_pi"]["weights"] = new_weight
-            # Note: We have constrained the model such that num_positions needs to be equal to num_layers for this setup to work right now.
-            # In the future we'll have to remove that constraint
 
-            set_weights["params"][encoder_layer_key]["encoder_position_pi"]["weights"] = jnp.zeros_like(old_weights, dtype=mask_type)
+    num_layers = 0
+    while True:
+        if f"encoders_{num_layers}" not in params["params"]:
+            break
+        num_layers += 1
 
-            num_layer += 1
-        else:
-            done = True
+    for layer in range(num_layers):
+        update_position_pi_weights(layer, params, updated_params, set_weights, "decoder", layer_width)
+        update_position_pi_weights(layer, params, updated_params, set_weights, "encoder", layer_width)
+
     lw = 0
     position = 0
     vocab_idx = 0  # should be the index for either "dog" or "cat"
