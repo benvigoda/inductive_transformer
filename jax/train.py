@@ -121,8 +121,8 @@ if __name__ == "__main__":
     # print(apply_model(state, prob_tensors.attention_input, all_t_tensors))
 
     # Train the model.
-    n_training_steps = 10000
-    print_every = 100
+    n_training_steps = 20000
+    print_every = 250
     key, train_key = jax.random.split(key)
     for step in range(0, n_training_steps):
         grads, loss = apply_model(state, prob_tensors.attention_input, all_t_tensors)
