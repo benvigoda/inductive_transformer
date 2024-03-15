@@ -55,7 +55,7 @@ def apply_model(state, z_in, t_in):
     """Computes gradients and loss for a single instance (not yet batched)."""
 
     def loss_fn(params):
-        z_out, t_out = state.apply_fn(params, z_in, t_in)
+        z_out, t_out, activations = state.apply_fn(params, z_in, t_in)
         t_in_sums = jnp.sum(t_in, axis=-1)
         t_out_sums = jnp.sum(t_out, axis=-1)
         return jnp.mean(jnp.square(t_out_sums - t_in_sums))
