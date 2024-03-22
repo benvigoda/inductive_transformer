@@ -187,6 +187,7 @@ if __name__ == "__main__":
     )
 
     print("===================== Inference Activations ======================")
+
     encoder_activation_keys = [
         "u",
         "v",
@@ -212,6 +213,12 @@ if __name__ == "__main__":
     for idx in range(n_examples):
         print("--------------------------")
         print(f"Inference example {idx}")
+
+        print("input t")
+        print(all_inference_data[idx])
+        print("output t")
+        print(decoder_t[idx])
+        print("")
 
         for layer_idx, layer_activation in enumerate(encoder_activations):
             print(f"Layer {layer_idx} encoder")
