@@ -146,6 +146,7 @@ if __name__ == "__main__":
         "encoder_token_pi",
     ]
 
+    print("===================== Decoder Layers ======================")
     for layer in decoder_layers:
         print(layer)
         layer_params = state.params["params"][layer]
@@ -154,6 +155,7 @@ if __name__ == "__main__":
             print(layer_params[sublayer]["weights"])
         print("")
 
+    print("===================== Encoder Layers ======================")
     for layer in encoder_layers:
         print(layer)
         layer_params = state.params["params"][layer]
@@ -162,6 +164,7 @@ if __name__ == "__main__":
             print(layer_params[sublayer]["weights"])
         print("")
 
+    # Load inference examples.
     inference_data = prob_tensors.make_inference_prompt_tensors(
         num_layers=args.num_layers
     )
@@ -175,10 +178,12 @@ if __name__ == "__main__":
         args.layer_width,
     )
 
+    # Run inference.
     decoder_z, decoder_t, activations = state.apply_fn(
         state.params, prob_tensors.attention_input, all_inference_data
     )
 
+    print("===================== Inference Activations ======================")
     activation_keys = [
         "x_bernoulli",
         "y_bernoulli",
