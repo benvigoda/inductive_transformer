@@ -116,6 +116,9 @@ if __name__ == "__main__":
     )
     print(f"vocab: {data.vocab}")
 
+    # temp: duplicate our training data
+    all_t_tensors = jnp.concatenate([all_t_tensors] * 10, axis=0)
+
     # Initialize all training state (most importantly, the model parameters and optimizer).
     key, subkey = jax.random.split(key)
     state = create_train_state(
@@ -127,15 +130,27 @@ if __name__ == "__main__":
     )
 
     # Train the model.
-    n_training_steps = 20000
+    n_epochs = 1000
+    batch_size = 1
+    n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
     print_every = 250
-    key, train_key = jax.random.split(key)
-    for step in range(0, n_training_steps):
-        grads, loss = apply_model(state, prob_tensors.attention_input, all_t_tensors)
-        state = update_model(state, grads)
-        if step % print_every == 0:
-            print(f"step {step}, loss: {loss:.3e}")
+    print(f"{n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
+    key, subkey = jax.random.split(key)
+    for epoch in range(n_epochs):
+        # Shuffle the data.
+        shuffle_key = jax.random.fold_in(subkey, epoch)
+        all_t_tensors = jax.random.permutation(shuffle_key, all_t_tensors)
 
+        for step in range(0, n_steps_per_epoch):
+            batch_data = all_t_tensors[step * batch_size : (step + 1) * batch_size]
+            grads, loss = apply_model(state, prob_tensors.attention_input, batch_data)
+            state = update_model(state, grads)
+            if step > 0 and step % print_every == 0:
+                print(f"step {step}, loss: {loss:.3e}")
+
+        print(f"epoch {epoch}, loss: {loss:.3e}")
+
+    # Print trained weights.
     decoder_layers = ["decoders_0", "decoders_1"]
     encoder_layers = ["encoders_0", "encoders_1"]
     decoder_sublayers = [
