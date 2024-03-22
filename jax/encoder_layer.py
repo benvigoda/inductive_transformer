@@ -66,12 +66,6 @@ class EncoderLayer(nn.Module):
         y_categorical = self.encoder_attention_pi(v)
         assert y_categorical.shape == (1, self.layer_width)
 
-        # Encoder Word $\pi$
-        # without position, we had
-        # t_categorical.shape() = (vocab_size, layer_width)
-        # now with position we have:
-        assert t_categorical.shape == (self.num_positions, self.vocab_size, self.layer_width)
-
         # Hook 3 pi_t's to their parent pi_rho, everywhere this occurs.
         # The encoder open-closed universe without backwards info from the decoder simply clones the input data for a given token and position
         # and sends it to the corresponding pi_t in both the the left and right columns.
@@ -97,4 +91,15 @@ class EncoderLayer(nn.Module):
         z_prime = self.encoder_and(x_bernoulli, y_bernoulli)
         assert z_prime.shape == (2, self.layer_width)
 
-        return z_prime, x_bernoulli, y_bernoulli
+        activations = {
+            "u": u,
+            "v": v,
+            "y_categorical": y_categorical,
+            "rho_categorical": rho_categorical,
+            "x_categorical": x_categorical,
+            "y_bernoulli": y_bernoulli,
+            "x_bernoulli": x_bernoulli,
+            "z_prime": z_prime,
+        }
+
+        return z_prime, x_bernoulli, y_bernoulli, activations

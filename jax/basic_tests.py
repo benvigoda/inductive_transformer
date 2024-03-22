@@ -126,7 +126,7 @@ def main():
     x_encoder = jax.random.normal(subkey_1, (bernoulli_width, layer_width))
     y_encoder = jax.random.normal(subkey_2, (bernoulli_width, layer_width))
     params = decoder_layer.init(subkey_3, z_prime, x_encoder, y_encoder)
-    z, t = decoder_layer.apply(params, z_prime, x_encoder, y_encoder)
+    z, t, activations = decoder_layer.apply(params, z_prime, x_encoder, y_encoder)
     print("params", params["params"])
     print("z_prime", z_prime)
     print("x_encoder", x_encoder)
@@ -148,7 +148,9 @@ def main():
 
     print("Encoder Attention Pi")
     key, subkey_0, subkey_1 = jax.random.split(key, 3)
-    encoder_attention = EncoderAttentionPi(layer_width=layer_width, vocab_size=vocab_size)
+    encoder_attention = EncoderAttentionPi(
+        layer_width=layer_width, vocab_size=vocab_size
+    )
     v = jax.random.normal(subkey_0, (layer_width, layer_width))
     params = encoder_attention.init(subkey_1, v)
     y = encoder_attention.apply(params, v)
@@ -177,7 +179,9 @@ def main():
 
     print("Encoder Position Pi")
     key, subkey_0, subkey_1 = jax.random.split(key, 3)
-    encoder_position_pi = EncoderPositionPi(num_positions=num_positions, layer_width=layer_width)
+    encoder_position_pi = EncoderPositionPi(
+        num_positions=num_positions, layer_width=layer_width
+    )
     rho = jax.random.normal(subkey_0, (num_positions, layer_width))
     params = encoder_position_pi.init(subkey_1, rho)
     x = encoder_position_pi.apply(params, rho)
@@ -216,7 +220,7 @@ def main():
     z = jax.random.normal(subkey_0, (bernoulli_width, layer_width))
     t = jax.random.normal(subkey_1, (num_positions, vocab_size, layer_width))
     params = encoder_layer.init(subkey_2, z, t)
-    z_prime, x_bernoulli, y_bernoulli = encoder_layer.apply(params, z, t)
+    z_prime, x_bernoulli, y_bernoulli, activations = encoder_layer.apply(params, z, t)
     print("params", params["params"])
     print("z", z)
     print("t", t)
@@ -234,9 +238,13 @@ def main():
         num_layers=num_layers,
     )
     z_in = jax.random.normal(subkey_0, (bernoulli_width, layer_width))
-    t_in = jax.random.normal(subkey_1, (num_layers, num_positions, vocab_size, layer_width))
+    t_in = jax.random.normal(
+        subkey_1, (num_layers, num_positions, vocab_size, layer_width)
+    )
     params = inductive_transformer.init(subkey_2, z_in, t_in)
-    z_out, t_out = inductive_transformer.apply(params, z_in, t_in)
+    z_out, t_out, encoder_activations, decoder_activations = (
+        inductive_transformer.apply(params, z_in, t_in)
+    )
     param_shapes = jax.tree_map(lambda x: x.shape, params)
     print("params (shapes)")
     pprint(param_shapes["params"])
@@ -254,10 +262,14 @@ def main():
         num_layers=num_layers,
     )
     z_in = jax.random.normal(subkey_0, (bernoulli_width, layer_width))
-    t_in = jax.random.normal(subkey_1, (num_layers, num_positions, vocab_size, layer_width))
+    t_in = jax.random.normal(
+        subkey_1, (num_layers, num_positions, vocab_size, layer_width)
+    )
     params = inductive_transformer.init(subkey_2, z_in, t_in)
     updated_params, set_weights = update_weights(params)
-    z_out, t_out = inductive_transformer.apply(updated_params, z_in, t_in)
+    z_out, t_out, encoder_activations, decoder_activations = (
+        inductive_transformer.apply(updated_params, z_in, t_in)
+    )
     param_shapes = jax.tree_map(lambda x: x.shape, updated_params)
     print("params (shapes)")
     pprint(param_shapes["params"])

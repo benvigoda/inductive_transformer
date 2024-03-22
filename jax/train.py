@@ -57,7 +57,9 @@ def apply_model(state, z_in, t_in):
     """Computes gradients and loss for a single instance (not yet batched)."""
 
     def loss_fn(params):
-        z_out, t_out, activations = state.apply_fn(params, z_in, t_in)
+        z_out, t_out, encoder_activations, decoder_activations = state.apply_fn(
+            params, z_in, t_in
+        )
         t_in_sums = jnp.sum(t_in, axis=-1)
         t_out_sums = jnp.sum(t_out, axis=-1)
         return jnp.mean(jnp.square(t_out_sums - t_in_sums))
@@ -112,6 +114,7 @@ if __name__ == "__main__":
         prob_tensors.vocab_size,
         args.layer_width,
     )
+    print(f"vocab: {data.vocab}")
 
     # Initialize all training state (most importantly, the model parameters and optimizer).
     key, subkey = jax.random.split(key)
@@ -179,12 +182,22 @@ if __name__ == "__main__":
     )
 
     # Run inference.
-    decoder_z, decoder_t, activations = state.apply_fn(
+    decoder_z, decoder_t, encoder_activations, decoder_activations = state.apply_fn(
         state.params, prob_tensors.attention_input, all_inference_data
     )
 
     print("===================== Inference Activations ======================")
-    activation_keys = [
+    encoder_activation_keys = [
+        "u",
+        "v",
+        "y_categorical",
+        "rho_categorical",
+        "x_categorical",
+        "y_bernoulli",
+        "x_bernoulli",
+        "z_prime",
+    ]
+    decoder_activation_keys = [
         "x_bernoulli",
         "y_bernoulli",
         "x_categorical",
@@ -197,10 +210,19 @@ if __name__ == "__main__":
     ]
 
     for idx in range(n_examples):
+        print("--------------------------")
         print(f"Inference example {idx}")
-        for layer_idx, layer_activation in enumerate(activations):
-            print(f"Layer {layer_idx}")
-            for key in activation_keys:
+
+        for layer_idx, layer_activation in enumerate(encoder_activations):
+            print(f"Layer {layer_idx} encoder")
+            for key in encoder_activation_keys:
+                print(key)
+                print(layer_activation[key][idx])
+                print("")
+
+        for layer_idx, layer_activation in enumerate(decoder_activations):
+            print(f"Layer {layer_idx} decoder")
+            for key in decoder_activation_keys:
                 print(key)
                 print(layer_activation[key][idx])
                 print("")

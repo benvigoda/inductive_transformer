@@ -41,14 +41,16 @@ class InductiveTransformer(nn.Module):
         encoder_z = []
         encoder_x = []  # bernoulli
         encoder_y = []  # bernoulli
+        encoder_activations = []
         for idx, encoder in enumerate(self.encoders):
-            z, x, y = encoder(z, t_categorical[idx])
+            z, x, y, activations = encoder(z, t_categorical[idx])
             assert z.shape == (2, self.layer_width)
             assert x.shape == (2, self.layer_width)
             assert y.shape == (2, self.layer_width)
             encoder_z.append(z)
             encoder_x.append(x)
             encoder_y.append(y)
+            encoder_activations.append(activations)
 
         decoder_z = [None] * (self.num_layers)
         decoder_t = [None] * (self.num_layers)
@@ -66,7 +68,7 @@ class InductiveTransformer(nn.Module):
         decoder_t = jnp.stack(decoder_t, axis=0)
         assert decoder_z.shape == (self.num_layers, 2, self.layer_width)
         assert decoder_t.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
-        return decoder_z, decoder_t, decoder_activations
+        return decoder_z, decoder_t, encoder_activations, decoder_activations
 
 
 # JAX vmap takes a function and maps it over an additional axis.
@@ -75,7 +77,7 @@ class InductiveTransformer(nn.Module):
 BatchedInductiveTransformer = nn.vmap(
     InductiveTransformer,
     in_axes=(None, 0),
-    out_axes=(0, 0, 0),
+    out_axes=(0, 0, 0, 0),
     variable_axes={'params': None},
     split_rngs={'params': False},
 )
