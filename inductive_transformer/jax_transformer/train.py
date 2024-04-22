@@ -45,7 +45,7 @@ def create_train_state(key, num_positions, vocab_size, layer_width, num_layers):
     # Update weights.
     params, set_weights = update_weights(params)
 
-    tx = optax.adam(learning_rate=1.0e-4)
+    tx = optax.adam(learning_rate=1.0e-3)
 
     return TrainState.create(
         apply_fn=model.apply, params=params, tx=tx, grad_mask=set_weights
@@ -60,8 +60,8 @@ def apply_model(state, z_in, t_in):
         z_out, t_out, encoder_activations, decoder_activations = state.apply_fn(
             params, z_in, t_in
         )
-        t_in = jnp.sum(t_in, axis=(0, -1))
-        return jnp.mean(jnp.square(t_out - t_in))
+        t_in_sum = jnp.sum(t_in, axis=(0, -1))
+        return jnp.mean(jnp.square(t_out - t_in_sum))
 
     grad_fn = jax.value_and_grad(loss_fn)
     loss, grads = grad_fn(state.params)
