@@ -35,9 +35,6 @@ class InductiveTransformer(nn.Module):
         This is the forward pass of the model, defined without batches.
         """
 
-        print("z", z.shape)
-        print("t_categorical", t_categorical.shape)
-
         assert z.shape == (2, self.layer_width)
         assert t_categorical.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
 
