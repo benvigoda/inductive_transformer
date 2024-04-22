@@ -1,13 +1,23 @@
 from pathlib import Path
 import jax
-import torch
 import jax.numpy as jnp
 import numpy as np
+import torch
+import torch.nn.functional as F  # type: ignore
 from jax_transformer.model import InductiveTransformer
 from torch_transformer.hyperparameters import HyperParameters
 from torch_transformer.model import Model
 from torch_transformer.text_parsing import InputData, ProbTensors
 from torch_transformer.main import get_model_weights
+
+
+class L2Loss:
+    def __call__(self, pred, truth):
+        truth = truth.sum(dim=(0, -1))
+        print("torch pred", pred.shape)
+        print("torch truth", truth.shape)
+        loss = F.mse_loss(pred, truth, reduction="mean")
+        return loss
 
 
 def jax_to_torch_tensor(jax_array):
@@ -18,13 +28,21 @@ def torch_to_jax_tensor(torch_tensor):
     return jnp.array(torch_tensor.numpy())
 
 
+def jax_loss_fn(model, params, z_in, t_in):
+    z_out, t_out, encoder_activations, decoder_activations = model.apply(
+        params, z_in, t_in
+    )
+    t_in = jnp.sum(t_in, axis=(0, -1))
+    return jnp.mean(jnp.square(t_out - t_in))
+
+
 def main():
     parent_dir = Path(__file__).resolve().parent
 
     # Initialize RNG state.
     np_rng = np.random.default_rng()
-    # seed = np_rng.integers(0, 2**32 - 1)
-    seed = 1985637237
+    seed = np_rng.integers(0, 2**32 - 1)
+    # seed = 1985637237
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
 
@@ -150,22 +168,32 @@ def main():
     torch_model = Model(hyperparams=hyperparams)
     torch_model.eval()  # set the model to inference mode
     prompt_tensors = prob_tensors.make_inference_prompt_tensors(num_layers=num_layers)
+
+    # lr=0.001
+    # torch_optim = torch.optim.Adam(torch_model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
+    torch_criterion = L2Loss()  # Simply use an L2 loss
+
     for prompt_tensor in prompt_tensors:
         attention_input = prob_tensors.attention_input
         torch_result = torch_model(attention_input, prompt_tensor)
         print("torch_model output", torch_result.shape)
         print(torch_result)
+        torch_loss = torch_criterion(torch_result, prompt_tensor)
+        print(f"torch loss: {torch_loss:.3e}")
 
         jax_attention = torch_to_jax_tensor(attention_input)
         jax_prompt = torch_to_jax_tensor(prompt_tensor)
         z_out, t_out, encoder_activations, decoder_activations = (
             jax_model.apply(jax_params, jax_attention, jax_prompt)
         )
+        jax_loss = jax_loss_fn(jax_model, jax_params, jax_attention, jax_prompt)
         print("jax_model output")
         print("z_out", z_out.shape)
         print(z_out)
+        print("t_in", jax_prompt.shape)
         print("t_out", t_out.shape)
         print(t_out)
+        print(f"jax loss: {jax_loss:.3e}")
 
         print("")
 
