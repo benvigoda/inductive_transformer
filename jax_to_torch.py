@@ -3,7 +3,7 @@ import jax
 import torch
 import jax.numpy as jnp
 import numpy as np
-from jax_transformer.model import BatchedInductiveTransformer
+from jax_transformer.model import InductiveTransformer
 from torch_transformer.hyperparameters import HyperParameters
 from torch_transformer.model import Model
 from torch_transformer.text_parsing import InputData, ProbTensors
@@ -12,6 +12,10 @@ from torch_transformer.main import get_model_weights
 
 def jax_to_torch_tensor(jax_array):
     return torch.from_numpy(np.array(jax_array))
+
+
+def torch_to_jax_tensor(torch_tensor):
+    return jnp.array(torch_tensor.numpy())
 
 
 def main():
@@ -32,7 +36,7 @@ def main():
 
     key, subkey = jax.random.split(key)
 
-    jax_model = BatchedInductiveTransformer(
+    jax_model = InductiveTransformer(
         layer_width=layer_width,
         num_positions=num_positions,
         vocab_size=vocab_size,
@@ -47,10 +51,7 @@ def main():
         subkey_1,
         minval=0.0,
         maxval=1.0,
-        # The first axis specifies the batch size. Since all jax_params are shared over the batch
-        # axis, the batch size isn't consequential for initialization. (But it does matter for
-        # inference.)
-        shape=(4, num_layers, num_positions, vocab_size, layer_width),
+        shape=(num_layers, num_positions, vocab_size, layer_width),
     )
     jax_params = jax_model.init(subkey_2, z_in, t_in)
 
@@ -73,23 +74,24 @@ def main():
         "encoder_token_pi",
     ]
 
-    print("===================== Encoder Layers ======================")
-    for layer in encoder_layers:
-        print(layer)
-        layer_jax_params = jax_params["params"][layer]
-        for sublayer in encoder_sublayers:
-            print(sublayer)
-            print(layer_jax_params[sublayer]["weights"])
-        print("")
+    if False:
+        print("===================== Encoder Layers ======================")
+        for layer in encoder_layers:
+            print(layer)
+            layer_jax_params = jax_params["params"][layer]
+            for sublayer in encoder_sublayers:
+                print(sublayer)
+                print(layer_jax_params[sublayer]["weights"])
+            print("")
 
-    print("===================== Decoder Layers ======================")
-    for layer in decoder_layers:
-        print(layer)
-        layer_jax_params = jax_params["params"][layer]
-        for sublayer in decoder_sublayers:
-            print(sublayer)
-            print(layer_jax_params[sublayer]["weights"])
-        print("")
+        print("===================== Decoder Layers ======================")
+        for layer in decoder_layers:
+            print(layer)
+            layer_jax_params = jax_params["params"][layer]
+            for sublayer in decoder_sublayers:
+                print(sublayer)
+                print(layer_jax_params[sublayer]["weights"])
+            print("")
 
     data = InputData(parent_dir / "training_text.txt", parent_dir / "inference_text.txt")
     prob_tensors = ProbTensors(data=data, layer_width=layer_width)
@@ -146,38 +148,51 @@ def main():
     # print(hyperparams.decoder_token_pi_weights)
 
     torch_model = Model(hyperparams=hyperparams)
-    # torch_model.hyperparams = hyperparams
     torch_model.eval()  # set the model to inference mode
-    print("encoder_layer_0.encoder_attention_pi.weights")
-    print(torch_model.encoder_layer_0.encoder_attention_pi.weights)
-    print("encoder_layer_1.encoder_attention_pi.weights")
-    print(torch_model.encoder_layer_1.encoder_attention_pi.weights)
-    print("encoder_layer_0.encoder_position_pi.weights")
-    print(torch_model.encoder_layer_0.encoder_position_pi.weights)
-    print("encoder_layer_1.encoder_position_pi.weights")
-    print(torch_model.encoder_layer_1.encoder_position_pi.weights)
-    print("encoder_layer_0.encoder_token_pi.weights")
-    print(torch_model.encoder_layer_0.encoder_token_pi.weights)
-    print("encoder_layer_1.encoder_token_pi.weights")
-    print(torch_model.encoder_layer_1.encoder_token_pi.weights)
-    print("decoder_layer_0.decoder_attention_pi.weights")
-    print(torch_model.decoder_layer_0.decoder_attention_pi.weights)
-    print("decoder_layer_1.decoder_attention_pi.weights")
-    print(torch_model.decoder_layer_1.decoder_attention_pi.weights)
-    print("decoder_layer_0.decoder_position_pi.weights")
-    print(torch_model.decoder_layer_0.decoder_position_pi.weights)
-    print("decoder_layer_1.decoder_position_pi.weights")
-    print(torch_model.decoder_layer_1.decoder_position_pi.weights)
-    print("decoder_layer_0.decoder_token_pi.weights")
-    print(torch_model.decoder_layer_0.decoder_token_pi.weights)
-    print("decoder_layer_1.decoder_token_pi.weights")
-    print(torch_model.decoder_layer_1.decoder_token_pi.weights)
+    prompt_tensors = prob_tensors.make_inference_prompt_tensors(num_layers=num_layers)
+    for prompt_tensor in prompt_tensors:
+        attention_input = prob_tensors.attention_input
+        print("torch_model output")
+        print(torch_model(attention_input, prompt_tensor))
 
-    model_weights = get_model_weights(model=torch_model)
-    for key in model_weights:
-        print(key)
-        print(model_weights[key])
+        jax_attention = torch_to_jax_tensor(attention_input)
+        jax_prompt = torch_to_jax_tensor(prompt_tensor)
+        z_out, t_out, encoder_activations, decoder_activations = (
+            jax_model.apply(jax_params, jax_attention, jax_prompt)
+        )
+        print("z_out", z_out.shape)
+        print("t_out", t_out.shape)
+
+        print("jax_model output")
+        print(z_out)
+        print(t_out)
+
         print("")
+
+    # print("encoder_layer_0.encoder_attention_pi.weights")
+    # print(torch_model.encoder_layer_0.encoder_attention_pi.weights)
+    # print("encoder_layer_1.encoder_attention_pi.weights")
+    # print(torch_model.encoder_layer_1.encoder_attention_pi.weights)
+    # print("encoder_layer_0.encoder_position_pi.weights")
+    # print(torch_model.encoder_layer_0.encoder_position_pi.weights)
+    # print("encoder_layer_1.encoder_position_pi.weights")
+    # print(torch_model.encoder_layer_1.encoder_position_pi.weights)
+    # print("encoder_layer_0.encoder_token_pi.weights")
+    # print(torch_model.encoder_layer_0.encoder_token_pi.weights)
+    # print("encoder_layer_1.encoder_token_pi.weights")
+    # print(torch_model.encoder_layer_1.encoder_token_pi.weights)
+    # print("decoder_layer_0.decoder_attention_pi.weights")
+    # print(torch_model.decoder_layer_0.decoder_attention_pi.weights)
+    # print("decoder_layer_1.decoder_attention_pi.weights")
+    # print(torch_model.decoder_layer_1.decoder_attention_pi.weights)
+    # print("decoder_layer_0.decoder_position_pi.weights")
+    # print(torch_model.decoder_layer_0.decoder_position_pi.weights)
+    # print("decoder_layer_1.decoder_position_pi.weights")
+    # print(torch_model.decoder_layer_1.decoder_position_pi.weights)
+    # print("decoder_layer_0.decoder_token_pi.weights")
+    # print(torch_model.decoder_layer_0.decoder_token_pi.weights)
+    # print("decoder_layer_1.decoder_token_pi.weights")
+    # print(torch_model.decoder_layer_1.decoder_token_pi.weights)
 
 
 if __name__ == "__main__":
