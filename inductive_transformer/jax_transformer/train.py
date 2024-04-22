@@ -17,7 +17,9 @@ class TrainState(train_state.TrainState):
     grad_mask: jnp.ndarray
 
 
-def create_train_state(key, num_positions, vocab_size, layer_width, num_layers):
+def create_train_state(
+    key, num_positions, vocab_size, layer_width, num_layers, noise_seed
+):
     """Creates initial `TrainState`."""
     bernoulli_width = 2
 
@@ -45,11 +47,18 @@ def create_train_state(key, num_positions, vocab_size, layer_width, num_layers):
     # Update weights.
     params, set_weights = update_weights(params)
 
-    tx = optax.adam(learning_rate=1.0e-4)
+    key, subkey = jax.random.split(key)
+    tx = optax.chain(
+        optax.adam(learning_rate=1.0e-4),
+        optax.add_noise(eta=1.0e-2, gamma=0.999, seed=noise_seed),
+    )
 
     return TrainState.create(
         # apply_fn=model.apply, params=params, tx=tx, grad_mask=set_weights
-        apply_fn=model.apply, params=params, tx=tx, grad_mask=None
+        apply_fn=model.apply,
+        params=params,
+        tx=tx,
+        grad_mask=None,
     )
 
 
@@ -97,8 +106,14 @@ if __name__ == "__main__":
     # Initialize RNG state.
     np_rng = np.random.default_rng()
     seed = np_rng.integers(0, 2**32 - 1)
+    seed = 11675966
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
+
+    key, subkey = jax.random.split(key)
+    noise_seed = jax.random.randint(
+        subkey, (1,), jnp.iinfo(jnp.int32).min, jnp.iinfo(jnp.int32).max
+    )[0]
 
     # Load training data.
     data = InputData(args.training_text, args.inference_text, print_vals=False)
@@ -117,10 +132,12 @@ if __name__ == "__main__":
         args.layer_width,
     )
     print(f"vocab: {data.vocab}")
+    print(f"num training examples: {all_t_tensors.shape[0]}")
 
     # temp: duplicate our training data
     all_t_tensors = jnp.concatenate([all_t_tensors] * 10, axis=0)
     all_outputs = jnp.concatenate([all_outputs] * 10, axis=0)
+    print(f"num training examples (padded): {all_t_tensors.shape[0]}")
 
     # Initialize all training state (most importantly, the model parameters and optimizer).
     key, subkey = jax.random.split(key)
@@ -130,11 +147,12 @@ if __name__ == "__main__":
         num_positions=prob_tensors.num_positions,
         layer_width=args.layer_width,
         num_layers=args.num_layers,
+        noise_seed=noise_seed,
     )
 
     # Train the model.
-    n_epochs = 10000
-    batch_size = 30
+    n_epochs = 100000
+    batch_size = 32
     n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
     print_every = 100
     print(f"{n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
@@ -192,6 +210,7 @@ if __name__ == "__main__":
             print(layer_params[sublayer]["weights"])
         print("")
 
+    """
     # Load inference examples.
     inference_data = prob_tensors.make_inference_prompt_tensors()
     all_inference_data = jnp.stack(inference_data, axis=0)
@@ -256,6 +275,7 @@ if __name__ == "__main__":
                 print(key)
                 print(layer_activation[key][idx])
                 print("")
+    """
 
     # import pdb
     # pdb.set_trace()
