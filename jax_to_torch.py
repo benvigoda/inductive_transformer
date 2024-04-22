@@ -19,7 +19,8 @@ def main():
 
     # Initialize RNG state.
     np_rng = np.random.default_rng()
-    seed = np_rng.integers(0, 2**32 - 1)
+    # seed = np_rng.integers(0, 2**32 - 1)
+    seed = 1985637237
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
 
@@ -27,7 +28,7 @@ def main():
     num_positions = 2
     vocab_size = 6
     layer_width = 2
-    num_layers = 3
+    num_layers = 2
 
     key, subkey = jax.random.split(key)
 
@@ -99,9 +100,9 @@ def main():
         vocab_size=vocab_size,
         num_positions=prob_tensors.num_positions,
         num_layers=num_layers,
-        weight_test=True,
+        weight_test=False,
         perturbation_test=False,
-        init_perturb_weights=True,
+        init_perturb_weights=False,
     )
 
     # Overwrite the model weights that hyper-parameters set with the ones from jax:
@@ -130,10 +131,47 @@ def main():
     decoder_token_pi_weights[1] = jax_to_torch_tensor(jax_params["params"]["decoders_1"]["decoder_token_pi"]["weights"])
     hyperparams.decoder_token_pi_weights = decoder_token_pi_weights
 
+    # Baseline sanity check...
+    # print("encoder attention pi")
+    # print(hyperparams.encoder_attention_pi_weights)
+    # print("encoder position pi")
+    # print(hyperparams.encoder_position_pi_weights)
+    # print("encoder token pi")
+    # print(hyperparams.encoder_token_pi_weights)
+    # print("decoder attention pi")
+    # print(hyperparams.decoder_attention_pi_weights)
+    # print("decoder position pi")
+    # print(hyperparams.decoder_position_pi_weights)
+    # print("decoder token pi")
+    # print(hyperparams.decoder_token_pi_weights)
+
     torch_model = Model(hyperparams=hyperparams)
-
+    # torch_model.hyperparams = hyperparams
     torch_model.eval()  # set the model to inference mode
-
+    print("encoder_layer_0.encoder_attention_pi.weights")
+    print(torch_model.encoder_layer_0.encoder_attention_pi.weights)
+    print("encoder_layer_1.encoder_attention_pi.weights")
+    print(torch_model.encoder_layer_1.encoder_attention_pi.weights)
+    print("encoder_layer_0.encoder_position_pi.weights")
+    print(torch_model.encoder_layer_0.encoder_position_pi.weights)
+    print("encoder_layer_1.encoder_position_pi.weights")
+    print(torch_model.encoder_layer_1.encoder_position_pi.weights)
+    print("encoder_layer_0.encoder_token_pi.weights")
+    print(torch_model.encoder_layer_0.encoder_token_pi.weights)
+    print("encoder_layer_1.encoder_token_pi.weights")
+    print(torch_model.encoder_layer_1.encoder_token_pi.weights)
+    print("decoder_layer_0.decoder_attention_pi.weights")
+    print(torch_model.decoder_layer_0.decoder_attention_pi.weights)
+    print("decoder_layer_1.decoder_attention_pi.weights")
+    print(torch_model.decoder_layer_1.decoder_attention_pi.weights)
+    print("decoder_layer_0.decoder_position_pi.weights")
+    print(torch_model.decoder_layer_0.decoder_position_pi.weights)
+    print("decoder_layer_1.decoder_position_pi.weights")
+    print(torch_model.decoder_layer_1.decoder_position_pi.weights)
+    print("decoder_layer_0.decoder_token_pi.weights")
+    print(torch_model.decoder_layer_0.decoder_token_pi.weights)
+    print("decoder_layer_1.decoder_token_pi.weights")
+    print(torch_model.decoder_layer_1.decoder_token_pi.weights)
 
     model_weights = get_model_weights(model=torch_model)
     for key in model_weights:
