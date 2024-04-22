@@ -152,19 +152,19 @@ def main():
     prompt_tensors = prob_tensors.make_inference_prompt_tensors(num_layers=num_layers)
     for prompt_tensor in prompt_tensors:
         attention_input = prob_tensors.attention_input
-        print("torch_model output")
-        print(torch_model(attention_input, prompt_tensor))
+        torch_result = torch_model(attention_input, prompt_tensor)
+        print("torch_model output", torch_result.shape)
+        print(torch_result)
 
         jax_attention = torch_to_jax_tensor(attention_input)
         jax_prompt = torch_to_jax_tensor(prompt_tensor)
         z_out, t_out, encoder_activations, decoder_activations = (
             jax_model.apply(jax_params, jax_attention, jax_prompt)
         )
-        print("z_out", z_out.shape)
-        print("t_out", t_out.shape)
-
         print("jax_model output")
+        print("z_out", z_out.shape)
         print(z_out)
+        print("t_out", t_out.shape)
         print(t_out)
 
         print("")
