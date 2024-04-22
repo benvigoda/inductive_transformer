@@ -3,13 +3,13 @@ from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
 
-from encoder_universe import EncoderUniverse
-from encoder_bernoulli_categorical import EncoderBernoulliCategorical
-from encoder_token_pi import EncoderTokenPi
-from encoder_position_pi import EncoderPositionPi
-from encoder_attention_pi import EncoderAttentionPi
-from encoder_categorical_bernoulli import EncoderCategoricalBernoulli
-from encoder_and import EncoderAnd
+from jax_transformer.encoder_universe import EncoderUniverse
+from jax_transformer.encoder_bernoulli_categorical import EncoderBernoulliCategorical
+from jax_transformer.encoder_token_pi import EncoderTokenPi
+from jax_transformer.encoder_position_pi import EncoderPositionPi
+from jax_transformer.encoder_attention_pi import EncoderAttentionPi
+from jax_transformer.encoder_categorical_bernoulli import EncoderCategoricalBernoulli
+from jax_transformer.encoder_and import EncoderAnd
 
 
 # In terms of left side pi_t's

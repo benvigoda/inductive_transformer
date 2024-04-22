@@ -2,8 +2,8 @@ from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
 
-from decoder_layer import DecoderLayer
-from encoder_layer import EncoderLayer
+from jax_transformer.decoder_layer import DecoderLayer
+from jax_transformer.encoder_layer import EncoderLayer
 
 
 class InductiveTransformer(nn.Module):

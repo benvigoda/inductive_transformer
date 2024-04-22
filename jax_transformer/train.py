@@ -6,9 +6,9 @@ import numpy as np
 import optax
 import pathlib
 
-from model import BatchedInductiveTransformer
-from text_parsing import InputData, ProbTensors
-from weights import update_weights
+from jax_transformer.model import BatchedInductiveTransformer
+from jax_transformer.text_parsing import InputData, ProbTensors
+from jax_transformer.weights import update_weights
 
 
 class TrainState(train_state.TrainState):
