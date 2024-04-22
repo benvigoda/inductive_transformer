@@ -1,7 +1,7 @@
 from flax import linen as nn  # type: ignore
 import jax.numpy as jnp  # type: ignore
 from typing import Callable
-from helper_functions import custom_normalize
+from jax_transformer.helper_functions import custom_normalize
 
 
 class EncoderAttentionPi(nn.Module):

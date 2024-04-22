@@ -2,23 +2,23 @@ from pprint import pprint
 import jax
 import numpy as np
 
-from decoder_and import DecoderAnd
-from decoder_attention_pi import DecoderAttentionPi
-from decoder_bernoulli_categorical import DecoderBernoulliCategorical
-from decoder_categorical_bernoulli import DecoderCategoricalBernoulli
-from decoder_position_pi import DecoderPositionPi
-from decoder_token_pi import DecoderTokenPi
-from decoder_universe import DecoderUniverse
-from decoder_layer import DecoderLayer
+from jax_transformer.decoder_and import DecoderAnd
+from jax_transformer.decoder_attention_pi import DecoderAttentionPi
+from jax_transformer.decoder_bernoulli_categorical import DecoderBernoulliCategorical
+from jax_transformer.decoder_categorical_bernoulli import DecoderCategoricalBernoulli
+from jax_transformer.decoder_position_pi import DecoderPositionPi
+from jax_transformer.decoder_token_pi import DecoderTokenPi
+from jax_transformer.decoder_universe import DecoderUniverse
+from jax_transformer.decoder_layer import DecoderLayer
 
-from encoder_and import EncoderAnd
-from encoder_attention_pi import EncoderAttentionPi
-from encoder_bernoulli_categorical import EncoderBernoulliCategorical
-from encoder_categorical_bernoulli import EncoderCategoricalBernoulli
-from encoder_position_pi import EncoderPositionPi
-from encoder_token_pi import EncoderTokenPi
-from encoder_universe import EncoderUniverse
-from encoder_layer import EncoderLayer
+from jax_transformer.encoder_and import EncoderAnd
+from jax_transformer.encoder_attention_pi import EncoderAttentionPi
+from jax_transformer.encoder_bernoulli_categorical import EncoderBernoulliCategorical
+from jax_transformer.encoder_categorical_bernoulli import EncoderCategoricalBernoulli
+from jax_transformer.encoder_position_pi import EncoderPositionPi
+from jax_transformer.encoder_token_pi import EncoderTokenPi
+from jax_transformer.encoder_universe import EncoderUniverse
+from jax_transformer.encoder_layer import EncoderLayer
 
 from model import InductiveTransformer
 from weights import update_weights

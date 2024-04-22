@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import jax.numpy as jnp  # type: ignore
 
-from helper_functions import custom_normalize
+from jax_transformer.helper_functions import custom_normalize
 
 
 @dataclass
