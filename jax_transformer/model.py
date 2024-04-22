@@ -67,13 +67,12 @@ class InductiveTransformer(nn.Module):
             decoder_t[idx] = t
             decoder_activations[idx] = activations
 
-        print("jax decoder_t")
-        for t in decoder_t:
-            print(t.shape)
         decoder_z = jnp.stack(decoder_z, axis=0)
-        decoder_t = jnp.stack(decoder_t, axis=0)
         assert decoder_z.shape == (self.num_layers, 2, self.layer_width)
+        decoder_t = jnp.stack(decoder_t, axis=0)
         assert decoder_t.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
+        decoder_t = decoder_t.sum(axis=(0, -1))
+        assert decoder_t.shape == (self.num_positions, self.vocab_size)
         return decoder_z, decoder_t, encoder_activations, decoder_activations
 
 
