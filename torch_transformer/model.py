@@ -1,7 +1,7 @@
 import torch  # type: ignore
 from torch import nn  # type: ignore
-from encoder_layer import EncoderLayer
-from decoder_layer import DecoderLayer
+from torch_transformer.encoder_layer import EncoderLayer
+from torch_transformer.decoder_layer import DecoderLayer
 
 
 class Model(nn.Module):

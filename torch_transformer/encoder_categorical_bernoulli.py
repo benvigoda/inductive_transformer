@@ -1,6 +1,6 @@
 import torch  # type: ignore
 from torch import nn  # type: ignore
-from helper_functions import custom_normalize
+from torch_transformer.helper_functions import custom_normalize
 
 
 class EncoderCategoricalBernoulli(nn.Module):

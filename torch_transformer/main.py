@@ -7,14 +7,15 @@ import torch  # type: ignore
 from torch import nn  # type: ignore
 import torch.nn.functional as F  # type: ignore
 from torch.optim.lr_scheduler import ReduceLROnPlateau, CyclicLR  # type: ignore
-import printing
-from text_parsing import InputData, ProbTensors
-from hyperparameters import HyperParameters
-from model import Model
-from helper_functions import custom_normalize
+from torch_transformer import printing
+from torch_transformer.text_parsing import InputData, ProbTensors
+from torch_transformer.hyperparameters import HyperParameters
+from torch_transformer.model import Model
+from torch_transformer.helper_functions import custom_normalize
 
 
 def normalize_weights(weights):
+    # return weights#FIXME XXX remove this line
     # return nn.functional.normalize(nn.ReLU()(weights), p=1, dim=0)
     return custom_normalize(nn.ReLU()(weights), dim=0)
 

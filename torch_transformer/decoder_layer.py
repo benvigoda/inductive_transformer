@@ -1,11 +1,11 @@
 from torch import nn  # type: ignore
-from decoder_universe import DecoderUniverse
-from decoder_bernoulli_categorical import DecoderBernoulliCategorical
-from decoder_categorical_bernoulli import DecoderCategoricalBernoulli
-from decoder_token_pi import DecoderTokenPi
-from decoder_position_pi import DecoderPositionPi
-from decoder_attention_pi import DecoderAttentionPi
-from decoder_and import DecoderAnd
+from torch_transformer.decoder_universe import DecoderUniverse
+from torch_transformer.decoder_bernoulli_categorical import DecoderBernoulliCategorical
+from torch_transformer.decoder_categorical_bernoulli import DecoderCategoricalBernoulli
+from torch_transformer.decoder_token_pi import DecoderTokenPi
+from torch_transformer.decoder_position_pi import DecoderPositionPi
+from torch_transformer.decoder_attention_pi import DecoderAttentionPi
+from torch_transformer.decoder_and import DecoderAnd
 
 
 class DecoderLayer(nn.Module):

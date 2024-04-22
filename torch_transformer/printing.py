@@ -4,7 +4,7 @@ import os
 import time
 from typing import List
 from torch import nn  # type: ignore
-from helper_functions import custom_normalize
+from torch_transformer.helper_functions import custom_normalize
 
 
 def format_prob_vocab(prob_outputs, vocab):
