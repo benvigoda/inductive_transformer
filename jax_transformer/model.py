@@ -35,6 +35,9 @@ class InductiveTransformer(nn.Module):
         This is the forward pass of the model, defined without batches.
         """
 
+        print("z", z.shape)
+        print("t_categorical", t_categorical.shape)
+
         assert z.shape == (2, self.layer_width)
         assert t_categorical.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
 
@@ -64,6 +67,9 @@ class InductiveTransformer(nn.Module):
             decoder_t[idx] = t
             decoder_activations[idx] = activations
 
+        print("jax decoder_t")
+        for t in decoder_t:
+            print(t.shape)
         decoder_z = jnp.stack(decoder_z, axis=0)
         decoder_t = jnp.stack(decoder_t, axis=0)
         assert decoder_z.shape == (self.num_layers, 2, self.layer_width)

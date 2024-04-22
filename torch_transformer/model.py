@@ -61,6 +61,10 @@ class Model(nn.Module):
         self.decoder_pre_output_details = torch.stack([t_decode_layer_0, t_decode_layer_1], dim=0)
         # this sum performs the open-to-closed universe for the decoder
         # FIXME: could move this to its own file and generalize for num_layers > 2
+        print("torch decode layer 0", t_decode_layer_0.shape)
+        print(t_decode_layer_0)
+        print("torch decode layer 1", t_decode_layer_1.shape)
+        print(t_decode_layer_1)
         self.decoder_output = t_decode_layer_0 + t_decode_layer_1
         self.decoder_output = torch.sum(self.decoder_output, dim=-1)
         assert self.decoder_output.shape == (self.num_positions, self.vocab_size)
