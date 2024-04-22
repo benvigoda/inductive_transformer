@@ -3,13 +3,18 @@ source /Users/benvigoda/src/inductive_transformer/env/bin/activate
 source ../inductive_transformer_position/venv/bin/activate
 
 How we are currently running the system:
-python main.py training_text.txt inference_text.txt --train --num_layer 2 --layer_width 2 --num_data_points 1000
+python main.py training_text.txt inference_text.txt --train --num_layer 2 --layer_width 2 --num_data_points 1000 --silence_google_sheet
 
 To use the test weights (which are themselves set in the hyperparameters.py file) add the --weight_test flag and remove the --train flag
-python main.py training_text.txt inference_text.txt --weight_test --num_layer 2 --layer_width 2 --num_data_points 1000
+python main.py training_text.txt inference_text.txt --weight_test --num_layer 2 --layer_width 2 --num_data_points 1000 --silence_google_sheet
 
 To run perturbation tests and only set some of the weights, add the --perturbation flag and keep the --train flag
-python main.py training_text.txt inference_text.txt --perturbation --train --num_layer 2 --layer_width 2 --num_data_points 1000
+python main.py training_text.txt inference_text.txt --perturbation --train --num_layer 2 --layer_width 2 --num_data_points 1000 --silence_google_sheet
+
+
+From April 22, 2024
+python main.py ../../training_text.txt ../../inference_text.txt --init_perturb_weights --train --num_layer 2 --layer_width 2 --num_data_points 1000 --silence_google_sheet
+python main.py ../../training_text.txt ../../inference_text.txt --perturbation --train --num_layer 2 --layer_width 2 --num_data_points 1000 --silence_google_sheet
 
 
 To get printing to google-sheet working you need to add a credentials.json file in the google_sheets_api directory.
