@@ -48,7 +48,8 @@ def create_train_state(key, num_positions, vocab_size, layer_width, num_layers):
     tx = optax.adam(learning_rate=1.0e-4)
 
     return TrainState.create(
-        apply_fn=model.apply, params=params, tx=tx, grad_mask=set_weights
+        # apply_fn=model.apply, params=params, tx=tx, grad_mask=set_weights
+        apply_fn=model.apply, params=params, tx=tx, grad_mask=None
     )
 
 
@@ -71,7 +72,8 @@ def apply_model(state, z_in, t_in, truths):
 @jax.jit
 def update_model(state, grads):
     # Zero out the gradients of parameters that we don't want to update.
-    grads = jax.tree_util.tree_map(lambda x, y: x * y, grads, state.grad_mask)
+    if state.grad_mask is not None:
+        grads = jax.tree_util.tree_map(lambda x, y: x * y, grads, state.grad_mask)
     return state.apply_gradients(grads=grads)
 
 
@@ -94,8 +96,7 @@ if __name__ == "__main__":
 
     # Initialize RNG state.
     np_rng = np.random.default_rng()
-    # seed = np_rng.integers(0, 2**32 - 1)
-    seed = 2775794490
+    seed = np_rng.integers(0, 2**32 - 1)
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
 
@@ -104,7 +105,7 @@ if __name__ == "__main__":
     prob_tensors = ProbTensors(
         data=data, layer_width=args.layer_width, print_flag=False
     )
-    training_data = prob_tensors.format_training_data(num_layers=args.num_layers)
+    training_data = prob_tensors.format_training_data()
     # Collect all input t tensors.
     all_t_tensors = jnp.stack([example[0] for example in training_data], axis=0)
     all_outputs = jnp.stack([example[1] for example in training_data], axis=0)
@@ -133,7 +134,7 @@ if __name__ == "__main__":
 
     # Train the model.
     n_epochs = 10000
-    batch_size = 10
+    batch_size = 30
     n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
     print_every = 100
     print(f"{n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
@@ -153,10 +154,11 @@ if __name__ == "__main__":
                 state, prob_tensors.attention_input, batch_input_data, batch_output_data
             )
             state = update_model(state, grads)
-            if step > 0 and step % print_every == 0:
-                print(f"step {step}, loss: {loss:.3e}")
+            # if step > 0 and step % print_every == 0:
+            #     print(f"step {step}, loss: {loss:.3e}")
 
-        print(f"epoch {epoch}, loss: {loss:.3e}")
+        if epoch > 0 and epoch % print_every == 0:
+            print(f"epoch {epoch}, loss: {loss:.3e}")
 
     # Print trained weights.
     decoder_layers = ["decoders_0", "decoders_1"]
@@ -191,9 +193,7 @@ if __name__ == "__main__":
         print("")
 
     # Load inference examples.
-    inference_data = prob_tensors.make_inference_prompt_tensors(
-        num_layers=args.num_layers
-    )
+    inference_data = prob_tensors.make_inference_prompt_tensors()
     all_inference_data = jnp.stack(inference_data, axis=0)
     n_examples = len(inference_data)
     assert all_inference_data.shape == (
