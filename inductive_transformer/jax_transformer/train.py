@@ -60,7 +60,8 @@ def apply_model(state, z_in, t_in):
         z_out, t_out, encoder_activations, decoder_activations = state.apply_fn(
             params, z_in, t_in
         )
-        t_in_sum = jnp.sum(t_in, axis=(0, -1))
+        t_in_sum = jnp.sum(t_in, axis=(1, -1))
+        assert t_out.shape == t_in_sum.shape
         return jnp.mean(jnp.square(t_out - t_in_sum))
 
     grad_fn = jax.value_and_grad(loss_fn)
@@ -130,15 +131,15 @@ if __name__ == "__main__":
 
     # Train the model.
     n_epochs = 1000
-    batch_size = 2
+    batch_size = 1
     n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
     print_every = 100
     print(f"{n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
     key, subkey = jax.random.split(key)
     for epoch in range(n_epochs):
         # Shuffle the data.
-        # shuffle_key = jax.random.fold_in(subkey, epoch)
-        # all_t_tensors = jax.random.permutation(shuffle_key, all_t_tensors)
+        shuffle_key = jax.random.fold_in(subkey, epoch)
+        all_t_tensors = jax.random.permutation(shuffle_key, all_t_tensors)
 
         for step in range(0, n_steps_per_epoch):
             batch_data = all_t_tensors[step * batch_size : (step + 1) * batch_size]
