@@ -99,7 +99,7 @@ class ProbTensors():
 
         self.attention_input = self.make_attention_input()
 
-    def format_training_data(self, num_layers: int = 1) -> List[Tuple[np.ndarray, np.ndarray]]:
+    def format_training_data(self) -> List[Tuple[np.ndarray, np.ndarray]]:
         '''
         EXAMPLE INPUT DATA:
         2 sentences "small dog. big cat." in the `text_training.txt` file
@@ -155,7 +155,7 @@ class ProbTensors():
         attention_input = np.full((2, self.layer_width), 0.5)  # A bernoulli input
         return attention_input
 
-    def make_inference_prompt_tensors(self, num_layers: int = 1) -> List[np.ndarray]:
+    def make_inference_prompt_tensors(self) -> List[np.ndarray]:
         inference_data = []  # A list of tuples of (input, expected_output)
         # We train on the expected_output to be the same as the input
         for window in self.data.inference_windows:  # self.windows is a list of lists of vocab indices
