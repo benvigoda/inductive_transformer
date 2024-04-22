@@ -4,16 +4,15 @@ import jax.numpy as jnp
 import numpy as np
 import torch
 import torch.nn.functional as F  # type: ignore
-from jax_transformer.model import InductiveTransformer
-from torch_transformer.hyperparameters import HyperParameters
-from torch_transformer.model import Model
-from torch_transformer.text_parsing import InputData, ProbTensors
-from torch_transformer.main import get_model_weights
+from inductive_transformer.jax_transformer.model import BatchedInductiveTransformer
+from inductive_transformer.torch_transformer.hyperparameters import HyperParameters
+from inductive_transformer.torch_transformer.model import Model
+from inductive_transformer.torch_transformer.text_parsing import InputData, ProbTensors
+from inductive_transformer.torch_transformer.main import get_model_weights
 
 
 class L2Loss:
     def __call__(self, pred, truth):
-        truth = truth.sum(dim=(0, -1))
         print("torch pred", pred.shape)
         print("torch truth", truth.shape)
         loss = F.mse_loss(pred, truth, reduction="mean")
@@ -28,12 +27,12 @@ def torch_to_jax_tensor(torch_tensor):
     return jnp.array(torch_tensor.numpy())
 
 
-def jax_loss_fn(model, params, z_in, t_in):
+def jax_loss_fn(model, params, z_in, t_in, truths):
     z_out, t_out, encoder_activations, decoder_activations = model.apply(
         params, z_in, t_in
     )
-    t_in = jnp.sum(t_in, axis=(0, -1))
-    return jnp.mean(jnp.square(t_out - t_in))
+    # t_in_sum = jnp.sum(t_in, axis=(1, -1))
+    return jnp.mean(jnp.square(t_out - truths))
 
 
 def main():
@@ -52,9 +51,17 @@ def main():
     layer_width = 2
     num_layers = 2
 
+    torch_device = "cpu"
+    data = InputData(parent_dir / "training_text.txt", parent_dir / "inference_text.txt")
+    prob_tensors = ProbTensors(data=data, layer_width=layer_width)
+    prob_tensors.to(torch_device)
+    prompt_tensors = prob_tensors.make_inference_prompt_tensors(num_layers=num_layers)
+    batch_size = len(prompt_tensors)
+    print(f"batch_size: {batch_size}")
+
     key, subkey = jax.random.split(key)
 
-    jax_model = InductiveTransformer(
+    jax_model = BatchedInductiveTransformer(
         layer_width=layer_width,
         num_positions=num_positions,
         vocab_size=vocab_size,
@@ -69,7 +76,7 @@ def main():
         subkey_1,
         minval=0.0,
         maxval=1.0,
-        shape=(num_layers, num_positions, vocab_size, layer_width),
+        shape=(batch_size, num_layers, num_positions, vocab_size, layer_width),
     )
     jax_params = jax_model.init(subkey_2, z_in, t_in)
 
@@ -111,10 +118,6 @@ def main():
                 print(layer_jax_params[sublayer]["weights"])
             print("")
 
-    data = InputData(parent_dir / "training_text.txt", parent_dir / "inference_text.txt")
-    prob_tensors = ProbTensors(data=data, layer_width=layer_width)
-    torch_device = "cpu"
-    prob_tensors.to(torch_device)
     hyperparams = HyperParameters(
         layer_width=layer_width,
         vocab_size=vocab_size,
@@ -167,35 +170,48 @@ def main():
 
     torch_model = Model(hyperparams=hyperparams)
     torch_model.eval()  # set the model to inference mode
-    prompt_tensors = prob_tensors.make_inference_prompt_tensors(num_layers=num_layers)
 
     # lr=0.001
     # torch_optim = torch.optim.Adam(torch_model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
     torch_criterion = L2Loss()  # Simply use an L2 loss
 
+    preds_list = []
+    train_data = prob_tensors.format_training_data(num_layers=num_layers, device=torch_device)
+    training_output = [t[1] for t in train_data]
+    truths = torch.stack(training_output[0: batch_size], 0)
+
+    attention_input = prob_tensors.attention_input
     for prompt_tensor in prompt_tensors:
-        attention_input = prob_tensors.attention_input
         torch_result = torch_model(attention_input, prompt_tensor)
         print("torch_model output", torch_result.shape)
+        preds_list.append(torch_result)
         print(torch_result)
-        torch_loss = torch_criterion(torch_result, prompt_tensor)
-        print(f"torch loss: {torch_loss:.3e}")
+    print("")
 
-        jax_attention = torch_to_jax_tensor(attention_input)
-        jax_prompt = torch_to_jax_tensor(prompt_tensor)
-        z_out, t_out, encoder_activations, decoder_activations = (
-            jax_model.apply(jax_params, jax_attention, jax_prompt)
-        )
-        jax_loss = jax_loss_fn(jax_model, jax_params, jax_attention, jax_prompt)
-        print("jax_model output")
-        print("z_out", z_out.shape)
-        print(z_out)
-        print("t_in", jax_prompt.shape)
-        print("t_out", t_out.shape)
-        print(t_out)
-        print(f"jax loss: {jax_loss:.3e}")
+    preds = torch.stack(preds_list, 0)
+    assert preds.shape == (batch_size, torch_model.hyperparams.num_positions, torch_model.hyperparams.vocab_size)
+    assert truths.shape == (batch_size, torch_model.hyperparams.num_positions, torch_model.hyperparams.vocab_size)
+    torch_loss = torch_criterion(preds, truths)
+    print("batched torch loss:", torch_loss)
+    print("")
 
-        print("")
+    jax_attention = torch_to_jax_tensor(attention_input)
+    all_prompt_tensors = torch.stack(prompt_tensors, 0)
+    jax_prompt = torch_to_jax_tensor(all_prompt_tensors)
+    z_out, t_out, encoder_activations, decoder_activations = (
+        jax_model.apply(jax_params, jax_attention, jax_prompt)
+    )
+    # print("jax prompt shape", jax_prompt.shape)
+    # print("truths shape", truths.shape)
+    jax_truths = torch_to_jax_tensor(truths)
+    jax_loss = jax_loss_fn(jax_model, jax_params, jax_attention, jax_prompt, jax_truths)
+    print("batched jax_model output")
+    print("z_out", z_out.shape)
+    print(z_out)
+    print("t_in", jax_prompt.shape)
+    print("t_out", t_out.shape)
+    print(t_out)
+    print(f"jax loss: {jax_loss:.3e}")
 
     # print("encoder_layer_0.encoder_attention_pi.weights")
     # print(torch_model.encoder_layer_0.encoder_attention_pi.weights)
