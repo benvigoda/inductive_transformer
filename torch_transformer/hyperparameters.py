@@ -64,8 +64,8 @@ class HyperParameters:
     def construct_some_test_weights(self, all_weights_override: bool = False):
         # Don't set the token weights, we can just let training take care of them
         print("Constructing some weights for perturbation test")
-        # sentences = "small dog. big cat."
-        sentences = "small dog. big cat. medium bird. large elephant."
+        sentences = "small dog. big cat."
+        # sentences = "small dog. big cat. medium bird. large elephant."
         if sentences == "small dog. big cat.":
             if self.perturbation_test_encoder_token or all_weights_override:
                 self.encoder_token_pi_weights = torch.full((self.num_layers, self.num_positions, self.vocab_size, self.layer_width), self.weak)
