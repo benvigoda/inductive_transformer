@@ -178,6 +178,8 @@ def main():
     preds_list = []
     train_data = prob_tensors.format_training_data(num_layers=num_layers, device=torch_device)
     training_output = [t[1] for t in train_data]
+    # These are derived from the inputs. I believe we sum over axes 1 and -1 (num layers and layer
+    # width), and then normalize.
     truths = torch.stack(training_output[0: batch_size], 0)
 
     attention_input = prob_tensors.attention_input
@@ -212,6 +214,10 @@ def main():
     print("t_out", t_out.shape)
     print(t_out)
     print(f"jax loss: {jax_loss:.3e}")
+    print("")
+
+    print("summed jax inputs", jax_prompt.sum(axis=(1, -1)))
+    print("jax truths", jax_truths)
 
     # print("encoder_layer_0.encoder_attention_pi.weights")
     # print(torch_model.encoder_layer_0.encoder_attention_pi.weights)
