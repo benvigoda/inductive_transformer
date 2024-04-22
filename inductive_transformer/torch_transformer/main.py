@@ -7,7 +7,7 @@ import torch  # type: ignore
 from torch import nn  # type: ignore
 import torch.nn.functional as F  # type: ignore
 from torch.optim.lr_scheduler import ReduceLROnPlateau, CyclicLR  # type: ignore
-from torch_transformer import printing
+from inductive_transformer.torch_transformer import printing
 from inductive_transformer.torch_transformer.text_parsing import InputData, ProbTensors
 from inductive_transformer.torch_transformer.hyperparameters import HyperParameters
 from inductive_transformer.torch_transformer.model import Model
@@ -349,7 +349,7 @@ def main():
                 train_data=training_data,
                 print_every=20,
                 batch_size=len(prob_tensors.windows),  # Batch all the different sentences together
-                lr=1e-4,
+                lr=1e-3,
                 vocab=data.vocab,
                 prompt_tensors=prompt_tensors,
                 output_to_google_sheet=not args.silence_google_sheet,
