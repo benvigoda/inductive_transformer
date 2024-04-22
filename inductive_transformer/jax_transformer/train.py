@@ -45,7 +45,7 @@ def create_train_state(key, num_positions, vocab_size, layer_width, num_layers):
     # Update weights.
     params, set_weights = update_weights(params)
 
-    tx = optax.adam(learning_rate=4.0e-5)
+    tx = optax.adam(learning_rate=1.0e-4)
 
     return TrainState.create(
         apply_fn=model.apply, params=params, tx=tx, grad_mask=set_weights
@@ -94,7 +94,8 @@ if __name__ == "__main__":
 
     # Initialize RNG state.
     np_rng = np.random.default_rng()
-    seed = np_rng.integers(0, 2**32 - 1)
+    # seed = np_rng.integers(0, 2**32 - 1)
+    seed = 2775794490
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
 
@@ -117,8 +118,8 @@ if __name__ == "__main__":
     print(f"vocab: {data.vocab}")
 
     # temp: duplicate our training data
-    all_t_tensors = jnp.concatenate([all_t_tensors] * 100, axis=0)
-    all_outputs = jnp.concatenate([all_outputs] * 100, axis=0)
+    all_t_tensors = jnp.concatenate([all_t_tensors] * 10, axis=0)
+    all_outputs = jnp.concatenate([all_outputs] * 10, axis=0)
 
     # Initialize all training state (most importantly, the model parameters and optimizer).
     key, subkey = jax.random.split(key)
@@ -132,7 +133,7 @@ if __name__ == "__main__":
 
     # Train the model.
     n_epochs = 10000
-    batch_size = 20
+    batch_size = 10
     n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
     print_every = 100
     print(f"{n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
