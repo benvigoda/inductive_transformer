@@ -3,8 +3,9 @@ import argparse
 import jax
 import jax.numpy as jnp
 import numpy as np
-import optax
+import optax  # type: ignore
 import pathlib
+from flax import linen as nn
 
 from inductive_transformer.jax_transformer.model import BatchedInductiveTransformer
 from inductive_transformer.jax_transformer.text_parsing import InputData, ProbTensors
@@ -106,7 +107,7 @@ if __name__ == "__main__":
     # Initialize RNG state.
     np_rng = np.random.default_rng()
     seed = np_rng.integers(0, 2**32 - 1)
-    seed = 11675966
+    # seed = 11675966
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
 
@@ -152,7 +153,7 @@ if __name__ == "__main__":
 
     # Train the model.
     n_epochs = 100000
-    batch_size = 32
+    batch_size = 3
     n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
     print_every = 100
     print(f"{n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
@@ -165,9 +166,9 @@ if __name__ == "__main__":
 
         for step in range(0, n_steps_per_epoch):
             batch_input_data = all_t_tensors[
-                step * batch_size : (step + 1) * batch_size
+                step * batch_size: (step + 1) * batch_size
             ]
-            batch_output_data = all_outputs[step * batch_size : (step + 1) * batch_size]
+            batch_output_data = all_outputs[step * batch_size: (step + 1) * batch_size]
             grads, loss = apply_model(
                 state, prob_tensors.attention_input, batch_input_data, batch_output_data
             )
@@ -198,16 +199,36 @@ if __name__ == "__main__":
         layer_params = state.params["params"][layer]
         for sublayer in decoder_sublayers:
             print(sublayer)
-            print(layer_params[sublayer]["weights"])
+            if sublayer == "decoder_token_pi":
+                for position, position_weights in enumerate(layer_params[sublayer]["weights"]):
+                    print(f"-- position {position}")
+                    for token_num, token_weights in enumerate(position_weights):
+                        if any(token_weights > 0.1):
+                            print(f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000} -- {data.vocab[token_num]}")
+                        else:
+                            print(f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000}")
+                    print()
+            else:
+                print(layer_params[sublayer]["weights"])
         print("")
 
     print("===================== Encoder Layers ======================")
     for layer in encoder_layers:
         print(layer)
         layer_params = state.params["params"][layer]
-        for sublayer in encoder_sublayers:
+        for sublayer in decoder_sublayers:
             print(sublayer)
-            print(layer_params[sublayer]["weights"])
+            if sublayer == "encoder_token_pi":
+                for position, position_weights in enumerate(layer_params[sublayer]["weights"]):
+                    print(f"-- position {position}")
+                    for token_num, token_weights in enumerate(position_weights):
+                        if any(token_weights > 0.1):
+                            print(f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000} -- {data.vocab[token_num]}")
+                        else:
+                            print(f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000}")
+                    print()
+            else:
+                print(layer_params[sublayer]["weights"])
         print("")
 
     """
