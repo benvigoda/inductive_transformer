@@ -19,11 +19,11 @@ class TrainState(train_state.TrainState):
 
 
 def create_train_state(
-    key, num_positions, vocab_size, layer_width, num_layers, noise_seed
+    key, num_positions, vocab, layer_width, num_layers, noise_seed
 ):
     """Creates initial `TrainState`."""
     bernoulli_width = 2
-
+    vocab_size = len(vocab)
     model = BatchedInductiveTransformer(
         layer_width=layer_width,
         num_positions=num_positions,
@@ -46,7 +46,7 @@ def create_train_state(
     params = model.init(subkey_2, z_in, t_in)
 
     # Update weights.
-    params, set_weights = update_weights(params)
+    params, set_weights = update_weights(params, vocab)
 
     key, subkey = jax.random.split(key)
     tx = optax.chain(
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     key, subkey = jax.random.split(key)
     state = create_train_state(
         subkey,
-        vocab_size=prob_tensors.vocab_size,
+        vocab=data.vocab,
         num_positions=prob_tensors.num_positions,
         layer_width=args.layer_width,
         num_layers=args.num_layers,
