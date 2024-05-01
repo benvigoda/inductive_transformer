@@ -1,6 +1,5 @@
 import jax
 import jax.numpy as jnp  # type: ignore
-import numpy as np
 
 strong = 1.  # Amplify the signal
 weak = 1e-9  # Dampen the signal
@@ -43,9 +42,7 @@ def update_weights(params, vocab):
         update_position_pi_weights(layer, params, updated_params, set_weights, "decoder", layer_width)
         update_position_pi_weights(layer, params, updated_params, set_weights, "encoder", layer_width)
 
-
-
-    #########  Update the weights for layer 1 #########
+    """ Update the weights for layer 1 """
     # encoders_1 is layer=1
     for lw, target_word in zip(range(layer_width), ['dog', 'cat']):
         position = 1
@@ -73,10 +70,9 @@ def update_weights(params, vocab):
         updated_params["params"]["decoders_1"]["decoder_token_pi"]["weights"], dtype=mask_type
     )
 
-
-    #########  Update the weights for layer 0 #########
+    """Set the weights for layer 0"""
     # encoders_0 is layer=0
-    position = 0 # layer=0 is always position=0
+    position = 0  # layer=0 is always position=0
 
     lw = 0
     new_weight = updated_params["params"]["encoders_0"]["encoder_token_pi"]["weights"]
@@ -103,7 +99,7 @@ def update_weights(params, vocab):
     position = 0
     new_weight = updated_params["params"]["decoders_0"]["decoder_token_pi"]["weights"]
     new_weight = new_weight.at[position, :, lw].set(jnp.full(vocab_size, weak))
-    
+
     vocab_idx = next((i for i, word in enumerate(vocab) if word.lower() == 'big'), None)
     new_weight = new_weight.at[position, vocab_idx, lw].set(strong)
     vocab_idx = next((i for i, word in enumerate(vocab) if word.lower() == 'large'), None)
@@ -122,16 +118,15 @@ def update_weights(params, vocab):
         updated_params["params"]["decoders_0"]["decoder_token_pi"]["weights"], dtype=mask_type
     )
 
-
-    ########## set attention weights ###########
+    """Set attention weights."""
     # we want no cross connections
-    # for the connection between layer=1 and layer=0, 
+    # for the connection between layer=1 and layer=0,
     # in lw=0, attention weight connecting to lw=0 should be strong and connecting to lw=1 weak
-    # in lw=1, attention weight connecting to lw=0 should be weak and connecting to lw=1 strong 
+    # in lw=1, attention weight connecting to lw=0 should be weak and connecting to lw=1 strong
     # for the connection from layer=0 to the inputs/outputs, we can have all the weights be uniform
-    
+
     new_weight = updated_params["params"]["encoders_0"]["encoder_attention_pi"]["weights"]
-    new_weight = new_weight.at[:, :].set(jnp.full(layer_width, layer_width, strong / 2))
+    new_weight = new_weight.at[:, :].set(jnp.full((layer_width, layer_width), strong / 2))
     updated_params["params"]["decoders_0"]["decoder_token_pi"]["weights"] = new_weight
     # Fix set_weights so the gradient does not update the weights
     set_weights["params"]["encoders_0"]["encoder_attention_pi"]["weights"] = jnp.zeros_like(
@@ -139,7 +134,7 @@ def update_weights(params, vocab):
     )
 
     new_weight = updated_params["params"]["decoders_0"]["decoder_attention_pi"]["weights"]
-    new_weight = new_weight.at[:, :].set(jnp.full(layer_width, layer_width, strong / 2))
+    new_weight = new_weight.at[:, :].set(jnp.full((layer_width, layer_width), strong / 2))
     updated_params["params"]["decoders_0"]["decoder_attention_pi"]["weights"] = new_weight
     # Fix set_weights so the gradient does not update the weights
     set_weights["params"]["decoders_0"]["decoder_attention_pi"]["weights"] = jnp.zeros_like(
@@ -147,7 +142,7 @@ def update_weights(params, vocab):
     )
 
     new_weight = updated_params["params"]["encoders_1"]["encoder_attention_pi"]["weights"]
-    new_weight = new_weight.at[:, :].set(jnp.full(layer_width, layer_width, weak))
+    new_weight = new_weight.at[:, :].set(jnp.full((layer_width, layer_width), weak))
     new_weight = new_weight.at[0, 0].set(strong)
     new_weight = new_weight.at[1, 1].set(strong)
     updated_params["params"]["encoders_1"]["encoder_attention_pi"]["weights"] = new_weight
@@ -157,7 +152,7 @@ def update_weights(params, vocab):
     )
 
     new_weight = updated_params["params"]["decoders_1"]["decoder_attention_pi"]["weights"]
-    new_weight = new_weight.at[:, :].set(jnp.full(layer_width, layer_width, weak))
+    new_weight = new_weight.at[:, :].set(jnp.full((layer_width, layer_width), weak))
     new_weight = new_weight.at[0, 0].set(strong)
     new_weight = new_weight.at[1, 1].set(strong)
     updated_params["params"]["decoders_1"]["decoder_attention_pi"]["weights"] = new_weight
