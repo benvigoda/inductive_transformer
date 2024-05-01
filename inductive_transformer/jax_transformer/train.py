@@ -55,11 +55,11 @@ def create_train_state(
     )
 
     return TrainState.create(
-        # apply_fn=model.apply, params=params, tx=tx, grad_mask=set_weights
+        # apply_fn=model.apply, params=params, tx=tx, grad_mask=None
         apply_fn=model.apply,
         params=params,
         tx=tx,
-        grad_mask=None,
+        grad_mask=set_weights,
     )
 
 
@@ -152,7 +152,7 @@ if __name__ == "__main__":
     )
 
     # Train the model.
-    n_epochs = 100000
+    n_epochs = 10000
     batch_size = 3
     n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
     print_every = 100
