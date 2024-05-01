@@ -152,7 +152,7 @@ if __name__ == "__main__":
     )
 
     # Train the model.
-    n_epochs = 10000
+    n_epochs = 100000
     batch_size = 3
     n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
     print_every = 100
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     for layer in encoder_layers:
         print(layer)
         layer_params = state.params["params"][layer]
-        for sublayer in decoder_sublayers:
+        for sublayer in encoder_sublayers:
             print(sublayer)
             if sublayer == "encoder_token_pi":
                 for position, position_weights in enumerate(layer_params[sublayer]["weights"]):
