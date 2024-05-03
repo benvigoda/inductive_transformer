@@ -1,3 +1,4 @@
+from functools import partial
 from flax.training import train_state
 import argparse
 import jax
@@ -63,7 +64,7 @@ def create_train_state(
     )
 
 
-@jax.jit
+# @jax.jit
 def apply_model(state, z_in, t_in, truths):
     """Computes gradients and loss for a single instance (not yet batched)."""
 
@@ -79,7 +80,7 @@ def apply_model(state, z_in, t_in, truths):
     return grads, loss
 
 
-@jax.jit
+# @jax.jit
 def update_model(state, grads):
     # Zero out the gradients of parameters that we don't want to update.
     if state.grad_mask is not None:
@@ -152,8 +153,8 @@ if __name__ == "__main__":
     )
 
     # Train the model.
-    n_epochs = 100000
-    batch_size = 3
+    n_epochs = 3000
+    batch_size = 2
     n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
     print_every = 100
     print(f"{n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
@@ -164,17 +165,14 @@ if __name__ == "__main__":
         all_t_tensors = jax.random.permutation(shuffle_key, all_t_tensors)
         all_outputs = jax.random.permutation(shuffle_key, all_outputs)
 
-        for step in range(0, n_steps_per_epoch):
-            batch_input_data = all_t_tensors[
-                step * batch_size: (step + 1) * batch_size
-            ]
-            batch_output_data = all_outputs[step * batch_size: (step + 1) * batch_size]
+        for step_idx in range(0, n_steps_per_epoch):
+            start = step_idx * batch_size
+            batch_input_data = all_t_tensors[start:start + batch_size]
+            batch_output_data = all_outputs[step_idx * batch_size: (step_idx + 1) * batch_size]
             grads, loss = apply_model(
                 state, prob_tensors.attention_input, batch_input_data, batch_output_data
             )
             state = update_model(state, grads)
-            # if step > 0 and step % print_every == 0:
-            #     print(f"step {step}, loss: {loss:.3e}")
 
         if epoch > 0 and epoch % print_every == 0:
             print(f"epoch {epoch}, loss: {loss:.3e}")

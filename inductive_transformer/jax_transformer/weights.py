@@ -69,8 +69,8 @@ def update_weights(params, vocab):
     )
 
     """ Update the weights for layer 0 """
-    position = 1
-    for lw, target_words in zip(range(layer_width), [['big', 'large'], ['small']]):
+    position = 0
+    for lw, target_words in zip(range(layer_width), [['big'], ['small']]):  # [['big', 'large'], ['small']]
         # encoders_0 is layer=0
         new_weight = updated_params["params"]["encoders_0"]["encoder_token_pi"]["weights"]
         new_weight = new_weight.at[position, :, lw].set(jnp.full(vocab_size, weak))
@@ -95,13 +95,19 @@ def update_weights(params, vocab):
     )
 
     """Set attention weights."""
+    set_flat_weights = True
     # we want no cross connections
     # for the connection between layer=1 and layer=0,
     # in lw=0, attention weight connecting to lw=0 should be strong and connecting to lw=1 weak
     # in lw=1, attention weight connecting to lw=0 should be weak and connecting to lw=1 strong
     # for the connection from layer=0 to the inputs/outputs, we can have all the weights be uniform
     new_weight = updated_params["params"]["encoders_0"]["encoder_attention_pi"]["weights"]
-    new_weight = new_weight.at[:, :].set(jnp.full((layer_width, layer_width), strong / 2))
+    if set_flat_weights:
+        new_weight = new_weight.at[:, :].set(jnp.full((layer_width, layer_width), strong / 2))
+    else:
+        new_weight = new_weight.at[:, :].set(jnp.full((layer_width, layer_width), weak))
+        new_weight = new_weight.at[0, 0].set(strong)
+        new_weight = new_weight.at[1, 1].set(strong)
     updated_params["params"]["encoders_0"]["encoder_attention_pi"]["weights"] = new_weight
     # Fix set_weights so the gradient does not update the weights
     set_weights["params"]["encoders_0"]["encoder_attention_pi"]["weights"] = jnp.zeros_like(
@@ -109,7 +115,12 @@ def update_weights(params, vocab):
     )
 
     new_weight = updated_params["params"]["decoders_0"]["decoder_attention_pi"]["weights"]
-    new_weight = new_weight.at[:, :].set(jnp.full((layer_width, layer_width), strong / 2))
+    if set_flat_weights:
+        new_weight = new_weight.at[:, :].set(jnp.full((layer_width, layer_width), strong / 2))
+    else:
+        new_weight = new_weight.at[:, :].set(jnp.full((layer_width, layer_width), weak))
+        new_weight = new_weight.at[0, 0].set(strong)
+        new_weight = new_weight.at[1, 1].set(strong)
     updated_params["params"]["decoders_0"]["decoder_attention_pi"]["weights"] = new_weight
     # Fix set_weights so the gradient does not update the weights
     set_weights["params"]["decoders_0"]["decoder_attention_pi"]["weights"] = jnp.zeros_like(
