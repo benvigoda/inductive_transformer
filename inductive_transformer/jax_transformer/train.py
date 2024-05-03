@@ -52,7 +52,7 @@ def create_train_state(
     key, subkey = jax.random.split(key)
     tx = optax.chain(
         optax.adam(learning_rate=1.0e-4),
-        optax.add_noise(eta=1.0e-2, gamma=0.999, seed=noise_seed),
+        # optax.add_noise(eta=1.0e-2, gamma=0.999, seed=noise_seed),
     )
 
     return TrainState.create(
@@ -60,11 +60,11 @@ def create_train_state(
         apply_fn=model.apply,
         params=params,
         tx=tx,
-        grad_mask=set_weights,
+        grad_mask=None,
     )
 
 
-# @jax.jit
+@jax.jit
 def apply_model(state, z_in, t_in, truths):
     """Computes gradients and loss for a single instance (not yet batched)."""
 
@@ -80,7 +80,7 @@ def apply_model(state, z_in, t_in, truths):
     return grads, loss
 
 
-# @jax.jit
+@jax.jit
 def update_model(state, grads):
     # Zero out the gradients of parameters that we don't want to update.
     if state.grad_mask is not None:
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     # Initialize RNG state.
     np_rng = np.random.default_rng()
     seed = np_rng.integers(0, 2**32 - 1)
-    # seed = 11675966
+    seed = 11675966
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
 
@@ -153,7 +153,7 @@ if __name__ == "__main__":
     )
 
     # Train the model.
-    n_epochs = 3000
+    n_epochs = 100000
     batch_size = 2
     n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
     print_every = 100
