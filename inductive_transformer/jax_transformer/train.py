@@ -108,7 +108,7 @@ if __name__ == "__main__":
     # Initialize RNG state.
     np_rng = np.random.default_rng()
     seed = np_rng.integers(0, 2**32 - 1)
-    seed = 11675966
+    # seed = 11675966
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
 
@@ -153,7 +153,7 @@ if __name__ == "__main__":
     )
 
     # Train the model.
-    n_epochs = 100000
+    n_epochs = 10000
     batch_size = 2
     n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
     print_every = 100
