@@ -17,7 +17,6 @@ class DecoderPositionPi(nn.Module):
 
         weights = self.param('weights', self.weight_init, (self.num_positions, self.layer_width))
         prob_weights = nn.relu(weights) + 1e-9
-
         # we are going to output a categorical distribution over tokens at every lw in the layer
         # each of these output categoricals will be of length vocab_size
         # each categorical will be normalized, not to 1, but to the x value at this lw
