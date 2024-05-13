@@ -1,4 +1,3 @@
-from functools import partial
 from flax.training import train_state
 import argparse
 import jax
@@ -56,11 +55,11 @@ def create_train_state(
     )
 
     return TrainState.create(
-        # apply_fn=model.apply, params=params, tx=tx, grad_mask=None
-        apply_fn=model.apply,
-        params=params,
-        tx=tx,
-        grad_mask=None,
+        apply_fn=model.apply, params=params, tx=tx, grad_mask=None
+        # apply_fn=model.apply,
+        # params=params,
+        # tx=tx,
+        # grad_mask=set_weights,
     )
 
 
@@ -109,6 +108,7 @@ if __name__ == "__main__":
     np_rng = np.random.default_rng()
     seed = np_rng.integers(0, 2**32 - 1)
     # seed = 11675966
+    seed = 615523631
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
 

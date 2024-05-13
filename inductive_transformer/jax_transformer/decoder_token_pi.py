@@ -26,9 +26,9 @@ class DecoderTokenPi(nn.Module):
         # prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)
         prob_weights = custom_normalize(prob_weights, axis=1)
 
-        # rho = custom_normalize(rho, dim=1)  #FIXME: do we want this? We already do it in the decoder_position_pi
+        # rho = custom_normalize(rho, axis=1)  #FIXME: do we want this? We already do it in the decoder_position_pi
         # element-wise product of weight tensor and rho
         t = prob_weights * rho.reshape((self.num_positions, 1, self.layer_width))
         assert t.shape == (self.num_positions, self.vocab_size, self.layer_width)
-        # t = custom_normalize(t, dim=1)
+        # t = custom_normalize(t, axis=1)
         return t
