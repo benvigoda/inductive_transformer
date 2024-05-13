@@ -30,12 +30,12 @@ class EncoderLayer(nn.Module):
             num_positions=self.num_positions,
             vocab_size=self.vocab_size,
             layer_width=self.layer_width,
-            weight_init=self.weight_init,  # FIXME: @Erik is this right? Shouldn't it be a different weight_init?
+            weight_init=self.weight_init,
         )
         self.encoder_position_pi = EncoderPositionPi(
             num_positions=self.num_positions,
             layer_width=self.layer_width,
-            weight_init=self.weight_init,  # FIXME: @Erik is this right? Shouldn't it be a different weight_init?
+            weight_init=self.weight_init,
         )
         self.encoder_attention_pi = EncoderAttentionPi(
             vocab_size=self.vocab_size,

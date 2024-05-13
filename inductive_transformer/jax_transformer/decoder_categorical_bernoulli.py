@@ -66,7 +66,8 @@ class DecoderCategoricalBernoulli:
         u = jnp.stack([u_0, u_1], axis=0)
 
         # import pdb; pdb.set_trace()
-        # u = nn.functional.normalize(u, p=1, dim=0)
-        u = custom_normalize(u, axis=0)
+        # u = custom_normalize(u, axis=0)  # IMPORTANT: We commented this line out because it was over correcting the weights to converge
+        # to a zero loss with two sentences "big dog. small cat." Once we commented it out, it yielded a loss of 1e-10 right away, without
+        # needing to train away from that point.
         assert u.shape == (2, self.layer_width, self.layer_width)
         return u

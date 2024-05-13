@@ -13,6 +13,6 @@ class DecoderBernoulliCategorical:
 
         categorical = bernoulli[1] / (bernoulli[0] + 1e-9)
         categorical = categorical.reshape((1, self.layer_width))
-        categorical = custom_normalize(categorical, axis=1)
+        categorical = custom_normalize(categorical, axis=1)  # FIXME : Do we need this?
 
         return categorical
