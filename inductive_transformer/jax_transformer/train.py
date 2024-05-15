@@ -46,7 +46,7 @@ def create_train_state(
     params = model.init(subkey_2, z_in, t_in)
 
     # Update weights.
-    params, set_weights = update_weights(params, vocab)
+    params, set_weights = update_weights(params, vocab, set_all_weights=True)
 
     key, subkey = jax.random.split(key)
     tx = optax.chain(
