@@ -1,6 +1,5 @@
 import torch  # type: ignore
 from torch import nn  # type: ignore
-from inductive_transformer.torch_transformer.helper_functions import custom_normalize
 
 
 class EncoderTokenPi(nn.Module):

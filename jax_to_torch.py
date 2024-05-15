@@ -8,7 +8,7 @@ from inductive_transformer.jax_transformer.model import BatchedInductiveTransfor
 from inductive_transformer.torch_transformer.hyperparameters import HyperParameters
 from inductive_transformer.torch_transformer.model import Model
 from inductive_transformer.torch_transformer.text_parsing import InputData, ProbTensors
-from inductive_transformer.torch_transformer.main import get_model_weights
+# from inductive_transformer.torch_transformer.main import get_model_weights
 
 
 class L2Loss:
