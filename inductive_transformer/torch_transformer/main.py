@@ -3,6 +3,7 @@ import math
 import typing
 import pathlib
 import argparse
+import random
 import torch  # type: ignore
 from torch import nn  # type: ignore
 import torch.nn.functional as F  # type: ignore
@@ -105,9 +106,10 @@ def train_model(
 
     # Initialize the optimizer and the loss function
     optim = torch.optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
+    # optim = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9)
     scheduler_plateau = ReduceLROnPlateau(optim, mode='min', factor=.1, patience=50, min_lr=5e-5, verbose=True)
     scheduler_cycle = CyclicLR(optim, base_lr=lr, max_lr=0.1, step_size_up=20, step_size_down=2, mode='triangular', cycle_momentum=False, verbose=True)
-    total_loss = 0.0
+    losses_for_print = []
     start = time.time()  # Keep track of time
     toc = start
     if device:
@@ -154,20 +156,20 @@ def train_model(
             preds = torch.stack([model(attention_input, text_window) for text_window in token_prob_tensors], 0)
             # Compute and save the loss for that batch
             loss = criterion(preds, truths)
-            total_loss += loss
+            losses_for_print.append(loss.detach().item())
             losses.append(loss.detach())
 
             # Backpropagate the loss
             loss.backward()
             optim.step()
-            # if 1500 < i % 2000 < 1600:
+            # if n_batches // 2 < i < n_batches:
             #     scheduler_cycle.step()
             # else:
             #     scheduler_plateau.step(loss)
 
             # Print the loss every print_every batches
-            if (i + 1) % print_every == 0:
-                loss_avg = total_loss / print_every
+            if (epoch * n_batches + i) % print_every == 0:
+                loss_avg = statistics.mean(losses_for_print)
                 printing.print_to_terminal(
                     model=model,
                     iter=i,
@@ -175,107 +177,119 @@ def train_model(
                     start=start,
                     loss_avg=loss_avg,
                     toc=toc,
-                    print_every=print_every
+                    print_every=print_every,
+                    total_epochs=epochs,
                 )
                 toc = time.time()
-                total_loss = 0
-            # Save the model parameters for later printing
-            # Only output to the google sheet when we reach a local minimum
-            # Or at the very end of a batch
-            if is_local_minimum(losses=losses, reached_local_minimum=reached_local_minimum) or i == n_batches - 1 or loss_avg < 1e-9:
-                reached_local_minimum = True
-                reached_local_maximum = False
-                minimum_index = i * epoch + i - 1
-                minima_models_indices.append(minimum_index)
+                losses_for_print = []
+            # # Save the model parameters for later printing
+            # # Only output to the google sheet when we reach a local minimum
+            # # Or at the very end of a batch
+            # if is_local_minimum(losses=losses, reached_local_minimum=reached_local_minimum) or i == n_batches - 1 or loss_avg < 1e-9:
+            #     reached_local_minimum = True
+            #     reached_local_maximum = False
+            #     minimum_index = i * epoch + i - 1
+            #     minima_models_indices.append(minimum_index)
 
-                # Set the model to evaluation mode for inference
-                model.eval()
+            #     # Set the model to evaluation mode for inference
+            #     model.eval()
 
-                if prompt_tensors is not None:
-                    printing.print_to_terminal(
-                        model=model,
-                        iter=i,
-                        epoch=epoch,
-                        start=start,
-                        loss_avg=loss_avg,
-                        toc=toc,
-                        print_every=print_every,
-                    )
-                    if output_to_google_sheet:
-                        printing.send_to_google_sheet(
-                            prompt_tensors=prompt_tensors,
-                            preds=output_print_tensors,
-                            truths=truths,
-                            token_prob_tensors=token_prob_tensors,
-                            model=model,
-                            model_outputs=preds,
-                            attention_input=attention_input,
-                            vocab=vocab,
-                        )
+            #     if prompt_tensors is not None:
+            #         printing.print_to_terminal(
+            #             model=model,
+            #             iter=i,
+            #             epoch=epoch,
+            #             start=start,
+            #             loss_avg=loss_avg,
+            #             toc=toc,
+            #             print_every=print_every,
+            #             total_epochs=epochs,
+            #         )
+            #         if output_to_google_sheet:
+            #             printing.send_to_google_sheet(
+            #                 prompt_tensors=prompt_tensors,
+            #                 preds=output_print_tensors,
+            #                 truths=truths,
+            #                 token_prob_tensors=token_prob_tensors,
+            #                 model=model,
+            #                 model_outputs=preds,
+            #                 attention_input=attention_input,
+            #                 vocab=vocab,
+            #             )
 
-                # import pdb; pdb.set_trace()
-                #############################
-                # Use this to print the model parameters
-                # encoder printing
-                model.encoder_layer_0.encoder_universe.u
-                model.encoder_layer_0.encoder_bernoulli_categorical.v
-                model.encoder_layer_0.encoder_attention_pi.y
-                model.encoder_layer_0.encoder_position_pi.x
-                model.encoder_layer_0.encoder_token_pi.rho
-                # model.encoder_layer_0.encoder_categorical_bernoulli.bernoulli
-                model.encoder_layer_0.encoder_and.z
-                model.encoder_layer_0.encoder_and.y
-                model.encoder_layer_0.encoder_and.x
+            #     # import pdb; pdb.set_trace()
+            #     #############################
+            #     # Use this to print the model parameters
+            #     # encoder printing
+            #     model.encoder_layer_0.encoder_universe.u
+            #     model.encoder_layer_0.encoder_bernoulli_categorical.v
+            #     model.encoder_layer_0.encoder_attention_pi.y
+            #     model.encoder_layer_0.encoder_position_pi.x
+            #     model.encoder_layer_0.encoder_token_pi.rho
+            #     # model.encoder_layer_0.encoder_categorical_bernoulli.bernoulli
+            #     model.encoder_layer_0.encoder_and.z
+            #     model.encoder_layer_0.encoder_and.y
+            #     model.encoder_layer_0.encoder_and.x
 
-                model.encoder_layer_1.encoder_universe.u
-                model.encoder_layer_1.encoder_bernoulli_categorical.v
-                model.encoder_layer_1.encoder_attention_pi.y
-                model.encoder_layer_1.encoder_position_pi.x
-                model.encoder_layer_1.encoder_token_pi.rho
-                # model.encoder_layer_1.encoder_categorical_bernoulli.bernoulli
-                model.encoder_layer_1.encoder_and.z
-                model.encoder_layer_1.encoder_and.y
-                model.encoder_layer_1.encoder_and.x
+            #     model.encoder_layer_1.encoder_universe.u
+            #     model.encoder_layer_1.encoder_bernoulli_categorical.v
+            #     model.encoder_layer_1.encoder_attention_pi.y
+            #     model.encoder_layer_1.encoder_position_pi.x
+            #     model.encoder_layer_1.encoder_token_pi.rho
+            #     # model.encoder_layer_1.encoder_categorical_bernoulli.bernoulli
+            #     model.encoder_layer_1.encoder_and.z
+            #     model.encoder_layer_1.encoder_and.y
+            #     model.encoder_layer_1.encoder_and.x
 
-                # decoder printing
-                model.decoder_layer_1.decoder_and.y
-                model.decoder_layer_1.decoder_and.x
-                # model.decoder_layer_1.decoder_bernoulli_categorical.categorical
-                model.decoder_layer_1.decoder_attention_pi.y
-                model.decoder_layer_1.decoder_attention_pi.v
-                model.decoder_layer_1.decoder_position_pi.rho
-                model.decoder_layer_1.decoder_token_pi.t
-                model.decoder_layer_1.decoder_categorical_bernoulli.u
-                model.decoder_layer_1.decoder_universe.z
+            #     # decoder printing
+            #     model.decoder_layer_1.decoder_and.y
+            #     model.decoder_layer_1.decoder_and.x
+            #     # model.decoder_layer_1.decoder_bernoulli_categorical.categorical
+            #     model.decoder_layer_1.decoder_attention_pi.y
+            #     model.decoder_layer_1.decoder_attention_pi.v
+            #     model.decoder_layer_1.decoder_position_pi.rho
+            #     model.decoder_layer_1.decoder_token_pi.t
+            #     model.decoder_layer_1.decoder_categorical_bernoulli.u
+            #     model.decoder_layer_1.decoder_universe.z
 
-                model.decoder_layer_0.decoder_and.y
-                model.decoder_layer_0.decoder_and.x
-                # model.decoder_layer_0.decoder_bernoulli_categorical.categorical
-                model.decoder_layer_0.decoder_attention_pi.y
-                model.decoder_layer_0.decoder_attention_pi.y  # input
-                model.decoder_layer_0.decoder_attention_pi.v  # output
-                model.decoder_layer_0.decoder_token_pi.rho  # input
-                model.decoder_layer_0.decoder_position_pi.rho
-                model.decoder_layer_0.decoder_token_pi.t  # output
-                model.decoder_layer_0.decoder_categorical_bernoulli.u
-                model.decoder_layer_0.decoder_universe.z
-                #############################
+            #     model.decoder_layer_0.decoder_and.y
+            #     model.decoder_layer_0.decoder_and.x
+            #     # model.decoder_layer_0.decoder_bernoulli_categorical.categorical
+            #     model.decoder_layer_0.decoder_attention_pi.y
+            #     model.decoder_layer_0.decoder_attention_pi.y  # input
+            #     model.decoder_layer_0.decoder_attention_pi.v  # output
+            #     model.decoder_layer_0.decoder_token_pi.rho  # input
+            #     model.decoder_layer_0.decoder_position_pi.rho
+            #     model.decoder_layer_0.decoder_token_pi.t  # output
+            #     model.decoder_layer_0.decoder_categorical_bernoulli.u
+            #     model.decoder_layer_0.decoder_universe.z
+            #     #############################
 
-                # Set the model back to training mode
-                model.train()
-                if loss_avg < 1e-9:
-                    # Terminate training
-                    return model
+            #     # Set the model back to training mode
+            #     model.train()
+            #     if loss_avg < 1e-9:
+            #         # Terminate training
+            #         return model
 
-            # If the loss goes back down for the first time, we have reached a local maximum
-            elif len(losses) > 1 and losses[-1] < losses[-2] and not reached_local_maximum:
-                reached_local_maximum = True
-                reached_local_minimum = False
+            # # If the loss goes back down for the first time, we have reached a local maximum
+            # elif len(losses) > 1 and losses[-1] < losses[-2] and not reached_local_maximum:
+            #     reached_local_maximum = True
+            #     reached_local_minimum = False
 
     # Plot the losses:
     if output_matplot:
         plot_convergence(losses=losses)
-
+    if output_to_google_sheet:
+        printing.send_to_google_sheet(
+            prompt_tensors=prompt_tensors[:batch_size],
+            preds=output_print_tensors,
+            truths=truths,
+            token_prob_tensors=token_prob_tensors,
+            model=model,
+            model_outputs=preds,
+            attention_input=attention_input,
+            vocab=vocab,
+        )
     # Return the model
     return model
 
@@ -320,7 +334,12 @@ def main():
         prompt_tensors = [input_training for input_training, _ in training_data]
     else:
         prompt_tensors = prob_tensors.make_inference_prompt_tensors(num_layers=args.num_layers)
-    training_data = training_data * math.ceil(args.num_data_points / len(training_data))  # Duplicate to have num_data_points
+    batch_size = 2
+    num_epochs = math.ceil(args.num_data_points / batch_size)
+    print(f"Number of epochs: {num_epochs}")
+    print(f"Batch size: {batch_size}")
+    # training_data = training_data * math.ceil(args.num_data_points / len(training_data))  # Duplicate to have num_data_points
+    random.shuffle(training_data)
     hyperparams = HyperParameters(
         layer_width=args.layer_width,
         vocab_size=data.vocab_size,
@@ -345,11 +364,17 @@ def main():
             model = train_model(
                 model=model,
                 attention_input=prob_tensors.attention_input,
-                epochs=1,
+                epochs=num_epochs,
                 train_data=training_data,
+<<<<<<< HEAD:inductive_transformer/torch_transformer/main.py
                 print_every=20,
                 batch_size=len(prob_tensors.windows),  # Batch all the different sentences together
                 lr=1e-3,
+=======
+                print_every=8,
+                batch_size=batch_size,
+                lr=1e-2,
+>>>>>>> main:main.py
                 vocab=data.vocab,
                 prompt_tensors=prompt_tensors,
                 output_to_google_sheet=not args.silence_google_sheet,
@@ -371,30 +396,30 @@ def main():
         decoder_position_pi_weights = torch.stack(decoder_position_pi_weights, dim=0)
         decoder_token_pi_weights = torch.stack(decoder_token_pi_weights, dim=0)
         # Print the mean and standard deviation of the weights
-        print("encoder_attention_pi_weights:")
-        print(encoder_attention_pi_weights.mean(dim=0))
-        print("+/-")
-        print(encoder_attention_pi_weights.std(dim=0))
-        print("encoder_position_pi_weights:")
-        print(encoder_position_pi_weights.mean(dim=0))
-        print("+/-")
-        print(encoder_position_pi_weights.std(dim=0))
-        print("encoder_token_pi_weights:")
-        print(encoder_token_pi_weights.mean(dim=0))
-        print("+/-")
-        print(encoder_token_pi_weights.std(dim=0))
-        print("decoder_attention_pi_weights:")
-        print(decoder_attention_pi_weights.mean(dim=0))
-        print("+/-")
-        print(decoder_attention_pi_weights.std(dim=0))
-        print("decoder_position_pi_weights:")
-        print(decoder_position_pi_weights.mean(dim=0))
-        print("+/-")
-        print(decoder_position_pi_weights.std(dim=0))
-        print("decoder_token_pi_weights:")
-        print(decoder_token_pi_weights.mean(dim=0))
-        print("+/-")
-        print(decoder_token_pi_weights.std(dim=0))
+        # print("encoder_attention_pi_weights:")
+        # print(encoder_attention_pi_weights.mean(dim=0))
+        # print("+/-")
+        # print(encoder_attention_pi_weights.std(dim=0))
+        # print("encoder_position_pi_weights:")
+        # print(encoder_position_pi_weights.mean(dim=0))
+        # print("+/-")
+        # print(encoder_position_pi_weights.std(dim=0))
+        # print("encoder_token_pi_weights:")
+        # print(encoder_token_pi_weights.mean(dim=0))
+        # print("+/-")
+        # print(encoder_token_pi_weights.std(dim=0))
+        # print("decoder_attention_pi_weights:")
+        # print(decoder_attention_pi_weights.mean(dim=0))
+        # print("+/-")
+        # print(decoder_attention_pi_weights.std(dim=0))
+        # print("decoder_position_pi_weights:")
+        # print(decoder_position_pi_weights.mean(dim=0))
+        # print("+/-")
+        # print(decoder_position_pi_weights.std(dim=0))
+        # print("decoder_token_pi_weights:")
+        # print(decoder_token_pi_weights.mean(dim=0))
+        # print("+/-")
+        # print(decoder_token_pi_weights.std(dim=0))
         # import pdb; pdb.set_trace()
 
     # Inference:
