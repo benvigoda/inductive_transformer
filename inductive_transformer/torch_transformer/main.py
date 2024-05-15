@@ -4,10 +4,11 @@ import typing
 import pathlib
 import argparse
 import random
+import statistics
 import torch  # type: ignore
 from torch import nn  # type: ignore
 import torch.nn.functional as F  # type: ignore
-from torch.optim.lr_scheduler import ReduceLROnPlateau, CyclicLR  # type: ignore
+# from torch.optim.lr_scheduler import ReduceLROnPlateau, CyclicLR  # type: ignore
 from inductive_transformer.torch_transformer import printing
 from inductive_transformer.torch_transformer.text_parsing import InputData, ProbTensors
 from inductive_transformer.torch_transformer.hyperparameters import HyperParameters
@@ -102,13 +103,13 @@ def train_model(
     print("attention input", attention_input.device)
     # Initialize the lists used for storing what we want to print to the terminal and google sheet
     losses = []  # Store all the losses for later printing
-    minima_models_indices = []  # Store the indices of the models at the local minima so we can print just those
+    # minima_models_indices = []  # Store the indices of the models at the local minima so we can print just those
 
     # Initialize the optimizer and the loss function
     optim = torch.optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
     # optim = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9)
-    scheduler_plateau = ReduceLROnPlateau(optim, mode='min', factor=.1, patience=50, min_lr=5e-5, verbose=True)
-    scheduler_cycle = CyclicLR(optim, base_lr=lr, max_lr=0.1, step_size_up=20, step_size_down=2, mode='triangular', cycle_momentum=False, verbose=True)
+    # scheduler_plateau = ReduceLROnPlateau(optim, mode='min', factor=.1, patience=50, min_lr=5e-5, verbose=True)
+    # scheduler_cycle = CyclicLR(optim, base_lr=lr, max_lr=0.1, step_size_up=20, step_size_down=2, mode='triangular', cycle_momentum=False, verbose=True)
     losses_for_print = []
     start = time.time()  # Keep track of time
     toc = start
@@ -144,8 +145,8 @@ def train_model(
     print("Initial loss:", initial_loss)
 
     # Set the booleans to only print when local minimum is reached
-    reached_local_minimum = False
-    reached_local_maximum = False
+    # reached_local_minimum = False
+    # reached_local_maximum = False
     loss_avg = math.inf
     # Train the model for several epochs
     for epoch in range(epochs):
@@ -366,15 +367,9 @@ def main():
                 attention_input=prob_tensors.attention_input,
                 epochs=num_epochs,
                 train_data=training_data,
-<<<<<<< HEAD:inductive_transformer/torch_transformer/main.py
-                print_every=20,
-                batch_size=len(prob_tensors.windows),  # Batch all the different sentences together
-                lr=1e-3,
-=======
                 print_every=8,
                 batch_size=batch_size,
                 lr=1e-2,
->>>>>>> main:main.py
                 vocab=data.vocab,
                 prompt_tensors=prompt_tensors,
                 output_to_google_sheet=not args.silence_google_sheet,
