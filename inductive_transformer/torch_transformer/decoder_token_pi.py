@@ -1,6 +1,6 @@
 import torch  # type: ignore
 from torch import nn  # type: ignore
-from helper_functions import custom_normalize
+from inductive_transformer.torch_transformer.helper_functions import custom_normalize
 
 
 class DecoderTokenPi(nn.Module):
