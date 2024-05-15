@@ -38,13 +38,14 @@ def format_attention_tensor(t):
     return '[' + ', '.join(['{:.2f}'.format(value) for value in t]) + ']'
 
 
-def print_to_terminal(model, iter, epoch, start, loss_avg, toc, print_every):
+def print_to_terminal(model, iter, epoch, start, loss_avg, toc, print_every, total_epochs):
     print(
-        "time = %dm, epoch %d, iter = %d, loss = %.10f,\
+        "time = %dm, epoch %d of %d, iter = %d, loss = %.10f,\
         %ds per %d iters"
         % (
             (time.time() - start) // 60,
             epoch + 1,
+            total_epochs,
             iter + 1,
             loss_avg,
             time.time() - toc,
