@@ -1,6 +1,6 @@
 import torch  # type: ignore
 from torch import nn  # type: ignore
-from helper_functions import custom_normalize
+# from helper_functions import custom_normalize
 
 
 class EncoderUniverse(nn.Module):
@@ -167,7 +167,7 @@ class EncoderUniverse(nn.Module):
             p(\text{parent}_0 = 0) &=
             p(\text{child}=1) * 0.5 ^ (n - 1) * ( 2^(n-1) - 1 )
             p(\text{child}=0) * 0.5 ^ (n - 1) \nonumber \\
-        \end{align}
+        \\end{align}
 
 
         # Tail

@@ -1,11 +1,11 @@
 from torch import nn  # type: ignore
-from encoder_universe import EncoderUniverse
-from encoder_bernoulli_categorical import EncoderBernoulliCategorical
-from encoder_token_pi import EncoderTokenPi
-from encoder_position_pi import EncoderPositionPi
-from encoder_attention_pi import EncoderAttentionPi
-from encoder_categorical_bernoulli import EncoderCategoricalBernoulli
-from encoder_and import EncoderAnd
+from inductive_transformer.torch_transformer.encoder_universe import EncoderUniverse
+from inductive_transformer.torch_transformer.encoder_bernoulli_categorical import EncoderBernoulliCategorical
+from inductive_transformer.torch_transformer.encoder_token_pi import EncoderTokenPi
+from inductive_transformer.torch_transformer.encoder_position_pi import EncoderPositionPi
+from inductive_transformer.torch_transformer.encoder_attention_pi import EncoderAttentionPi
+from inductive_transformer.torch_transformer.encoder_categorical_bernoulli import EncoderCategoricalBernoulli
+from inductive_transformer.torch_transformer.encoder_and import EncoderAnd
 
 
 # In terms of left side pi_t's
