@@ -4,8 +4,9 @@ import pathlib
 import re
 import string
 from typing import List, Dict, Tuple
+from inductive_transformer.jax_transformer.helper_functions import EPSILON
 
-PROBABLE = 1 - 1e-9
+PROBABLE = 1 - EPSILON
 IMPROBABLE = 1e-5
 
 

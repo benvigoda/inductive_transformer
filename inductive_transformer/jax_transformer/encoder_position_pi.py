@@ -1,7 +1,7 @@
 from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
-from inductive_transformer.jax_transformer.helper_functions import custom_normalize
+from inductive_transformer.jax_transformer.helper_functions import custom_normalize, EPSILON
 
 
 '''
@@ -39,7 +39,7 @@ class EncoderPositionPi(nn.Module):
         # rho = custom_normalize(rho, dim=0)
 
         weights = self.param('weights', self.weight_init, (self.num_positions, self.layer_width))
-        prob_weights = nn.relu(weights) + 1e-9
+        prob_weights = nn.relu(weights) + EPSILON
         # NOTE: we decided to normalize the weights (it shouldn't matter)
         prob_weights = custom_normalize(prob_weights, axis=0)
 

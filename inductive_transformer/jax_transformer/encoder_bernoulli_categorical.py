@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from inductive_transformer.jax_transformer.helper_functions import custom_normalize
+from inductive_transformer.jax_transformer.helper_functions import custom_normalize, EPSILON
 
 
 @dataclass
@@ -12,7 +12,7 @@ class EncoderBernoulliCategorical:
         # and then normalize the categoricals
         # v[below_lw][above_lw] = u[heads][below_lw][above_lw] / u[tails][below_lw][above_lw]
 
-        v = u[1] / (u[0] + 1e-9)
+        v = u[1] / (u[0] + EPSILON)
 
         # we want to normalize is the inputs to a specific pi_a, remember from the encoder universe factor:
         # v[0][0] + v[1][0] = 1

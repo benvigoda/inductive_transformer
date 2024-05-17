@@ -70,6 +70,7 @@ class InductiveTransformer(nn.Module):
         assert decoder_t.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
         decoder_t = decoder_t.sum(axis=(0, -1))
         assert decoder_t.shape == (self.num_positions, self.vocab_size)
+        print(f"decoder_t {decoder_t}")
         return decoder_z, decoder_t, encoder_activations, decoder_activations
 
 

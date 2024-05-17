@@ -1,7 +1,7 @@
 from flax import linen as nn  # type: ignore
 import jax.numpy as jnp  # type: ignore
 from typing import Callable
-# from helper_functions import custom_normalize
+from inductive_transformer.jax_transformer.helper_functions import EPSILON
 
 
 class EncoderTokenPi(nn.Module):
@@ -16,7 +16,7 @@ class EncoderTokenPi(nn.Module):
         # we expect t to be already normalized
 
         weights = self.param('weights', self.weight_init, (self.num_positions, self.vocab_size, self.layer_width))
-        prob_weights = nn.relu(weights) + 1e-9
+        prob_weights = nn.relu(weights) + EPSILON
         # NOTE: we decided not to normalize the weights (it shouldn't matter)
         # prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)
         # prob_weights = custom_normalize(prob_weights, dim=1)
