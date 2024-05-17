@@ -46,7 +46,7 @@ def create_train_state(
     params = model.init(subkey_2, z_in, t_in)
 
     # Update weights.
-    params, set_weights = update_weights(params, vocab, set_all_weights=True)
+    params, set_weights = update_weights(params, vocab, set_all_weights=False)
 
     key, subkey = jax.random.split(key)
     tx = optax.chain(
@@ -72,7 +72,11 @@ def apply_model(state, z_in, t_in, truths):
             params, z_in, t_in
         )
         assert t_out.shape == truths.shape
-        return jnp.mean(jnp.square(t_out - truths))
+        loss = jnp.mean(jnp.square(t_out - truths))
+        # jax.debug.print("t_out\n{}", t_out)
+        # jax.debug.print("truths\n{}", truths)
+        # jax.debug.print("loss {}\n", loss)
+        return loss
 
     grad_fn = jax.value_and_grad(loss_fn)
     loss, grads = grad_fn(state.params)
@@ -138,8 +142,8 @@ if __name__ == "__main__":
     print(f"num training examples: {all_t_tensors.shape[0]}")
 
     # temp: duplicate our training data
-    all_t_tensors = jnp.concatenate([all_t_tensors] * 10, axis=0)
-    all_outputs = jnp.concatenate([all_outputs] * 10, axis=0)
+    all_t_tensors = jnp.concatenate([all_t_tensors] * 100, axis=0)
+    all_outputs = jnp.concatenate([all_outputs] * 100, axis=0)
     print(f"num training examples (padded): {all_t_tensors.shape[0]}")
 
     # Initialize all training state (most importantly, the model parameters and optimizer).
@@ -154,17 +158,17 @@ if __name__ == "__main__":
     )
 
     # Train the model.
-    n_epochs = 1000
-    batch_size = 2
+    n_epochs = 2000
+    batch_size = 10
     n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
     print_every = 100
     print(f"{n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
     key, subkey = jax.random.split(key)
     for epoch in range(n_epochs):
         # Shuffle the data.
-        shuffle_key = jax.random.fold_in(subkey, epoch)
-        all_t_tensors = jax.random.permutation(shuffle_key, all_t_tensors)
-        all_outputs = jax.random.permutation(shuffle_key, all_outputs)
+        # shuffle_key = jax.random.fold_in(subkey, epoch)
+        # all_t_tensors = jax.random.permutation(shuffle_key, all_t_tensors)
+        # all_outputs = jax.random.permutation(shuffle_key, all_outputs)
 
         for step_idx in range(0, n_steps_per_epoch):
             start = step_idx * batch_size
@@ -175,7 +179,7 @@ if __name__ == "__main__":
             )
             state = update_model(state, grads)
 
-        if epoch > 0 and epoch % print_every == 0:
+        if epoch % print_every == 0:
             print(f"epoch {epoch}, loss: {loss:.3e}")
 
     # Print trained weights.
