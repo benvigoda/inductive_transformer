@@ -1,8 +1,7 @@
 from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
-
-from inductive_transformer.jax_transformer.helper_functions import custom_normalize
+from inductive_transformer.jax_transformer.helper_functions import custom_normalize, EPSILON
 
 
 class DecoderAttentionPi(nn.Module):
@@ -18,7 +17,7 @@ class DecoderAttentionPi(nn.Module):
 
         # We want to interpret the weights as probabilities. To ensure they're all strictly between
         # 0 and 1, we pass them through a relu and then normalize.
-        prob_weights = nn.relu(weights) + 1e-9
+        prob_weights = nn.relu(weights) + EPSILON
 
         # we are going to output a categorical distribution over tokens at every lw in the layer
         # each of these output categoricals will be of length vocab_size

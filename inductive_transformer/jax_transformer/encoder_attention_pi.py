@@ -1,7 +1,7 @@
 from flax import linen as nn  # type: ignore
 import jax.numpy as jnp  # type: ignore
 from typing import Callable
-from inductive_transformer.jax_transformer.helper_functions import custom_normalize
+from inductive_transformer.jax_transformer.helper_functions import custom_normalize, EPSILON
 
 
 class EncoderAttentionPi(nn.Module):
@@ -15,7 +15,7 @@ class EncoderAttentionPi(nn.Module):
         assert v.shape == (self.layer_width, self.layer_width)
         # we expect v to be already normalized categorical
         weights = self.param('weights', self.weight_init, (self.layer_width, self.layer_width))
-        prob_weights = nn.relu(weights) + 1e-9
+        prob_weights = nn.relu(weights) + EPSILON
 
         prob_weights = custom_normalize(prob_weights, axis=1)
 

@@ -1,8 +1,9 @@
 import jax
 import jax.numpy as jnp  # type: ignore
+from inductive_transformer.jax_transformer.helper_functions import EPSILON
 
 strong = 1.  # Amplify the signal
-weak = 1e-9  # Dampen the signal
+weak = EPSILON  # Dampen the signal
 
 mask_type = int
 
@@ -71,7 +72,7 @@ def update_weights(params, vocab, set_all_weights=False):
 
         """ Update the weights for layer 0 """
         position = 0
-        for lw, target_words in zip(range(layer_width), [['big'], ['small']]):  # [['big', 'large'], ['small']]
+        for lw, target_words in zip(range(layer_width), [['small'], ['big']]):  # [['big', 'large'], ['small']]
             # encoders_0 is layer=0
             new_weight = updated_params["params"]["encoders_0"]["encoder_token_pi"]["weights"]
             new_weight = new_weight.at[position, :, lw].set(jnp.full(vocab_size, weak))
