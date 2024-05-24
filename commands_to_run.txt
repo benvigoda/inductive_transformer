@@ -25,3 +25,6 @@ So long as this token.json file is there, you won't need to approve the permissi
 
 From April 29, 2024
 PYTHONPATH=. python inductive_transformer/jax_transformer/train.py training_text.txt inference_text.txt --num_layer 2 --layer_width 2
+
+May 24
+python inductive_transformer/jax_transformer/train.py training_text.txt inference_text.txt --num_layer 2 --layer_width 2

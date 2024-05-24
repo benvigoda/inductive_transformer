@@ -234,7 +234,6 @@ if __name__ == "__main__":
                 print(layer_params[sublayer]["weights"])
         print("")
 
-    """
     # Load inference examples.
     inference_data = prob_tensors.make_inference_prompt_tensors()
     all_inference_data = jnp.stack(inference_data, axis=0)
@@ -247,9 +246,16 @@ if __name__ == "__main__":
         args.layer_width,
     )
 
+    # or should we use epsilon? does it matter?
+    prompt_data = all_inference_data.at[:, :, 1, :, :].set(1.0 / prob_tensors.vocab_size)
+    print("prompt data", prompt_data.shape)
+    print(prompt_data)
+    print("attention input")
+    print(prob_tensors.attention_input)
+
     # Run inference.
     decoder_z, decoder_t, encoder_activations, decoder_activations = state.apply_fn(
-        state.params, prob_tensors.attention_input, all_inference_data
+        state.params, prob_tensors.attention_input, prompt_data
     )
 
     print("===================== Inference Activations ======================")
@@ -281,7 +287,7 @@ if __name__ == "__main__":
         print(f"Inference example {idx}")
 
         print("input t")
-        print(all_inference_data[idx])
+        print(prompt_data[idx])
         print("output t")
         print(decoder_t[idx])
         print("")
@@ -299,7 +305,6 @@ if __name__ == "__main__":
                 print(key)
                 print(layer_activation[key][idx])
                 print("")
-    """
 
     # import pdb
     # pdb.set_trace()
