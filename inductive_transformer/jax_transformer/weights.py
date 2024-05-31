@@ -45,8 +45,9 @@ def update_weights(params, vocab, set_all_weights=False):
 
     if set_all_weights:
         """ Update the weights for layer 1 """
-        position = 1
         for lw, target_words in zip(range(layer_width), [['dog'], ['cat']]):
+            position = 1
+
             # encoders_1 is layer=1
             new_weight = updated_params["params"]["encoders_1"]["encoder_token_pi"]["weights"]
             new_weight = new_weight.at[position, :, lw].set(jnp.full(vocab_size, weak))
@@ -63,6 +64,19 @@ def update_weights(params, vocab, set_all_weights=False):
                 new_weight = new_weight.at[position, vocab_idx, lw].set(strong)
             updated_params["params"]["decoders_1"]["decoder_token_pi"]["weights"] = new_weight
 
+
+            position =  0
+
+            # encoders_1 is layer=1
+            new_weight = updated_params["params"]["encoders_1"]["encoder_token_pi"]["weights"]
+            new_weight = new_weight.at[position, :, lw].set(jnp.full(vocab_size, weak))
+            updated_params["params"]["encoders_1"]["encoder_token_pi"]["weights"] = new_weight
+
+            # decoder_1 is layer=1
+            new_weight = updated_params["params"]["decoders_1"]["decoder_token_pi"]["weights"]
+            new_weight = new_weight.at[position, :, lw].set(jnp.full(vocab_size, weak))
+            updated_params["params"]["decoders_1"]["decoder_token_pi"]["weights"] = new_weight
+
         # Fix set_weights so the gradient does not update the weights
         # set_weights["params"]["encoders_1"]["encoder_token_pi"]["weights"] = jnp.zeros_like(
         #     updated_params["params"]["encoders_1"]["encoder_token_pi"]["weights"], dtype=mask_type
@@ -72,8 +86,9 @@ def update_weights(params, vocab, set_all_weights=False):
         # )
 
         """ Update the weights for layer 0 """
-        position = 0
         for lw, target_words in zip(range(layer_width), [['small'], ['big']]):  # [['big', 'large'], ['small']]
+            position = 0
+
             # encoders_0 is layer=0
             new_weight = updated_params["params"]["encoders_0"]["encoder_token_pi"]["weights"]
             new_weight = new_weight.at[position, :, lw].set(jnp.full(vocab_size, weak))
@@ -81,12 +96,25 @@ def update_weights(params, vocab, set_all_weights=False):
                 vocab_idx = next((i for i, word in enumerate(vocab) if word.lower() == target_word), None)
                 new_weight = new_weight.at[position, vocab_idx, lw].set(strong)
             updated_params["params"]["encoders_0"]["encoder_token_pi"]["weights"] = new_weight
+
             # decoder_0 is layer=0
             new_weight = updated_params["params"]["decoders_0"]["decoder_token_pi"]["weights"]
             new_weight = new_weight.at[position, :, lw].set(jnp.full(vocab_size, weak))
             for target_word in target_words:
                 vocab_idx = next((i for i, word in enumerate(vocab) if word.lower() == target_word), None)
                 new_weight = new_weight.at[position, vocab_idx, lw].set(strong)
+            updated_params["params"]["decoders_0"]["decoder_token_pi"]["weights"] = new_weight
+
+            position = 1
+
+            # encoders_0 is layer=0
+            new_weight = updated_params["params"]["encoders_0"]["encoder_token_pi"]["weights"]
+            new_weight = new_weight.at[position, :, lw].set(jnp.full(vocab_size, weak))
+            updated_params["params"]["encoders_0"]["encoder_token_pi"]["weights"] = new_weight
+
+            # decoder_0 is layer=0
+            new_weight = updated_params["params"]["decoders_0"]["decoder_token_pi"]["weights"]
+            new_weight = new_weight.at[position, :, lw].set(jnp.full(vocab_size, weak))
             updated_params["params"]["decoders_0"]["decoder_token_pi"]["weights"] = new_weight
 
         # Fix set_weights so the gradient does not update the weights
