@@ -273,9 +273,9 @@ if __name__ == "__main__":
         "u",
         "v",
         "y_categorical",
+        "y_bernoulli",
         "rho_categorical",
         "x_categorical",
-        "y_bernoulli",
         "x_bernoulli",
         "z_prime",
     ]
