@@ -40,7 +40,7 @@ def update_weights(params, vocab, set_all_weights=False):
         num_layers += 1
 
     for layer in range(num_layers):
-        # update_position_pi_weights(layer, params, updated_params, set_weights, "decoder", layer_width)
+        update_position_pi_weights(layer, params, updated_params, set_weights, "decoder", layer_width)
         update_position_pi_weights(layer, params, updated_params, set_weights, "encoder", layer_width)
 
     if set_all_weights:
