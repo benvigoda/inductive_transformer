@@ -66,6 +66,9 @@ class EncoderLayer(nn.Module):
         y_categorical = self.encoder_attention_pi(v)
         assert y_categorical.shape == (1, self.layer_width)
 
+        y_bernoulli = self.encoder_categorical_bernoulli(y_categorical)
+        assert y_bernoulli.shape == (2, self.layer_width)
+
         # Hook 3 pi_t's to their parent pi_rho, everywhere this occurs.
         # The encoder open-closed universe without backwards info from the decoder simply clones the input data for a given token and position
         # and sends it to the corresponding pi_t in both the the left and right columns.
@@ -82,9 +85,7 @@ class EncoderLayer(nn.Module):
         assert x_categorical.shape == (1, self.layer_width)
 
         # Encoder Categorical-Bernoulli
-        y_bernoulli = self.encoder_categorical_bernoulli(y_categorical)
         x_bernoulli = self.encoder_categorical_bernoulli(x_categorical)
-        assert y_bernoulli.shape == (2, self.layer_width)
         assert x_bernoulli.shape == (2, self.layer_width)
 
         # Encoder $\land$
@@ -95,9 +96,9 @@ class EncoderLayer(nn.Module):
             "u": u,
             "v": v,
             "y_categorical": y_categorical,
+            "y_bernoulli": y_bernoulli,
             "rho_categorical": rho_categorical,
             "x_categorical": x_categorical,
-            "y_bernoulli": y_bernoulli,
             "x_bernoulli": x_bernoulli,
             "z_prime": z_prime,
         }
