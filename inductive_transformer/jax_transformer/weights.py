@@ -54,6 +54,7 @@ def update_weights(params, vocab, set_all_weights=False):
                 vocab_idx = next((i for i, word in enumerate(vocab) if word.lower() == target_word), None)
                 new_weight = new_weight.at[position, vocab_idx, lw].set(strong)
             updated_params["params"]["encoders_1"]["encoder_token_pi"]["weights"] = new_weight
+
             # decoder_1 is layer=1
             new_weight = updated_params["params"]["decoders_1"]["decoder_token_pi"]["weights"]
             new_weight = new_weight.at[position, :, lw].set(jnp.full(vocab_size, weak))
@@ -72,7 +73,7 @@ def update_weights(params, vocab, set_all_weights=False):
 
         """ Update the weights for layer 0 """
         position = 0
-        for lw, target_words in zip(range(layer_width), [['small', 'large'], ['big', 'large']]):  # [['big', 'large'], ['small']]
+        for lw, target_words in zip(range(layer_width), [['small'], ['big']]):  # [['big', 'large'], ['small']]
             # encoders_0 is layer=0
             new_weight = updated_params["params"]["encoders_0"]["encoder_token_pi"]["weights"]
             new_weight = new_weight.at[position, :, lw].set(jnp.full(vocab_size, weak))
@@ -97,7 +98,7 @@ def update_weights(params, vocab, set_all_weights=False):
         # )
 
         """Set attention weights."""
-        set_flat_weights = True
+        set_flat_weights = False
         # we want no cross connections
         # for the connection between layer=1 and layer=0,
         # in lw=0, attention weight connecting to lw=0 should be strong and connecting to lw=1 weak
