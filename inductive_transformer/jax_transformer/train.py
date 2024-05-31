@@ -46,7 +46,7 @@ def create_train_state(
     params = model.init(subkey_2, z_in, t_in)
 
     # Update weights.
-    params, set_weights = update_weights(params, vocab, set_all_weights=False)
+    params, set_weights = update_weights(params, vocab, set_all_weights=True)
 
     key, subkey = jax.random.split(key)
     tx = optax.chain(
@@ -141,11 +141,6 @@ if __name__ == "__main__":
     print(f"vocab: {data.vocab}")
     print(f"num training examples: {all_t_tensors.shape[0]}")
 
-    # temp: duplicate our training data
-    all_t_tensors = jnp.concatenate([all_t_tensors] * 100, axis=0)
-    all_outputs = jnp.concatenate([all_outputs] * 100, axis=0)
-    print(f"num training examples (padded): {all_t_tensors.shape[0]}")
-
     # Initialize all training state (most importantly, the model parameters and optimizer).
     key, subkey = jax.random.split(key)
     state = create_train_state(
@@ -157,8 +152,20 @@ if __name__ == "__main__":
         noise_seed=noise_seed,
     )
 
+    # Check the initial loss.
+    grads, loss = apply_model(
+        state, prob_tensors.attention_input, all_t_tensors, all_outputs
+    )
+    print(f"initial loss: {loss:.3e}")
+
+    # temp: duplicate our training data
+    all_t_tensors = jnp.concatenate([all_t_tensors] * 100, axis=0)
+    all_outputs = jnp.concatenate([all_outputs] * 100, axis=0)
+    print(f"num training examples (padded): {all_t_tensors.shape[0]}")
+
     # Train the model.
-    n_epochs = 2000
+    # n_epochs = 2000
+    n_epochs = 0
     batch_size = 10
     n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
     print_every = 100
@@ -246,8 +253,10 @@ if __name__ == "__main__":
         args.layer_width,
     )
 
-    # or should we use epsilon? does it matter?
-    prompt_data = all_inference_data.at[:, :, 1, :, :].set(1.0 / prob_tensors.vocab_size)
+    # uniform distribution
+    # prompt_data = all_inference_data.at[:, :, 1, :, :].set(1.0 / prob_tensors.vocab_size)
+    # all words epsilon
+    prompt_data = all_inference_data.at[:, :, 1, :, :].set(1e-6)
     print("prompt data", prompt_data.shape)
     print(prompt_data)
     print("attention input")
