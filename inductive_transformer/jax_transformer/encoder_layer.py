@@ -93,6 +93,7 @@ class EncoderLayer(nn.Module):
         assert z_prime.shape == (2, self.layer_width)
 
         activations = {
+            "z": z,
             "u": u,
             "v": v,
             "y_categorical": y_categorical,

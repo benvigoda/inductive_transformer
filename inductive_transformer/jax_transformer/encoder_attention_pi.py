@@ -19,6 +19,9 @@ class EncoderAttentionPi(nn.Module):
 
         prob_weights = custom_normalize(prob_weights, axis=1)
 
+        # in the future we may want to normalize v here for good measure
+        # v = custom_normalize(v, axis=1)
+
         # element-wise product of weight vector and token vector for each column in the layer
         y = prob_weights * v
 
@@ -26,6 +29,8 @@ class EncoderAttentionPi(nn.Module):
         y = jnp.sum(y, axis=0, keepdims=True)  # after summing it is size = (1, layer_width)
         assert y.shape == (1, self.layer_width)
 
-        y = custom_normalize(y, axis=1)
+        # we had to remove this since otherwise, y_categorical would have 0.5's instead of 1's,
+        # when it is certain on both values of the layer_width index:
+        # y = custom_normalize(y, axis=1)
 
         return y  # y is categorical

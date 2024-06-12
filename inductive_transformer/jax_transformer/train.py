@@ -270,6 +270,7 @@ if __name__ == "__main__":
     print("===================== Inference Activations ======================")
 
     encoder_activation_keys = [
+        "z",
         "u",
         "v",
         "y_categorical",
@@ -314,6 +315,7 @@ if __name__ == "__main__":
                 print(key)
                 print(layer_activation[key][idx])
                 print("")
+
 
     # import pdb
     # pdb.set_trace()

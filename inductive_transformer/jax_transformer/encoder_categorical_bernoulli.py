@@ -17,16 +17,18 @@ class EncoderCategoricalBernoulli:
         # The probability of a bernoulli variable being true is the same as the probability of the
         # corresponding categorical state.
 
+        # the assumption is that the categorical coming in is properly normalized
+        # but to we should verify that each output from each attention pi's is between 0 and 1
+        # Check that the categorical is between 0 and 1
+        assert jnp.all(categorical >= 0)
+        assert jnp.all(categorical <= 1)
+
         bernoulli_1 = categorical
-
-        # The probability of a bernoulli variable being false is the sum of the probabilities of all
-        # the other categorical states.
-        # Note: if categorical[i][j] is much larger than categorical[i][k] for k != j, then this
-        # method of performing the calculation introduces a lot of rounding error.
-
-        bernoulli_0 = categorical.sum(axis=-1, keepdims=True) - categorical
+        bernoulli_0 = 1 - categorical  # The assumption here is that the categorical variable is properly normalized already
         bernoulli = jnp.concatenate([bernoulli_0, bernoulli_1])
-        bernoulli = custom_normalize(bernoulli, axis=0)
+
+        # by construction these are each normalized
+        # bernoulli = custom_normalize(bernoulli, axis=0)
         assert bernoulli.shape == (2, self.layer_width)
 
         return bernoulli
