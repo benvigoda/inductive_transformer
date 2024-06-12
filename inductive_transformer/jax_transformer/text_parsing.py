@@ -153,7 +153,9 @@ class ProbTensors():
         attention_input[i=0, l=1] = 0.5
         attention_input[i=1, l=1] = 0.5
         '''
-        attention_input = np.full((2, self.layer_width), 0.5)  # A bernoulli input
+        attention_input = np.full((2, self.layer_width), 0)  # A bernoulli input
+        attention_input[1, 0] = 1
+        attention_input[1, 1] = 1
         return attention_input
 
     def make_inference_prompt_tensors(self) -> List[np.ndarray]:
