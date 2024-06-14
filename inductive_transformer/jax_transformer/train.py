@@ -233,6 +233,10 @@ if __name__ == "__main__":
     # Print trained weights.
     print_params(state, data.vocab)
 
+    if not args.prompt_text:
+        print("No prompt text given, exiting.")
+        exit()
+
     # Load inference examples.
     inference_data = prob_tensors.make_inference_prompt_tensors()
     all_inference_data = jnp.stack(inference_data, axis=0)
@@ -244,10 +248,6 @@ if __name__ == "__main__":
         prob_tensors.vocab_size,
         args.layer_width,
     )
-
-    if not args.prompt_text:
-        print("No prompt text given, exiting.")
-        exit()
 
     # uniform distribution
     # prompt_data = all_inference_data.at[:, :, 1, :, :].set(1.0 / prob_tensors.vocab_size)
