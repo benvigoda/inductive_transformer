@@ -49,10 +49,14 @@ def create_train_state(
     params, set_weights = update_weights(params, vocab, set_all_weights=perturb_flag)
 
     key, subkey = jax.random.split(key)
-    tx = optax.chain(
-        optax.adam(learning_rate=1.0e-4),
-        # optax.add_noise(eta=1.0e-2, gamma=0.999, seed=noise_seed),
-    )
+    if noise_seed is None:
+        tx = optax.chain(
+            optax.adam(learning_rate=1.0e-4),
+        )
+    else:
+        tx = optax.chain(
+            optax.add_noise(eta=1.0e-2, gamma=0.999, seed=noise_seed),
+        )
     # If perturb_flag is True, we will not update the weights set in weights.py.
     if perturb_flag:
         grad_mask = set_weights
@@ -154,7 +158,7 @@ if __name__ == "__main__":
     noise_seed = jax.random.randint(
         subkey, (1,), jnp.iinfo(jnp.int32).min, jnp.iinfo(jnp.int32).max
     )[0]
-    # noise_seed = None  # To not include noise in the training process.
+    noise_seed = None  # To not include noise in the training process.
 
     # Load training data.
     data = InputData(args.training_text, args.prompt_text, print_vals=False)
