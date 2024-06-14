@@ -46,6 +46,10 @@ class InputData():
             print(f'inference sentences: {self.inference_windows}')
             print(f'tokenizer_dict: {self.tokenizer_dict}')
 
+    @property
+    def padding_token(self) -> int:
+        return self.vocab_size - 1
+
     @staticmethod
     def clean(text: str) -> str:
         # To avoid this:
@@ -83,9 +87,9 @@ class InputData():
                 continue
             words = sentence.split()
             next_window = [self.tokenizer_dict[w] for w in words]
-            # Pad the window with -1's (the padding token)
+            # Add padding tokens to fill the rest of the window.
             while len(next_window) < window_size:
-                next_window.append(-1)
+                next_window.append(self.padding_token)
             windows.append(next_window)
         return windows
 

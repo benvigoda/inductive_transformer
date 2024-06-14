@@ -51,6 +51,12 @@ class InductiveTransformer(nn.Module):
             encoder_x.append(x)
             encoder_y.append(y)
             encoder_activations.append(activations)
+            # if we are in a layer where text_parsing tells us there is no input text from the prompt
+            # (it tells us this by sending in a token called [PAD])
+            # if prompt_text(self.num_layers - idx) == "<PADDING>":
+                # then set z in this layer to all 1's
+                # verify that the z above is the output of the layer which in the paper diagram is called z_prime
+
 
         decoder_z = [None] * (self.num_layers)
         decoder_t = [None] * (self.num_layers)
