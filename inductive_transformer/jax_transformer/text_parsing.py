@@ -15,10 +15,15 @@ class InputData():
     def __init__(self, training_path, inference_path, stop_token='.', print_vals=True):
         self.stop_token = stop_token
         # Reads a text files
+        if not training_path or not training_path.exists():
+            raise FileNotFoundError(f"File {training_path} not found")
         with open(training_path) as f:
             raw_training_text = " ".join(f.readlines())
-        with open(inference_path) as f:
-            raw_inference_text = " ".join(f.readlines())
+        if not inference_path or not inference_path.exists():
+            raw_inference_text = ""
+        else:
+            with open(inference_path) as f:
+                raw_inference_text = " ".join(f.readlines())
 
         self.raw_training_text = self.clean(raw_training_text)
         self.raw_inference_text = self.clean(raw_inference_text)

@@ -10,6 +10,7 @@ from flax import linen as nn
 from inductive_transformer.jax_transformer.model import BatchedInductiveTransformer
 from inductive_transformer.jax_transformer.text_parsing import InputData, ProbTensors
 from inductive_transformer.jax_transformer.weights import update_weights
+from inductive_transformer.jax_transformer.printing import print_params
 
 
 class TrainState(train_state.TrainState):
@@ -19,7 +20,7 @@ class TrainState(train_state.TrainState):
 
 
 def create_train_state(
-    key, num_positions, vocab, layer_width, num_layers, noise_seed
+    key, num_positions, vocab, layer_width, num_layers, noise_seed, perturb_flag
 ):
     """Creates initial `TrainState`."""
     bernoulli_width = 2
@@ -49,6 +50,7 @@ def create_train_state(
     params, set_weights = update_weights(params, vocab, set_all_weights=True)
 
     key, subkey = jax.random.split(key)
+    
     tx = optax.chain(
         optax.adam(learning_rate=1.0e-4),
         # optax.add_noise(eta=1.0e-2, gamma=0.999, seed=noise_seed),
@@ -98,8 +100,29 @@ def parse_args():
         "training_text", type=pathlib.Path
     )  # A text file of sentences to train on
     parser.add_argument(
-        "inference_text", type=pathlib.Path
+        "--prompt_text", type=pathlib.Path
     )  # A text file of sentences to run inference on
+    # if doing perturbation test, you also need to give it training_text
+    parser.add_argument("--perturb", action="store_true")
+
+    '''
+    if --train_text not empty
+    train with entirely free weights
+    if --prompt_text not empty
+    do inference on the prompt_text
+    if the prompt_text does not completely fill the context window, set the
+    z_prime appropriate activations in the encoder to all 1's
+    if both training_text and prompt_text are non-empty
+    first train the weights with training_text,
+    then run inference with the prompt text
+    if both --perturb is True and training_text is non-empty:
+    train but do not modify the weights that are set in weights.py
+    if --perturb is True and training_text is non-empty and prompt_text is non-empty:
+    train but do not modify the weights that are set in weights.py
+    then run inference with the prompt_text
+    if the prompt_text does not completely fill the context window, set the
+    z_prime appropriate activations in the encoder to all 1's
+    '''
     parser.add_argument("--layer_width", type=int, default=2)
     parser.add_argument("--num_layers", type=int, default=2)
     return parser.parse_args()
@@ -108,6 +131,9 @@ def parse_args():
 if __name__ == "__main__":
     # Parse args.
     args = parse_args()
+    # If doing perturbation test, you also need to give it training_text
+    if args.perturb:
+        assert args.training_text
 
     # Initialize RNG state.
     np_rng = np.random.default_rng()
@@ -121,9 +147,10 @@ if __name__ == "__main__":
     noise_seed = jax.random.randint(
         subkey, (1,), jnp.iinfo(jnp.int32).min, jnp.iinfo(jnp.int32).max
     )[0]
+    # noise_seed = None # To not include noise in the training process.
 
     # Load training data.
-    data = InputData(args.training_text, args.inference_text, print_vals=False)
+    data = InputData(args.training_text, args.prompt_text, print_vals=False)
     prob_tensors = ProbTensors(
         data=data, layer_width=args.layer_width, print_flag=False
     )
@@ -150,6 +177,7 @@ if __name__ == "__main__":
         layer_width=args.layer_width,
         num_layers=args.num_layers,
         noise_seed=noise_seed,
+        perturb_flag=args.perturb,
     )
 
     # Check the initial loss.
@@ -164,13 +192,15 @@ if __name__ == "__main__":
     print(f"num training examples (padded): {all_t_tensors.shape[0]}")
 
     # Train the model.
-    # n_epochs = 2000
-    n_epochs = 0
-    batch_size = 10
-    n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
-    print_every = 100
-    print(f"{n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
-    key, subkey = jax.random.split(key)
+    if args.training_text:
+        n_epochs = 2000
+        batch_size = 10
+        n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
+        print_every = 100
+        print(f"{n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
+        key, subkey = jax.random.split(key)
+    else:
+        n_epochs = 0
     for epoch in range(n_epochs):
         # Shuffle the data.
         # shuffle_key = jax.random.fold_in(subkey, epoch)
@@ -190,57 +220,11 @@ if __name__ == "__main__":
             print(f"epoch {epoch}, loss: {loss:.3e}")
 
     # Print trained weights.
-    decoder_layers = ["decoders_0", "decoders_1"]
-    encoder_layers = ["encoders_0", "encoders_1"]
-    decoder_sublayers = [
-        "decoder_attention_pi",
-        "decoder_position_pi",
-        "decoder_token_pi",
-    ]
-    encoder_sublayers = [
-        "encoder_attention_pi",
-        "encoder_position_pi",
-        "encoder_token_pi",
-    ]
+    print_params(state, data.vocab)
 
-    print("===================== Decoder Layers ======================")
-    for layer in decoder_layers:
-        print(layer)
-        layer_params = state.params["params"][layer]
-        for sublayer in decoder_sublayers:
-            print(sublayer)
-            if sublayer == "decoder_token_pi":
-                for position, position_weights in enumerate(layer_params[sublayer]["weights"]):
-                    print(f"-- position {position}")
-                    for token_num, token_weights in enumerate(position_weights):
-                        if any(token_weights > 0.1):
-                            print(f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000} -- {data.vocab[token_num]}")
-                        else:
-                            print(f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000}")
-                    print()
-            else:
-                print(layer_params[sublayer]["weights"])
-        print("")
-
-    print("===================== Encoder Layers ======================")
-    for layer in encoder_layers:
-        print(layer)
-        layer_params = state.params["params"][layer]
-        for sublayer in encoder_sublayers:
-            print(sublayer)
-            if sublayer == "encoder_token_pi":
-                for position, position_weights in enumerate(layer_params[sublayer]["weights"]):
-                    print(f"-- position {position}")
-                    for token_num, token_weights in enumerate(position_weights):
-                        if any(token_weights > 0.1):
-                            print(f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000} -- {data.vocab[token_num]}")
-                        else:
-                            print(f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000}")
-                    print()
-            else:
-                print(layer_params[sublayer]["weights"])
-        print("")
-
+    if not args.prompt_text:
+        print("No prompt text given, exiting.")
+        exit()
     # Load inference examples.
     inference_data = prob_tensors.make_inference_prompt_tensors()
     all_inference_data = jnp.stack(inference_data, axis=0)
