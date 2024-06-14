@@ -22,8 +22,9 @@ class InputData():
             raw_training_text = " ".join(f.readlines())
         if not inference_path or not inference_path.exists():
             raw_inference_text = ""
-        with open(inference_path) as f:
-            raw_inference_text = " ".join(f.readlines())
+        else:
+            with open(inference_path) as f:
+                raw_inference_text = " ".join(f.readlines())
 
         self.raw_training_text = self.clean(raw_training_text)
         self.raw_inference_text = self.clean(raw_inference_text)
