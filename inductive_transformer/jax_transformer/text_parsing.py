@@ -1,13 +1,12 @@
 import argparse
+import jax
+import jax.numpy as jnp
 import numpy as np
 import pathlib
 import re
 import string
 from typing import List, Dict, Tuple
-from inductive_transformer.jax_transformer.helper_functions import EPSILON
-
-PROBABLE = 1 - EPSILON
-IMPROBABLE = EPSILON
+from inductive_transformer.jax_transformer.helper_functions import PROBABLE, IMPROBABLE
 
 
 class InputData():
@@ -35,8 +34,11 @@ class InputData():
         self.vocab_size: int = len(self.vocab)
         self.tokenizer_dict: Dict = self.get_tokenizer()
         self.training_windows = self.stop_token_parsing(text=self.raw_training_text, stop_token=self.stop_token)
-        self.inference_windows = self.stop_token_parsing(text=self.raw_inference_text, stop_token=self.stop_token)
-        self.window_size = max(len(w) for w in self.training_windows + self.inference_windows)
+        self.window_size = self.training_windows.shape[1]
+        self.inference_windows = self.stop_token_parsing(
+            text=self.raw_inference_text, stop_token=self.stop_token, min_window_size=self.window_size
+        )
+        self.window_size = max(self.window_size, self.inference_windows.shape[1])
 
         # Returns an ordered list of all the words that appear in the file
         if print_vals:
@@ -79,9 +81,10 @@ class InputData():
             tokenizer_dict[w] = i
         return tokenizer_dict
 
-    def stop_token_parsing(self, text, stop_token) -> List[List[int]]:
+    def stop_token_parsing(self, text, stop_token, min_window_size=0) -> jax.Array:
         sentences = text.split(stop_token)  # Split on the stop token
         window_size = max(len(s.split()) for s in sentences)  # Get the max window size as the max number of words in the sentences
+        window_size = max(window_size, min_window_size)
         windows = []
         for sentence in sentences:
             if not sentence:
@@ -92,6 +95,7 @@ class InputData():
             while len(next_window) < window_size:
                 next_window.append(self.padding_token)
             windows.append(next_window)
+        windows = jnp.array(windows)
         return windows
 
 
@@ -136,17 +140,23 @@ class ProbTensors():
         Repeat this same data for every l (indexing layer) and lw (indexing layer width)
         '''
         training_data = []  # A list of tuples of (input, expected_output)
-        # Each window corresponds to a sentence. Each sentence is processed individually and appended to the training data
-        # We train on the expected_output to be the same as the input
-        for window in self.windows:  # self.windows is a list of lists of vocab indices
-            # For example, the first window is [0, 1] corresponding to "small dog"
+        # Each window corresponds to a sentence. Each sentence is processed individually and
+        # appended to the training data. We train on the expected_output to be the same as the
+        # input. self.windows is an array of vocab indices, shape (num_sentences, num_words). For
+        # example, the first window is [0, 1] corresponding to "small dog".
+        for window in self.windows:
+            # Convert the window to a one-hot encoding
+            # Note: we could use https://jax.readthedocs.io/en/latest/_autosummary/jax.nn.one_hot.html
             output_tensor = np.full((self.num_positions, self.vocab_size), self.improbable)
             for word_position, vocab_index in enumerate(window):
                 output_tensor[word_position, vocab_index] = self.probable
             # Reshape the training element to be (1, num_positions, vocab_size, 1)
             training_element = output_tensor[None, :, :, None]
             # Make copies along the num_layer and layer_width dimensions
-            input_tensor = np.broadcast_to(training_element, (self.num_layers, self.num_positions, self.vocab_size, self.layer_width))
+            input_tensor = np.broadcast_to(
+                training_element,
+                (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
+            )
             if self.print_flag:
                 print(f"format_training_data for window {window}:\n{input_tensor}")
                 print(f"input_tensor.size:\n{input_tensor.size}")
@@ -179,7 +189,10 @@ class ProbTensors():
             # Reshape the training element to be (1, num_positions, vocab_size, 1)
             inference_element = inference_element[None, :, :, None]
             # Make copies along the num_layer and layer_width dimensions
-            input_tensor = np.broadcast_to(inference_element, (self.num_layers, self.num_positions, self.vocab_size, self.layer_width))
+            input_tensor = np.broadcast_to(
+                inference_element,
+                (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
+            )
             inference_data.append(
                 input_tensor
             )

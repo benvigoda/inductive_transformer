@@ -62,12 +62,13 @@ def create_train_state(
         grad_mask = set_weights
     else:
         grad_mask = None
-    return TrainState.create(
+    state = TrainState.create(
         apply_fn=model.apply,
         params=params,
         tx=tx,
         grad_mask=grad_mask,
     )
+    return state, model
 
 
 @jax.jit
@@ -176,12 +177,17 @@ if __name__ == "__main__":
         prob_tensors.vocab_size,
         args.layer_width,
     )
+    assert all_outputs.shape == (
+        len(training_data),
+        prob_tensors.num_positions,
+        prob_tensors.vocab_size,
+    )
     print(f"vocab: {data.vocab}")
     print(f"num training examples: {all_t_tensors.shape[0]}")
 
     # Initialize all training state (most importantly, the model parameters and optimizer).
     key, subkey = jax.random.split(key)
-    state = create_train_state(
+    state, model = create_train_state(
         subkey,
         vocab=data.vocab,
         num_positions=prob_tensors.num_positions,
@@ -252,7 +258,8 @@ if __name__ == "__main__":
     # uniform distribution
     # prompt_data = all_inference_data.at[:, :, 1, :, :].set(1.0 / prob_tensors.vocab_size)
     # all words epsilon
-    prompt_data = all_inference_data.at[:, :, 1, :, :].set(1e-6)
+    # prompt_data = all_inference_data.at[:, :, 1, :, :].set(1e-6)
+    prompt_data = all_inference_data
     print("prompt data", prompt_data.shape)
     print(prompt_data)
     print("attention input")
