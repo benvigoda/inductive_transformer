@@ -1,6 +1,8 @@
 import jax.numpy as jnp  # type: ignore
 
 EPSILON = 1e-15
+PROBABLE = 1 - EPSILON
+IMPROBABLE = EPSILON
 
 
 def custom_normalize(tensor: jnp.ndarray, axis=0, default_constant=0.5) -> jnp.ndarray:

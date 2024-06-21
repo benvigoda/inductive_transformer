@@ -1,9 +1,11 @@
 from flax import linen as nn  # type: ignore
 from typing import Callable
+import jax
 import jax.numpy as jnp  # type: ignore
 
 from inductive_transformer.jax_transformer.decoder_layer import DecoderLayer
 from inductive_transformer.jax_transformer.encoder_layer import EncoderLayer
+from inductive_transformer.jax_transformer.helper_functions import PROBABLE, IMPROBABLE
 
 
 class InductiveTransformer(nn.Module):
@@ -38,24 +40,62 @@ class InductiveTransformer(nn.Module):
         assert z.shape == (2, self.layer_width)
         assert t_categorical.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
 
+        padding_embedding = jnp.full(self.vocab_size, IMPROBABLE)
+        padding_embedding = padding_embedding.at[self.vocab_size - 1].set(PROBABLE)
+
+        def make_padding_mask(t_categorical):
+            assert t_categorical.shape == (self.num_positions, self.vocab_size)
+            # We rely on broadcasting rules, which work right to left. The last axis for both arrays
+            # has size vocab_size. Only t_categorical has another axis, so padding_embedding will
+            # implicitly be treated as if it had a first axis of size 1.
+            mask = t_categorical == padding_embedding
+            assert mask.shape == (self.num_positions, self.vocab_size)
+
+            # We're equal to the padding token only if we agree across all of the vocab size axis.
+            mask = jnp.all(mask, axis=1)
+            assert mask.shape == (self.num_positions,)
+
+            # If any position is the padding token, we want to return True.
+            mask = jnp.any(mask, axis=0)
+            assert mask.shape == ()
+
+            return mask
+
+        make_padding_masks = jax.vmap(make_padding_mask, in_axes=-1)
+
         encoder_z = []
         encoder_x = []  # bernoulli
         encoder_y = []  # bernoulli
         encoder_activations = []
-        for idx, encoder in enumerate(self.encoders):
-            z, x, y, activations = encoder(z, t_categorical[idx])
+        for layer_idx, encoder in enumerate(self.encoders):
+            layer_t_categorical = t_categorical[layer_idx]
+            assert layer_t_categorical.shape == (self.num_positions, self.vocab_size, self.layer_width)
+            z, x, y, activations = encoder(z, layer_t_categorical)
             assert z.shape == (2, self.layer_width)
             assert x.shape == (2, self.layer_width)
             assert y.shape == (2, self.layer_width)
-            encoder_z.append(z)
-            encoder_x.append(x)
-            encoder_y.append(y)
-            encoder_activations.append(activations)
+
+            # If layer_t_categorical[i,:,j] == padding_embedding for any position i, set z[:, j] = 1.
+            #
+            # Another possible behavior would be: if layer_t_categorical[0,:,0] == padding_embedding
+            # or layer_t_categorical[1,:,0] == padding_embedding, then set z to all 1's. In this
+            # case we wouldn't look at layer_t_categorical[i,:,1] for any i.
+            #
+            # Ben's original notes:
             # if we are in a layer where text_parsing tells us there is no input text from the prompt
             # (it tells us this by sending in a token called [PAD])
             # if prompt_text(self.num_layers - idx) == "<PADDING>":
                 # then set z in this layer to all 1's
                 # verify that the z above is the output of the layer which in the paper diagram is called z_prime
+            mask = make_padding_masks(layer_t_categorical)
+            assert mask.shape == (self.layer_width,)
+            mask = jnp.broadcast_to(mask[None, :], z.shape)
+            z = jnp.where(mask, jnp.ones_like(z), z)
+
+            encoder_z.append(z)
+            encoder_x.append(x)
+            encoder_y.append(y)
+            encoder_activations.append(activations)
 
 
         decoder_z = [None] * (self.num_layers)
