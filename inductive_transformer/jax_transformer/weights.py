@@ -14,16 +14,19 @@ def update_position_pi_weights(layer, params, updated_params, set_weights, prefi
     if layer_key in updated_params["params"]:
         # Get the shape of the original weights
         old_weights = updated_params["params"][layer_key][position_pi]["weights"]
-        weights_shape = old_weights.shape  # (num_positions, layer_width)
         # Set the weights to all "weak" values
-        new_weight = jnp.full(weights_shape, weak)
-        new_weight = new_weight.at[layer].set(jnp.full(layer_width, strong))  # Match num_layer to the position in the weights
+        new_weight = jnp.full(old_weights.shape, weak)  # (num_positions, layer_width)
+
+        #FIXME: once we change the layer indexing to make layer 0 into layer 1 and vice versa,
+        # this has to go back to non-negative indices:
+        new_weight = new_weight.at[-layer-1].set(jnp.full(layer_width, strong))  # Match num_layer to the opposite position in the weights
         updated_params["params"][layer_key][position_pi]["weights"] = new_weight
         # Note: We have constrained the model such that num_positions needs to be equal to num_layers for this setup to work right now.
         # In the future we'll have to remove that constraint
 
         set_weights["params"][layer_key][position_pi]["weights"] = jnp.zeros_like(old_weights, dtype=mask_type)
-
+    else:
+        raise ValueError(f"Layer {layer_key} not found in params.")
 
 def update_weights(params, vocab, set_all_weights=False):
     # Get shapes:
