@@ -210,7 +210,7 @@ if __name__ == "__main__":
 
     # Train the model.
     if args.training_text:
-        n_epochs = 2000
+        n_epochs = 0
         batch_size = 10
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
         print_every = 100
