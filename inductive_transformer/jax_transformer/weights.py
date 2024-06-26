@@ -48,8 +48,12 @@ def update_weights(params, vocab, set_all_weights=False):
 
     if set_all_weights:
         """ Update the weights for layer 1 """
-        for lw, target_words in zip(range(layer_width), [['dog'], ['cat']]):
-            position = 1
+        for lw, target_words in zip(range(layer_width), [['small'], ['big']]):  # [['big', 'large'], ['small']]
+            '''
+            in the position where we want to listen for a particular word
+            set a single word weight to strong and all the others to weak 
+            '''
+            position = 0
 
             # encoders_1 is layer=1
             new_weight = updated_params["params"]["encoders_1"]["encoder_token_pi"]["weights"]
@@ -67,8 +71,11 @@ def update_weights(params, vocab, set_all_weights=False):
                 new_weight = new_weight.at[position, vocab_idx, lw].set(strong)
             updated_params["params"]["decoders_1"]["decoder_token_pi"]["weights"] = new_weight
 
-
-            position =  0
+            '''
+            in the position where we want to listen for NO word
+            set all weights to weak 
+            '''
+            position =  1
 
             # encoders_1 is layer=1
             new_weight = updated_params["params"]["encoders_1"]["encoder_token_pi"]["weights"]
@@ -89,8 +96,12 @@ def update_weights(params, vocab, set_all_weights=False):
         # )
 
         """ Update the weights for layer 0 """
-        for lw, target_words in zip(range(layer_width), [['small'], ['big']]):  # [['big', 'large'], ['small']]
-            position = 0
+        for lw, target_words in zip(range(layer_width), [['dog'], ['cat']]):
+            '''
+            in the position where we want to listen for a particular word
+            set a single word weight to strong and all the others to weak 
+            '''
+            position = 1
 
             # encoders_0 is layer=0
             new_weight = updated_params["params"]["encoders_0"]["encoder_token_pi"]["weights"]
@@ -108,7 +119,11 @@ def update_weights(params, vocab, set_all_weights=False):
                 new_weight = new_weight.at[position, vocab_idx, lw].set(strong)
             updated_params["params"]["decoders_0"]["decoder_token_pi"]["weights"] = new_weight
 
-            position = 1
+            '''
+            in the position where we want to listen for NO word
+            set all weights to weak 
+            '''
+            position = 0
 
             # encoders_0 is layer=0
             new_weight = updated_params["params"]["encoders_0"]["encoder_token_pi"]["weights"]

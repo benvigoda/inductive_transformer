@@ -67,7 +67,22 @@ class InductiveTransformer(nn.Module):
         encoder_x = []  # bernoulli
         encoder_y = []  # bernoulli
         encoder_activations = []
+        # layer_t_categorical is the same copy in each layer_idx, so we can just grab the first one
+        # same point on layer_width axis
+        sentence_t_categorical = t_categorical[0,:,0]
+        assert sentence_t_categorical.shape == (self.num_positions, self.vocab_size,)
+        padding_position = None
+        for position in range(self.num_positions):
+            if jnp.all(sentence_t_categorical[position] == padding_embedding):
+                padding_position = position
+                break
+        
+                
+        # We want to know in which position the padding is
         for layer_idx, encoder in enumerate(self.encoders):
+            # the words flow into the encoder in reverse order e.g. the sentence "big cat"
+            # has word "big" flow to layer 1 and "cat" flow to layer 0
+            # if "cat" was <padding> then we flow <padding> to layer 0
             layer_t_categorical = t_categorical[layer_idx]
             assert layer_t_categorical.shape == (self.num_positions, self.vocab_size, self.layer_width)
             z, x, y, activations = encoder(z, layer_t_categorical)
@@ -75,22 +90,17 @@ class InductiveTransformer(nn.Module):
             assert x.shape == (2, self.layer_width)
             assert y.shape == (2, self.layer_width)
 
+            # if we are in an encoder layer where text_parsing tells us there is no input text from the prompt
+            # and the input token is <padding> then set the output of the encoder layer to all True
+            
             # If layer_t_categorical[i,:,j] == padding_embedding for any position i, set z[:, j] = 1.
             #
             # Another possible behavior would be: if layer_t_categorical[0,:,0] == padding_embedding
             # or layer_t_categorical[1,:,0] == padding_embedding, then set z to all 1's. In this
             # case we wouldn't look at layer_t_categorical[i,:,1] for any i.
-            #
-            # Ben's original notes:
-            # if we are in a layer where text_parsing tells us there is no input text from the prompt
-            # (it tells us this by sending in a token called [PAD])
-            # if prompt_text(self.num_layers - idx) == "<PADDING>":
-                # then set z in this layer to all 1's
-                # verify that the z above is the output of the layer which in the paper diagram is called z_prime
-            mask = make_padding_masks(layer_t_categorical)
-            assert mask.shape == (self.layer_width,)
-            mask = jnp.broadcast_to(mask[None, :], z.shape)
-            z = jnp.where(mask, jnp.ones_like(z), z)
+
+            if padding_position is not None and padding_position == self.num_layers-layer_idx-1:
+                z = jnp.ones_like(z)
 
             encoder_z.append(z)
             encoder_x.append(x)
