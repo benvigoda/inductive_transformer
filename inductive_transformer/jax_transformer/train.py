@@ -11,6 +11,7 @@ from inductive_transformer.jax_transformer.text_parsing import InputData, ProbTe
 from inductive_transformer.jax_transformer.weights import update_weights
 from inductive_transformer.jax_transformer.printing import print_params
 
+
 class TrainState(train_state.TrainState):
     """A custom TrainState class that includes a `grad_mask` attribute."""
 
@@ -134,7 +135,6 @@ def parse_args():
     z_prime appropriate activations in the encoder to all 1's
     '''
 
-
     parser.add_argument("--layer_width", type=int, default=2)
     parser.add_argument("--num_layers", type=int, default=2)
     return parser.parse_args()
@@ -159,7 +159,7 @@ if __name__ == "__main__":
     noise_seed = jax.random.randint(
         subkey, (1,), jnp.iinfo(jnp.int32).min, jnp.iinfo(jnp.int32).max
     )[0]
-    noise_seed = None  # To not include noise in the training process.
+    noise_seed = None  # type: ignore  # To not include noise in the training process.
 
     # Load training data.
     data = InputData(args.training_text, args.prompt_text, print_vals=False)
@@ -307,18 +307,14 @@ if __name__ == "__main__":
 
         for layer_idx, layer_activation in enumerate(encoder_activations):
             print(f"Layer {layer_idx} encoder")
-            for key in encoder_activation_keys:
+            for key in encoder_activation_keys:  # type: ignore
                 print(key)
                 print(layer_activation[key][idx])
                 print("")
 
         for layer_idx, layer_activation in enumerate(decoder_activations):
             print(f"Layer {layer_idx} decoder")
-            for key in decoder_activation_keys:
+            for key in decoder_activation_keys:  # type: ignore
                 print(key)
                 print(layer_activation[key][idx])
                 print("")
-
-
-    # import pdb
-    # pdb.set_trace()

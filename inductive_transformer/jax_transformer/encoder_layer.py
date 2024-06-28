@@ -47,7 +47,7 @@ class EncoderLayer(nn.Module):
         )
         self.encoder_and = EncoderAnd()
 
-    def __call__(self, z, t_categorical):
+    def __call__(self, z, t_categorical, masked):
         assert z.shape == (2, self.layer_width)
         assert t_categorical.shape == (self.num_positions, self.vocab_size, self.layer_width)
 
@@ -91,6 +91,24 @@ class EncoderLayer(nn.Module):
         # Encoder $\land$
         z_prime = self.encoder_and(x_bernoulli, y_bernoulli)
         assert z_prime.shape == (2, self.layer_width)
+
+        # if we are in an encoder layer where text_parsing tells us there is no input text from the prompt
+        # and the input token is <padding> then set the output of the encoder layer to all True
+
+        # If layer_t_categorical[num_layers-i-1,:,0] == padding_embedding,
+        #   set z[0, :] = 0
+        #   set z[1, :] = 1
+        # Talking about the output z of the encoder, so really z_prime
+        masked_z = jnp.stack(
+            [
+                jnp.zeros(shape=(self.layer_width,)),
+                jnp.ones(shape=(self.layer_width,)),
+            ],
+            axis=0,
+        )
+        assert masked_z.shape == (2, self.layer_width)
+
+        z_prime = jnp.where(masked, masked_z, z_prime)
 
         activations = {
             "z": z,

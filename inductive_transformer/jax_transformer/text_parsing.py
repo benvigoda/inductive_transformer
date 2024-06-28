@@ -95,8 +95,8 @@ class InputData():
             while len(next_window) < window_size:
                 next_window.append(self.padding_token)
             windows.append(next_window)
-        windows = jnp.array(windows)
-        return windows
+        windows = jnp.array(windows)  # type: ignore
+        return windows  # type: ignore
 
 
 class ProbTensors():
