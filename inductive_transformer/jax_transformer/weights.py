@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp  # type: ignore
 from inductive_transformer.jax_transformer.helper_functions import EPSILON
 
-strong = 1.0 - EPSILON # Amplify the signal
+strong = 1.0 - EPSILON  # Amplify the signal
 weak = EPSILON  # Dampen the signal
 
 mask_type = int
@@ -17,9 +17,9 @@ def update_position_pi_weights(layer, params, updated_params, set_weights, prefi
         # Set the weights to all "weak" values
         new_weight = jnp.full(old_weights.shape, weak)  # (num_positions, layer_width)
 
-        #FIXME: once we change the layer indexing to make layer 0 into layer 1 and vice versa,
+        # FIXME: once we change the layer indexing to make layer 0 into layer 1 and vice versa,
         # this has to go back to non-negative indices:
-        new_weight = new_weight.at[-layer-1].set(jnp.full(layer_width, strong))  # Match num_layer to the opposite position in the weights
+        new_weight = new_weight.at[-layer - 1].set(jnp.full(layer_width, strong))  # Match num_layer to the opposite position in the weights
         updated_params["params"][layer_key][position_pi]["weights"] = new_weight
         # Note: We have constrained the model such that num_positions needs to be equal to num_layers for this setup to work right now.
         # In the future we'll have to remove that constraint
@@ -27,6 +27,7 @@ def update_position_pi_weights(layer, params, updated_params, set_weights, prefi
         set_weights["params"][layer_key][position_pi]["weights"] = jnp.zeros_like(old_weights, dtype=mask_type)
     else:
         raise ValueError(f"Layer {layer_key} not found in params.")
+
 
 def update_weights(params, vocab, set_all_weights=False):
     # Get shapes:
@@ -51,7 +52,7 @@ def update_weights(params, vocab, set_all_weights=False):
         for lw, target_words in zip(range(layer_width), [['small'], ['big']]):  # [['big', 'large'], ['small']]
             '''
             in the position where we want to listen for a particular word
-            set a single word weight to strong and all the others to weak 
+            set a single word weight to strong and all the others to weak
             '''
             position = 0
 
@@ -73,9 +74,9 @@ def update_weights(params, vocab, set_all_weights=False):
 
             '''
             in the position where we want to listen for NO word
-            set all weights to weak 
+            set all weights to weak
             '''
-            position =  1
+            position = 1
 
             # encoders_1 is layer=1
             new_weight = updated_params["params"]["encoders_1"]["encoder_token_pi"]["weights"]
@@ -99,7 +100,7 @@ def update_weights(params, vocab, set_all_weights=False):
         for lw, target_words in zip(range(layer_width), [['dog'], ['cat']]):
             '''
             in the position where we want to listen for a particular word
-            set a single word weight to strong and all the others to weak 
+            set a single word weight to strong and all the others to weak
             '''
             position = 1
 
@@ -121,7 +122,7 @@ def update_weights(params, vocab, set_all_weights=False):
 
             '''
             in the position where we want to listen for NO word
-            set all weights to weak 
+            set all weights to weak
             '''
             position = 0
 
