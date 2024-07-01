@@ -26,9 +26,12 @@ class DecoderAttentionPi(nn.Module):
         prob_weights = custom_normalize(prob_weights, axis=1)
 
         # and then since y comes in as categorical of size (1, layer_width)
-        y = custom_normalize(y, axis=1)
+        # y = custom_normalize(y, axis=1)
 
         # element-wise product of weight tensor and y
         v = prob_weights * y
+
+        # added this:
+        v = custom_normalize(v, axis=1)
         assert v.shape == (self.layer_width, self.layer_width)
         return v

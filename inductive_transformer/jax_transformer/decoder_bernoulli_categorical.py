@@ -11,8 +11,11 @@ class DecoderBernoulliCategorical:
         # bernoulli is size (2, layer_width)
         assert bernoulli.shape == (2, self.layer_width)
 
-        categorical = bernoulli[1] / (bernoulli[0] + EPSILON)
+        #tried removing denominator
+        bernoulli = custom_normalize(bernoulli, axis=0)  
+        categorical = bernoulli[1] #/ (bernoulli[0] + EPSILON) 
         categorical = categorical.reshape((1, self.layer_width))
-        categorical = custom_normalize(categorical, axis=1)  # FIXME : Do we need this?
+
+        # Removed the layer norm
 
         return categorical

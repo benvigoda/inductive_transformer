@@ -59,7 +59,8 @@ class DecoderCategoricalBernoulli:
         # the other categorical states.
         # Note: if v[i][j] is much larger than v[i][k] for k != j, then this method of performing
         # the calculation introduces a lot of rounding error.
-        u_0 = jnp.sum(v, axis=-1, keepdims=True) - v
+        # u_0 = jnp.sum(v, axis=-1, keepdims=True) - v
+        u_0 = 1 - u_1
 
         u = jnp.stack([u_0, u_1], axis=0)
 
