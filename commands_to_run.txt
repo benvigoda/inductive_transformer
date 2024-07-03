@@ -1,5 +1,5 @@
 First turn on the environment:
-source /Users/benvigoda/src/inductive_transformer/env/bin/activate
+source /Users/benvigoda/src/inductive_transformer/venv/bin/activate
 source ../inductive_transformer_position/venv/bin/activate
 
 How we are currently running the system:
