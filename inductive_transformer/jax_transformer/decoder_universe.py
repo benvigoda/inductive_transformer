@@ -11,7 +11,6 @@ class DecoderUniverse:
     def __call__(self, u):
         assert u.shape == (2, self.layer_width, self.layer_width)
 
-
         """
         # u[heads/tails][below_lw?][above_lw?]
         # left
@@ -26,7 +25,7 @@ class DecoderUniverse:
         """
         # not sure why we had a sum?  it was some sort of approximation?
         # z = jnp.sum(u, axis=1)
-       
+
         # z[0][0] = u[0][0][0] * u[0][0][1]
         # z[1][0] = 1 - z[0][0]
         # z[0][1] = u[0][1][0] * u[0][1][1]

@@ -92,20 +92,25 @@ class EncoderLayer(nn.Module):
         z_prime = self.encoder_and(x_bernoulli, y_bernoulli)
         assert z_prime.shape == (2, self.layer_width)
 
-        # if we are in an encoder layer where text_parsing tells us there is no input text from the prompt
-        # and the input token is <padding> then set the output of the encoder layer to all True
+        """
+        OLD WAY of thinking
+            # if we are in an encoder layer where text_parsing tells us there is no input text from the prompt
+            # and the input token is <padding> then set the output of the encoder layer to all True
 
-        # If layer_t_categorical[num_layers-i-1,:,0] == padding_embedding,
-        #   set z[0, :] = 0
-        #   set z[1, :] = 1
-        # Talking about the output z of the encoder, so really z_prime
-        masked_z = jnp.stack(
-            [
-                jnp.zeros(shape=(self.layer_width,)),
-                jnp.ones(shape=(self.layer_width,)),
-            ],
-            axis=0,
-        )
+            # If layer_t_categorical[num_layers-i-1,:,0] == padding_embedding,
+            #   set z[0, :] = 0
+            #   set z[1, :] = 1
+            # Talking about the output z of the encoder, so really z_prime
+            masked_z = jnp.stack(
+                [
+                    jnp.zeros(shape=(self.layer_width,)),
+                    jnp.ones(shape=(self.layer_width,)),
+                ],
+                axis=0,
+            )
+        """
+        # When padding we do not know which word should be activated, so we set all to 0.5
+        masked_z = jnp.ones(shape=(2, self.layer_width)) * 0.5
         assert masked_z.shape == (2, self.layer_width)
 
         z_prime = jnp.where(masked, masked_z, z_prime)
