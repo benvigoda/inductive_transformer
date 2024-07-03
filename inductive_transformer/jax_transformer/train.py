@@ -308,6 +308,7 @@ if __name__ == "__main__":
         # num_layers - 1 is the root
         # while layer 0 is the leaf
         for layer_idx, layer_activation in enumerate(encoder_activations):
+            print("=" * 25)
             print(f"Layer {layer_idx} encoder")
             for key in encoder_activation_keys:  # type: ignore
                 print(key)

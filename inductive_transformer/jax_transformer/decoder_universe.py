@@ -34,9 +34,9 @@ class DecoderUniverse:
         z[1][1] = 1 - z[0][1]
         """
 
+        
         # more general form of this:
-        # z_0 = jnp.prod(u[0], axis=-1)
-        z_0 = jnp.mean(u[0], axis=1)
+        z_0 = jnp.prod(u[0], axis=-1)
         z_1 = 1 - z_0
         z = jnp.stack([z_0, z_1], axis=0)
 
