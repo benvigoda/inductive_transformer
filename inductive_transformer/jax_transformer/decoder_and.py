@@ -71,25 +71,28 @@ class DecoderAnd:
             assert x_encoder.shape == (2, self.layer_width)
             assert y_encoder.shape == (2, self.layer_width)
 
-            # torch
-            # x[0] = y_encoder[0] * z[0] + y_encoder[1] * z[0]
-            # x[1] = y_encoder[0] * z[0] + y_encoder[1] * z[1]
-
-            y0_z0 = y_encoder[0] * z[0]
-            x_0 = y0_z0 + y_encoder[1] * z[0]
-            x_1 = y0_z0 + y_encoder[1] * z[1]
+            # OLD AND:
+            # y0_z0 = y_encoder[0] * z[0]
+            # x_0 = y0_z0 + y_encoder[1] * z[0]
+            # x_1 = y0_z0 + y_encoder[1] * z[1]
+            # NEW EQUAL
+            x_0 = y_encoder[0] * z[0]
+            x_1 = y_encoder[1] * z[1]
             x = jnp.stack([x_0, x_1])
 
-            # torch
-            # y[0] = x_encoder[0] * z[0] + x_encoder[1] * z[0]
-            # y[1] = x_encoder[0] * z[0] + x_encoder[1] * z[1]
-
-            x0_z0 = x_encoder[0] * z[0]
-            y_0 = x0_z0 + x_encoder[1] * z[0]
-            y_1 = x0_z0 + x_encoder[1] * z[1]
+            # OLD AND:
+            # x0_z0 = x_encoder[0] * z[0]
+            # y_0 = x0_z0 + x_encoder[1] * z[0]
+            # y_1 = x0_z0 + x_encoder[1] * z[1]
+            # NEW EQUAL
+            y_0 = x_encoder[0] * z[0]
+            y_1 = x_encoder[1] * z[1]
             y = jnp.stack([y_0, y_1])
 
+        # Note we should not use this
+        # Not sure it is even up to date
         else:
+            raise NotImplementedError
             # torch
             # x[0] = z[0] + z[0]
             # x[1] = z[0] + z[1]
