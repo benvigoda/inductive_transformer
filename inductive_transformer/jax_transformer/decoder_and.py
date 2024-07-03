@@ -13,102 +13,41 @@ class DecoderAnd:
     use_encoder_message: bool = True
 
     def __call__(self, z, x_encoder, y_encoder):
-        '''
-        x y z prob
-        0 0 0   1
-        0 0 1   0
-        0 1 0   1
-        0 1 1   0
-        1 0 0   1
-        1 0 1   0
-        1 1 0   0
-        1 1 1   1
 
-        prob = 1 states when y = 1
-        0 1 0   1
-        1 1 1   1
-
-        prob = 1 states when y = 0
-        0 0 0   1
-        1 0 0   1
-        '''
-
-        # left
-        # y[1][0] = x[0][0]*z[0][0] + x[1][0]*z[1][0]
-        # y[0][0] = x[0][0]*z[0][0] + x[1][0]*z[0][0]
-
-        # x[1][0] = y[0][0]*z[0][0] + y[1][0]*z[1][0]
-        # x[0][0] = y[0][0]*z[0][0] + y[1][0]*z[0][0]
-
-        # right
-        # y[1][1] = x[0][1]*z[0][1] + x[1][1]*z[1][1]
-        # y[0][1] = x[0][1]*z[0][1] + x[1][1]*z[0][1]
-
-        # x[1][1] = y[0][1]*z[0][1] + y[1][1]*z[1][1]
-        # x[0][1] = y[0][1]*z[0][1] + y[1][1]*z[0][1]
-
-        # --------------
-
-        # left
-        # y[1][0] = 0.5*z[0][0] + 0.5*z[1][0]
-        # y[0][0] = 0.5*z[0][0] + 0.5*z[0][0]
-
-        # x[1][0] = 0.5*z[0][0] + 0.5*z[1][0]
-        # x[0][0] = 0.5*z[0][0] + 0.5*z[0][0]
-
-        # right
-        # y[1][1] = 0.5*z[0][1] + 0.5*z[1][1]
-        # y[0][1] = 0.5*z[0][1] + 0.5*z[0][1]
-
-        # x[1][1] = 0.5*z[0][1] + 0.5*z[1][1]
-        # x[0][1] = 0.5*z[0][1] + 0.5*z[0][1]
-
-        # --------------
 
         assert z.shape == (2, self.layer_width)
 
         if self.use_encoder_message and x_encoder is not None and y_encoder is not None:
             assert x_encoder.shape == (2, self.layer_width)
             assert y_encoder.shape == (2, self.layer_width)
+            assert z.shape == (2, self.layer_width)
 
             # OLD AND:
             # y0_z0 = y_encoder[0] * z[0]
             # x_0 = y0_z0 + y_encoder[1] * z[0]
             # x_1 = y0_z0 + y_encoder[1] * z[1]
             # NEW EQUAL
-            x_0 = y_encoder[0] * z[0]
-            x_1 = y_encoder[1] * z[1]
-            x = jnp.stack([x_0, x_1])
+            # x_0 = y_encoder[0] * z[0]
+            # x_1 = y_encoder[1] * z[1]
+            # x = jnp.stack([x_0, x_1], axis=0)
+            x = y_encoder * z
 
             # OLD AND:
             # x0_z0 = x_encoder[0] * z[0]
             # y_0 = x0_z0 + x_encoder[1] * z[0]
             # y_1 = x0_z0 + x_encoder[1] * z[1]
             # NEW EQUAL
-            y_0 = x_encoder[0] * z[0]
-            y_1 = x_encoder[1] * z[1]
-            y = jnp.stack([y_0, y_1])
+            # y_0 = x_encoder[0] * z[0]
+            # y_1 = x_encoder[1] * z[1]
+            # y = jnp.stack([y_0, y_1], axis=0)
+            y = x_encoder * z
 
         # Note we should not use this
         # Not sure it is even up to date
         else:
             raise NotImplementedError
-            # torch
-            # x[0] = z[0] + z[0]
-            # x[1] = z[0] + z[1]
 
-            x_0 = z[0] + z[0]
-            x_1 = z[0] + z[1]
-            x = jnp.stack([x_0, x_1])
-
-            # torch
-            # y[0] = z[0] + z[0]
-            # y[1] = z[0] + z[1]
-
-            y_0 = z[0] + z[0]
-            y_1 = z[0] + z[1]
-            y = jnp.stack([y_0, y_1])
-
+        # import pdb; pdb.set_trace()
         x = custom_normalize(x, axis=0)
         y = custom_normalize(y, axis=0)
 
