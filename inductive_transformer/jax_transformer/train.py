@@ -295,7 +295,7 @@ if __name__ == "__main__":
         "z",
     ]
 
-    for idx in range(n_examples):
+    for idx in range(n_examples)[::-1]:
         print("--------------------------")
         print(f"Inference example {idx}")
 
@@ -304,16 +304,19 @@ if __name__ == "__main__":
         print("output t")
         print(decoder_t[idx])
         print("")
-
+        # Input from layer 0 to layer num_layers - 1
+        # num_layers - 1 is the root
+        # while layer 0 is the leaf
         for layer_idx, layer_activation in enumerate(encoder_activations):
             print(f"Layer {layer_idx} encoder")
             for key in encoder_activation_keys:  # type: ignore
                 print(key)
                 print(layer_activation[key][idx])
                 print("")
-
-        for layer_idx, layer_activation in enumerate(decoder_activations):
-            print(f"Layer {layer_idx} decoder")
+        # Print the decoder activations in reverse order
+        # since layer 0 is the leaf and num_layers - 1 is the root
+        for layer_idx, layer_activation in enumerate(decoder_activations[::-1]):
+            print(f"Layer {len(decoder_activations) - layer_idx - 1} decoder")
             for key in decoder_activation_keys:  # type: ignore
                 print(key)
                 print(layer_activation[key][idx])

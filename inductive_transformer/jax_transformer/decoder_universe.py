@@ -10,28 +10,33 @@ class DecoderUniverse:
 
     def __call__(self, u):
         assert u.shape == (2, self.layer_width, self.layer_width)
-
         """
-        # u[heads/tails][below_lw?][above_lw?]
-        # left
+        what is u coming in?
 
-        z[0][0] = u[0][0][0] * u[0][0][1]  # all the others
-        z[1][0] = u[1][0][0] * u[1][0][1] + u[1][0][0] * u[0][0][1] + u[0][0][0] * u[1][0][1]
-        # right
+        it's v as the HEADS of the Bernoulli
+        # v[:, 0] = the outputs of the left hand attention pi
+        # v[0, 0] = the straight down on the left output of the left hand attention pi
+        # similarly, v[:, 1] = the outputs of the right hand attention pi
+
+        stacked on axis=0 with (1-v) as the TAILS of the Bernoulli
+
+        resulting in shape:
+        assert u.shape == (2, left and right edges coming out of the an attention unit, left and right attention units)
+
+        How would we consume this?  To get the two parents of the left-side universe we need:
+        parent_a = v[0, 0] the straight down edge of the left-side attention unit
+        parent_b v[0, 1] the left-going edge of the right-side attention unit
+        and we want TAILS of both of these, like this:
+       
+        z[0][0] = u[0][0][0] * u[0][0][1]
+        z[1][0] = 1 - z[0][0]
         z[0][1] = u[0][1][0] * u[0][1][1]
-        z[1][1] = u[1][1][0] * u[1][1][1] + u[1][1][0] * u[0][1][1] + u[0][1][0] * u[1][1][1]
-
-        # z = nn.functional.normalize(z, p=1, dim=0)
+        z[1][1] = 1 - z[0][1]
         """
-        # not sure why we had a sum?  it was some sort of approximation?
-        # z = jnp.sum(u, axis=1)
 
-        # z[0][0] = u[0][0][0] * u[0][0][1]
-        # z[1][0] = 1 - z[0][0]
-        # z[0][1] = u[0][1][0] * u[0][1][1]
-        # z[1][1] = 1 - z[0][1]
         # more general form of this:
-        z_0 = jnp.prod(u[0], axis=-1)
+        # z_0 = jnp.prod(u[0], axis=-1)
+        z_0 = jnp.mean(u[0], axis=1)
         z_1 = 1 - z_0
         z = jnp.stack([z_0, z_1], axis=0)
 

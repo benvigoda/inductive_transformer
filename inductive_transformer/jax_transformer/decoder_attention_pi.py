@@ -31,7 +31,13 @@ class DecoderAttentionPi(nn.Module):
         # element-wise product of weight tensor and y
         v = prob_weights * y
 
-        # added this:
+        # added this because like Bayes rule, Loeliger, chapter 2 of Ben's thesis, and 
+        # our deep belief in Bayes rule as foundational to concepts and thinking in transformers and humans
         v = custom_normalize(v, axis=1)
+        
         assert v.shape == (self.layer_width, self.layer_width)
+        # v[:, 0] = the outputs of the left hand attention pi
+        # v[0, 0] = the straight down on the left output of the left hand attention pi
+        # similarly, v[:, 1] = the outputs of the right hand attention pi
+
         return v
