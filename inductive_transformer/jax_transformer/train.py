@@ -9,7 +9,7 @@ import pathlib
 from inductive_transformer.jax_transformer.model import BatchedInductiveTransformer
 from inductive_transformer.jax_transformer.text_parsing import InputData, ProbTensors
 from inductive_transformer.jax_transformer.weights import update_weights
-from inductive_transformer.jax_transformer.printing import print_params
+from inductive_transformer.jax_transformer.printing import print_params, print_activations
 
 
 class TrainState(train_state.TrainState):
@@ -99,6 +99,37 @@ def update_model(state, grads):
     if state.grad_mask is not None:
         grads = jax.tree_util.tree_map(lambda x, y: x * y, grads, state.grad_mask)
     return state.apply_gradients(grads=grads)
+
+
+def run_and_print_inference(state, prob_tensors):
+        # Load inference examples.
+        inference_data = prob_tensors.make_inference_prompt_tensors()
+        all_inference_data = jnp.stack(inference_data, axis=0)
+        n_examples = len(inference_data)
+        assert all_inference_data.shape == (
+            n_examples,
+            args.num_layers,
+            prob_tensors.num_positions,
+            prob_tensors.vocab_size,
+            args.layer_width,
+        )
+
+        # uniform distribution
+        # prompt_data = all_inference_data.at[:, :, 1, :, :].set(1.0 / prob_tensors.vocab_size)
+        # all words epsilon
+        # prompt_data = all_inference_data.at[:, :, 1, :, :].set(1e-6)
+        prompt_data = all_inference_data
+        print("prompt data", prompt_data.shape)
+        print(prompt_data)
+        print("attention input")
+        print(prob_tensors.attention_input)
+
+        # Run inference.
+        decoder_z, decoder_t, encoder_activations, decoder_activations = state.apply_fn(
+            state.params, prob_tensors.attention_input, prompt_data
+        )
+
+        print_activations(n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations)
 
 
 def parse_args():
@@ -212,7 +243,7 @@ if __name__ == "__main__":
 
     # Train the model.
     if args.training_text:
-        n_epochs = 2000
+        n_epochs = 500
         batch_size = 10
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
         print_every = 100
@@ -236,9 +267,17 @@ if __name__ == "__main__":
             state = update_model(state, grads)
 
         if epoch % print_every == 0:
-            print(f"epoch {epoch}, loss: {loss:.3e}")
+            print("\n\n\n\n\n")
+            print("*" * 100)
+            print("-" * 100)
+            print("*" * 100)
+            print(f"epoch {epoch}, loss: {loss:.3e}\n")
             # Print the trained weights:
-            # print_params(state, data.vocab)
+            print_params(state, data.vocab)
+            print("*" * 100)
+            # Print activations:
+            run_and_print_inference(state, prob_tensors)
+
 
     # Print trained weights.
     print_params(state, data.vocab)
@@ -247,82 +286,4 @@ if __name__ == "__main__":
         print("No prompt text given, exiting.")
         exit()
 
-    # Load inference examples.
-    inference_data = prob_tensors.make_inference_prompt_tensors()
-    all_inference_data = jnp.stack(inference_data, axis=0)
-    n_examples = len(inference_data)
-    assert all_inference_data.shape == (
-        n_examples,
-        args.num_layers,
-        prob_tensors.num_positions,
-        prob_tensors.vocab_size,
-        args.layer_width,
-    )
-
-    # uniform distribution
-    # prompt_data = all_inference_data.at[:, :, 1, :, :].set(1.0 / prob_tensors.vocab_size)
-    # all words epsilon
-    # prompt_data = all_inference_data.at[:, :, 1, :, :].set(1e-6)
-    prompt_data = all_inference_data
-    print("prompt data", prompt_data.shape)
-    print(prompt_data)
-    print("attention input")
-    print(prob_tensors.attention_input)
-
-    # Run inference.
-    decoder_z, decoder_t, encoder_activations, decoder_activations = state.apply_fn(
-        state.params, prob_tensors.attention_input, prompt_data
-    )
-
-    print("===================== Inference Activations ======================")
-
-    encoder_activation_keys = [
-        "z",
-        "u",
-        "v",
-        "y_categorical",
-        "y_bernoulli",
-        "rho_categorical",
-        "x_categorical",
-        "x_bernoulli",
-        "z_prime",
-    ]
-    decoder_activation_keys = [
-        "x_bernoulli",
-        "y_bernoulli",
-        "x_categorical",
-        "y_categorical",
-        "v",
-        "rho_categorical",
-        "t_categorical",
-        "u",
-        "z",
-    ]
-
-    for idx in range(n_examples)[::-1]:
-        print("--------------------------")
-        print(f"Inference example {idx}")
-
-        print("input t")
-        print(prompt_data[idx])
-        print("output t")
-        print(decoder_t[idx])
-        print("")
-        # Input from layer 0 to layer num_layers - 1
-        # num_layers - 1 is the root
-        # while layer 0 is the leaf
-        for layer_idx, layer_activation in enumerate(encoder_activations):
-            print("=" * 25)
-            print(f"Layer {layer_idx} encoder")
-            for key in encoder_activation_keys:  # type: ignore
-                print(key)
-                print(layer_activation[key][idx])
-                print("")
-        # Print the decoder activations in reverse order
-        # since layer 0 is the leaf and num_layers - 1 is the root
-        for layer_idx, layer_activation in enumerate(decoder_activations[::-1]):
-            print(f"Layer {len(decoder_activations) - layer_idx - 1} decoder")
-            for key in decoder_activation_keys:  # type: ignore
-                print(key)
-                print(layer_activation[key][idx])
-                print("")
+    run_and_print_inference(state, prob_tensors)
