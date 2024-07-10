@@ -53,3 +53,59 @@ def print_params(state, vocab):
             else:
                 print(layer_params[sublayer]["weights"])
         print("")
+
+def print_activations(n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations):
+
+    print("===================== Inference Activations ======================")
+
+    encoder_activation_keys = [
+        "z",
+        "u",
+        "v",
+        "y_categorical",
+        "y_bernoulli",
+        "rho_categorical",
+        "x_categorical",
+        "x_bernoulli",
+        "z_prime",
+    ]
+    decoder_activation_keys = [
+        "x_bernoulli",
+        "y_bernoulli",
+        "x_categorical",
+        "y_categorical",
+        "v",
+        "rho_categorical",
+        "t_categorical",
+        "u",
+        "z",
+    ]
+
+    for idx in range(n_examples)[::-1]:
+        print("--------------------------")
+        print(f"Inference example {idx}")
+
+        print("input t")
+        print(prompt_data[idx])
+        print("output t")
+        print(decoder_t[idx])
+        print("")
+        # Input from layer 0 to layer num_layers - 1
+        # num_layers - 1 is the root
+        # while layer 0 is the leaf
+        for layer_idx, layer_activation in enumerate(encoder_activations):
+            print("=" * 25)
+            print(f"Layer {layer_idx} encoder")
+            for key in encoder_activation_keys:  # type: ignore
+                print(key)
+                print(layer_activation[key][idx])
+                print("")
+        # Print the decoder activations in reverse order
+        # since layer 0 is the leaf and num_layers - 1 is the root
+        for layer_idx, layer_activation in enumerate(decoder_activations[::-1]):
+            print(f"Layer {len(decoder_activations) - layer_idx - 1} decoder")
+            for key in decoder_activation_keys:  # type: ignore
+                print(key)
+                print(layer_activation[key][idx])
+                print("")
+        print("--------------------------")
