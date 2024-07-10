@@ -2,7 +2,7 @@ from flax import linen as nn  # type: ignore
 import jax.numpy as jnp  # type: ignore
 from typing import Callable
 from inductive_transformer.jax_transformer.helper_functions import EPSILON
-
+from inductive_transformer.jax_transformer.helper_functions import custom_normalize, EPSILON
 
 class EncoderTokenPi(nn.Module):
     num_positions: int
@@ -18,8 +18,8 @@ class EncoderTokenPi(nn.Module):
         weights = self.param('weights', self.weight_init, (self.num_positions, self.vocab_size, self.layer_width))
         prob_weights = nn.relu(weights) + EPSILON
         # NOTE: we decided not to normalize the weights (it shouldn't matter)
-        # prob_weights = nn.functional.normalize(prob_weights, p=1, dim=0)
-        # prob_weights = custom_normalize(prob_weights, dim=1)
+        # prob_weights = nn.functional.normalize(prob_weights, p=1, axis=0)
+        prob_weights = custom_normalize(prob_weights, axis=1)
 
         # element-wise product of weight vector and token vector for each column in the layer
         rho = prob_weights * t

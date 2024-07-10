@@ -52,7 +52,7 @@ def create_train_state(
     key, subkey = jax.random.split(key)
     if noise_seed is None:
         tx = optax.chain(
-            optax.adam(learning_rate=1.0e-4),
+            optax.adam(learning_rate=1.0e-3),
         )
     else:
         tx = optax.chain(
@@ -152,6 +152,8 @@ if __name__ == "__main__":
     seed = np_rng.integers(0, 2**32 - 1)
     # seed = 11675966
     # seed = 615523631
+    # seed = 2819370678  # For NAN with 32 sentences
+    seed = 3727924788 # For NAN with 2 sentences
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
 
@@ -235,6 +237,8 @@ if __name__ == "__main__":
 
         if epoch % print_every == 0:
             print(f"epoch {epoch}, loss: {loss:.3e}")
+            # Print the trained weights:
+            # print_params(state, data.vocab)
 
     # Print trained weights.
     print_params(state, data.vocab)
