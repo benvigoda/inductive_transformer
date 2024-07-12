@@ -20,7 +20,7 @@ class EncoderAttentionPi(nn.Module):
         prob_weights = custom_normalize(prob_weights, axis=1)
 
         # in the future we may want to normalize v here for good measure
-        # v = custom_normalize(v, axis=1)
+        v = custom_normalize(v, axis=1)
 
         # element-wise product of weight vector and token vector for each column in the layer
         y = prob_weights * v
