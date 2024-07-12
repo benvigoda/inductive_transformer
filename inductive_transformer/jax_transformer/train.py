@@ -246,7 +246,7 @@ if __name__ == "__main__":
 
     # Train the model.
     if args.training_text:
-        n_epochs = 2000
+        n_epochs = 1000
         batch_size = 10
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
         print_every = 100
@@ -306,12 +306,13 @@ if __name__ == "__main__":
     decoder_t = run_and_print_inference(state, prob_tensors)
     print("decoder_t", decoder_t.shape)
 
+    temperature = 1e-3
     for example in range(decoder_t.shape[0]):
         print(f"Example {example}")
         single_decoder_t = decoder_t[example]
-        for sample_idx in range(25):
+        for sample_idx in range(10):
             key, subkey = jax.random.split(key)
-            samples = sample(subkey, single_decoder_t)
-            print(samples)
+            samples = sample(subkey, single_decoder_t, temperature=temperature)
             print(" ".join([data.vocab[s] for s in samples]))
         print("")
+    print(f"seed: {seed}\n")
