@@ -103,6 +103,7 @@ def print_activations(n_examples, prompt_data, decoder_t, encoder_activations, d
         # Print the decoder activations in reverse order
         # since layer 0 is the leaf and num_layers - 1 is the root
         for layer_idx, layer_activation in enumerate(decoder_activations[::-1]):
+            print("=" * 20)
             print(f"Layer {len(decoder_activations) - layer_idx - 1} decoder")
             for key in decoder_activation_keys:  # type: ignore
                 print(key)

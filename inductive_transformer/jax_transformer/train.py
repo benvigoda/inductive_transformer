@@ -184,7 +184,7 @@ if __name__ == "__main__":
     # seed = 11675966
     # seed = 615523631
     # seed = 2819370678  # For NAN with 32 sentences
-    seed = 3727924788 # For NAN with 2 sentences
+    # seed = 3727924788 # For NAN with 2 sentences
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
 
@@ -243,7 +243,7 @@ if __name__ == "__main__":
 
     # Train the model.
     if args.training_text:
-        n_epochs = 500
+        n_epochs = 2000
         batch_size = 10
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
         print_every = 100
@@ -265,18 +265,32 @@ if __name__ == "__main__":
                 state, prob_tensors.attention_input, batch_input_data, batch_output_data
             )
             state = update_model(state, grads)
+            # First Nan is at epoch 357, step 5
+            # if epoch == 356 and step_idx >= 4 and step_idx <= 5:
+            #     print("\n\n\n\n\n")
+            #     print("*" * 100)
+            #     print("-" * 100)
+            #     print("*" * 100)
+            #     print(f"epoch {epoch}, step {step_idx}, loss: {loss:.3e}")
+            #     # Print the trained weights:
+            #     print_params(state, data.vocab)
+            #     print("*" * 100)
+            #     # Print activations:
+            #     run_and_print_inference(state, prob_tensors)
+
 
         if epoch % print_every == 0:
-            print("\n\n\n\n\n")
-            print("*" * 100)
-            print("-" * 100)
-            print("*" * 100)
-            print(f"epoch {epoch}, loss: {loss:.3e}\n")
-            # Print the trained weights:
-            print_params(state, data.vocab)
-            print("*" * 100)
-            # Print activations:
-            run_and_print_inference(state, prob_tensors)
+            # print("\n\n\n\n\n")
+            # print("*" * 100)
+            # print("-" * 100)
+            # print("*" * 100)
+            print(f"epoch {epoch}, loss: {loss:.3e}")
+            # # Print the trained weights:
+            # print()
+            # print_params(state, data.vocab)
+            # print("*" * 100)
+            # # Print activations:
+            # run_and_print_inference(state, prob_tensors)
 
 
     # Print trained weights.
