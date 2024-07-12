@@ -1,6 +1,6 @@
 import jax.numpy as jnp  # type: ignore
 
-EPSILON = 1e-8
+EPSILON = 1e-12
 PROBABLE = 1 - EPSILON
 IMPROBABLE = EPSILON
 
