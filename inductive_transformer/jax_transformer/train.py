@@ -52,7 +52,7 @@ def create_train_state(
     key, subkey = jax.random.split(key)
     if noise_seed is None:
         tx = optax.chain(
-            optax.adam(learning_rate=1.0e-3),
+            optax.adam(learning_rate=1.0e-5),
         )
     else:
         tx = optax.chain(
