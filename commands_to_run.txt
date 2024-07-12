@@ -31,3 +31,6 @@ python inductive_transformer/jax_transformer/train.py training_text.txt inferenc
 
 June 14
 PYTHONPATH=. python inductive_transformer/jax_transformer/train.py training_text.txt --prompt_text inference_text.txt --perturb --num_layer 2 --layer_width 2
+
+July 12
+python inductive_transformer/jax_transformer/train.py 32_curated_sentences.txt --prompt_text inference_text_32.txt --num_layer 2 --layer_width 2
