@@ -10,6 +10,7 @@ from inductive_transformer.jax_transformer.model import BatchedInductiveTransfor
 from inductive_transformer.jax_transformer.text_parsing import InputData, ProbTensors
 from inductive_transformer.jax_transformer.weights import update_weights
 from inductive_transformer.jax_transformer.printing import print_params, print_activations
+from inductive_transformer.jax_transformer.sampling import sample
 
 
 class TrainState(train_state.TrainState):
@@ -52,7 +53,7 @@ def create_train_state(
     key, subkey = jax.random.split(key)
     if noise_seed is None:
         tx = optax.chain(
-            optax.adam(learning_rate=1.0e-5),
+            optax.adam(learning_rate=1.0e-3),
         )
     else:
         tx = optax.chain(
@@ -130,6 +131,8 @@ def run_and_print_inference(state, prob_tensors):
         )
 
         print_activations(n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations)
+
+        return decoder_t
 
 
 def parse_args():
@@ -300,4 +303,15 @@ if __name__ == "__main__":
         print("No prompt text given, exiting.")
         exit()
 
-    run_and_print_inference(state, prob_tensors)
+    decoder_t = run_and_print_inference(state, prob_tensors)
+    print("decoder_t", decoder_t.shape)
+
+    for example in range(decoder_t.shape[0]):
+        print(f"Example {example}")
+        single_decoder_t = decoder_t[example]
+        for sample_idx in range(25):
+            key, subkey = jax.random.split(key)
+            samples = sample(subkey, single_decoder_t)
+            print(samples)
+            print(" ".join([data.vocab[s] for s in samples]))
+        print("")
