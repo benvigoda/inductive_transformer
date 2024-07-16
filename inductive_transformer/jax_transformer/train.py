@@ -52,9 +52,16 @@ def create_train_state(
 
     key, subkey = jax.random.split(key)
     if noise_seed is None:
+        # Pick a random number between 1e-8 and 1e-1
+        # lr = 10 ** np.random.uniform(-8, -1)
+        lr = 1e-3
         tx = optax.chain(
-            optax.adam(learning_rate=1.0e-3),
+            optax.adam(learning_rate=lr),
         )
+        # b1 means the exponential decay rate for the first moment estimates
+        # b2 means the exponential decay rate for the second moment estimates
+        # A lower b1 will make the optimizer more aggressive, a higher b1 will make it less aggressive
+        # A lower b2 will make the optimizer more aggressive, a higher b2 will make it less aggressive
     else:
         tx = optax.chain(
             optax.add_noise(eta=1.0e-2, gamma=0.999, seed=noise_seed),
@@ -70,7 +77,7 @@ def create_train_state(
         tx=tx,
         grad_mask=grad_mask,
     )
-    return state, model
+    return state, model, lr
 
 
 @jax.jit
@@ -102,37 +109,37 @@ def update_model(state, grads):
     return state.apply_gradients(grads=grads)
 
 
-def run_and_print_inference(state, prob_tensors):
-        # Load inference examples.
-        inference_data = prob_tensors.make_inference_prompt_tensors()
-        all_inference_data = jnp.stack(inference_data, axis=0)
-        n_examples = len(inference_data)
-        assert all_inference_data.shape == (
-            n_examples,
-            args.num_layers,
-            prob_tensors.num_positions,
-            prob_tensors.vocab_size,
-            args.layer_width,
-        )
+def run_and_print_inference(state, prob_tensors, args):
+    # Load inference examples.
+    inference_data = prob_tensors.make_inference_prompt_tensors()
+    all_inference_data = jnp.stack(inference_data, axis=0)
+    n_examples = len(inference_data)
+    assert all_inference_data.shape == (
+        n_examples,
+        args.num_layers,
+        prob_tensors.num_positions,
+        prob_tensors.vocab_size,
+        args.layer_width,
+    )
 
-        # uniform distribution
-        # prompt_data = all_inference_data.at[:, :, 1, :, :].set(1.0 / prob_tensors.vocab_size)
-        # all words epsilon
-        # prompt_data = all_inference_data.at[:, :, 1, :, :].set(1e-6)
-        prompt_data = all_inference_data
-        print("prompt data", prompt_data.shape)
-        print(prompt_data)
-        print("attention input")
-        print(prob_tensors.attention_input)
+    # uniform distribution
+    # prompt_data = all_inference_data.at[:, :, 1, :, :].set(1.0 / prob_tensors.vocab_size)
+    # all words epsilon
+    # prompt_data = all_inference_data.at[:, :, 1, :, :].set(1e-6)
+    prompt_data = all_inference_data
+    print("prompt data", prompt_data.shape)
+    print(prompt_data)
+    print("attention input")
+    print(prob_tensors.attention_input)
 
-        # Run inference.
-        decoder_z, decoder_t, encoder_activations, decoder_activations = state.apply_fn(
-            state.params, prob_tensors.attention_input, prompt_data
-        )
+    # Run inference.
+    decoder_z, decoder_t, encoder_activations, decoder_activations = state.apply_fn(
+        state.params, prob_tensors.attention_input, prompt_data
+    )
 
-        print_activations(n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations)
+    print_activations(n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations)
 
-        return decoder_t
+    return decoder_t
 
 
 def parse_args():
@@ -174,7 +181,7 @@ def parse_args():
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def main():
     # Parse args.
     args = parse_args()
     # If doing perturbation test, you also need to give it training_text
@@ -223,7 +230,7 @@ if __name__ == "__main__":
 
     # Initialize all training state (most importantly, the model parameters and optimizer).
     key, subkey = jax.random.split(key)
-    state, model = create_train_state(
+    state, model, lr = create_train_state(
         subkey,
         vocab=data.vocab,
         num_positions=prob_tensors.num_positions,
@@ -279,8 +286,7 @@ if __name__ == "__main__":
             #     print_params(state, data.vocab)
             #     print("*" * 100)
             #     # Print activations:
-            #     run_and_print_inference(state, prob_tensors)
-
+            #     run_and_print_inference(state, prob_tensors, args)
 
         if epoch % print_every == 0:
             # print("\n\n\n\n\n")
@@ -293,8 +299,7 @@ if __name__ == "__main__":
             # print_params(state, data.vocab)
             # print("*" * 100)
             # # Print activations:
-            # run_and_print_inference(state, prob_tensors)
-
+            # run_and_print_inference(state, prob_tensors, args)
 
     # Print trained weights.
     print_params(state, data.vocab)
@@ -303,16 +308,29 @@ if __name__ == "__main__":
         print("No prompt text given, exiting.")
         exit()
 
-    decoder_t = run_and_print_inference(state, prob_tensors)
+    decoder_t = run_and_print_inference(state, prob_tensors, args)
     print("decoder_t", decoder_t.shape)
 
     temperature = 1e-3
-    for example in range(decoder_t.shape[0]):
-        print(f"Example {example}")
-        single_decoder_t = decoder_t[example]
+    for example_idx, example in enumerate(data.raw_inference_text.replace(" .", ".").split(".")):
+        if not example:
+            continue
+        print(f"Example {example_idx}: {example}")
+        single_decoder_t = decoder_t[example_idx]
         for sample_idx in range(10):
             key, subkey = jax.random.split(key)
             samples = sample(subkey, single_decoder_t, temperature=temperature)
             print(" ".join([data.vocab[s] for s in samples]))
         print("")
     print(f"seed: {seed}\n")
+    return seed, loss, lr
+
+
+if __name__ == "__main__":
+    for i in range(1):
+        seed, loss, lr = main()
+        if loss < 1e-3:
+            # Save seed and loss to a file
+            # Append to the file if it already exists
+            with open("seed_loss.txt", "a") as f:
+                f.write(f"seed: {seed}, loss: {loss:.3e}, learning rate: {lr}\n")
