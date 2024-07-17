@@ -195,6 +195,7 @@ def main():
     # seed = 615523631
     # seed = 2819370678  # For NAN with 32 sentences
     # seed = 3727924788 # For NAN with 2 sentences
+    seed = 1376424188 # Basic convergence of 32_6_layer_sentences.txt
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
 
@@ -253,7 +254,7 @@ def main():
 
     # Train the model.
     if args.training_text:
-        n_epochs = 1000
+        n_epochs = 300
         batch_size = 10
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
         print_every = 100
@@ -311,7 +312,7 @@ def main():
     decoder_t = run_and_print_inference(state, prob_tensors, args)
     print("decoder_t", decoder_t.shape)
 
-    temperature = 1e-3
+    temperature = 1
     for example_idx, example in enumerate(data.raw_inference_text.replace(" .", ".").split(".")):
         if not example:
             continue
