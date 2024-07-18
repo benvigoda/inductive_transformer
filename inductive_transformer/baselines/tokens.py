@@ -1,6 +1,7 @@
+from typing import NamedTuple
 import jax
 import jax.numpy as jnp
-from typing import NamedTuple
+import numpy as np
 
 
 class Dataset(NamedTuple):
@@ -23,6 +24,10 @@ class Dataset(NamedTuple):
     @property
     def blank_token(self):
         return self.vocab_size - 1
+
+    def ids_to_strings(self, ids):
+        ids = np.asarray(ids).tolist()
+        return [[self.id_to_word[id] for id in sentence] for sentence in ids]
 
 
 def load_dataset(filepath):
