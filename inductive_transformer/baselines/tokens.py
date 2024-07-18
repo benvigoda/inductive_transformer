@@ -27,7 +27,7 @@ class Dataset(NamedTuple):
 
     def ids_to_strings(self, ids):
         ids = np.asarray(ids).tolist()
-        return [[self.id_to_word[id] for id in sentence] for sentence in ids]
+        return [" ".join([self.id_to_word[id] for id in sentence]) for sentence in ids]
 
 
 def load_dataset(filepath):
