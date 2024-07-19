@@ -5,12 +5,15 @@ import jax.numpy as jnp
 import numpy as np
 import optax  # type: ignore
 import pathlib
+from jax.tree_util import tree_flatten
+
 
 from inductive_transformer.jax_transformer.model import BatchedInductiveTransformer
 from inductive_transformer.jax_transformer.text_parsing import InputData, ProbTensors
 from inductive_transformer.jax_transformer.weights import update_weights
 from inductive_transformer.jax_transformer.printing import print_params, print_activations
 from inductive_transformer.jax_transformer.sampling import sample
+from inductive_transformer.jax_transformer.histogram_generations import histogram_results
 
 
 class TrainState(train_state.TrainState):
@@ -77,6 +80,8 @@ def create_train_state(
         tx=tx,
         grad_mask=grad_mask,
     )
+    num_params = count_params(params)
+    print(f"Number of parameters: {num_params}")
     return state, model, lr
 
 
@@ -140,6 +145,11 @@ def run_and_print_inference(state, prob_tensors, args):
     print_activations(n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations)
 
     return decoder_t
+
+
+def count_params(params):
+    leaves, _ = tree_flatten(params)
+    return sum(leaf.size for leaf in leaves)
 
 
 def parse_args():
@@ -254,7 +264,7 @@ def main():
 
     # Train the model.
     if args.training_text:
-        n_epochs = 300
+        n_epochs = 200
         batch_size = 10
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
         print_every = 100
@@ -313,17 +323,24 @@ def main():
     print("decoder_t", decoder_t.shape)
 
     temperature = 1
+    generated_sentences = []
     for example_idx, example in enumerate(data.raw_inference_text.replace(" .", ".").split(".")):
         if not example:
             continue
         print(f"Example {example_idx}: {example}")
         single_decoder_t = decoder_t[example_idx]
-        for sample_idx in range(10):
+        for sample_idx in range(500):
             key, subkey = jax.random.split(key)
             samples = sample(subkey, single_decoder_t, temperature=temperature)
-            print(" ".join([data.vocab[s] for s in samples]))
+            generated_sentence = " ".join([data.vocab[s] for s in samples])
+            print(generated_sentence)
+            generated_sentences.append(generated_sentence)
         print("")
     print(f"seed: {seed}\n")
+
+    # Generate histograms:
+    training_sentences = data.training_sentences
+    histogram_results(training_sentences, generated_sentences)
     return seed, loss, lr
 
 

@@ -1,136 +1,138 @@
+import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-
-# List of all the sentences generated
-sentences = [
-    "Small dog often fears big cat.",
-    "Little canine usually avoids large feline.",
-    "Tiny dog commonly fears giant cat.",
-    "Micro canine frequently avoids huge feline.",
-    "Mini dog often fears humungous cat.",
-    "Small canine usually avoids enormous feline.",
-    "Little dog commonly fears big cat.",
-    "Tiny canine frequently avoids large feline.",
-    "Micro dog often fears giant cat.",
-    "Mini canine usually avoids huge feline.",
-    "Small dog commonly fears humungous cat.",
-    "Little canine frequently avoids enormous feline.",
-    "Tiny dog often fears big cat.",
-    "Micro canine usually avoids large feline.",
-    "Mini dog commonly fears giant cat.",
-    "Small canine frequently avoids huge feline.",
-    "Little dog often fears humungous cat.",
-    "Tiny canine usually avoids enormous feline.",
-    "Micro dog commonly fears big cat.",
-    "Mini canine frequently avoids large feline.",
-    "Small dog often fears giant cat.",
-    "Little canine usually avoids huge feline.",
-    "Tiny dog commonly fears humungous cat.",
-    "Micro canine frequently avoids enormous feline.",
-    "Mini dog often fears big cat.",
-    "Small canine usually avoids large feline.",
-    "Little dog commonly fears giant cat.",
-    "Tiny canine frequently avoids huge feline.",
-    "Micro dog often fears humungous cat.",
-    "Mini canine usually avoids enormous feline.",
-    "Small dog sometimes chases big cat.",
-    "Little canine occasionally intimidates large feline.",
-    "Tiny dog rarely eats giant cat.",
-    "Micro canine never chases huge feline.",
-    "Mini dog sometimes intimidates humungous cat.",
-    "Small canine occasionally eats enormous feline.",
-    "Little dog rarely chases big cat.",
-    "Tiny canine never intimidates large feline.",
-    "Micro dog sometimes eats giant cat.",
-    "Mini canine occasionally chases huge feline.",
-    "Small dog rarely intimidates humungous cat.",
-    "Little canine never eats enormous feline.",
-    "Tiny dog sometimes chases big cat.",
-    "Micro canine occasionally intimidates large feline.",
-    "Mini dog rarely eats giant cat.",
-    "Small canine never chases huge feline.",
-    "Little dog sometimes intimidates humungous cat.",
-    "Tiny canine occasionally eats enormous feline.",
-    "Micro dog rarely chases big cat.",
-    "Mini canine never intimidates large feline.",
-    "Small dog sometimes eats giant cat.",
-    "Little canine occasionally chases huge feline.",
-    "Tiny dog rarely intimidates humungous cat.",
-    "Micro canine never eats enormous feline.",
-    "Mini dog sometimes chases big cat.",
-    "Small canine occasionally intimidates large feline.",
-    "Little dog rarely eats giant cat.",
-    "Tiny canine never chases huge feline.",
-    "Micro dog sometimes intimidates humungous cat.",
-    "Mini canine occasionally eats enormous feline.",
-    "Small dog rarely chases big cat.",
-    "Little canine never intimidates large feline.",
-    "Tiny dog sometimes eats giant cat.",
-    "Micro canine occasionally chases huge feline.",
-    "Mini dog rarely intimidates humungous cat.",
-    "Small canine never eats enormous feline.",
-    "Little dog sometimes chases big cat.",
-    "Tiny canine occasionally intimidates large feline.",
-    "Micro dog rarely eats giant cat.",
-    "Mini canine never chases huge feline.",
-    "Small dog sometimes intimidates humungous cat.",
-    "Little canine occasionally eats enormous feline.",
-    "Tiny dog rarely chases big cat.",
-    "Micro canine never intimidates large feline.",
-    "Mini dog sometimes eats giant cat.",
-    "Small canine occasionally chases huge feline.",
-    "Little dog rarely intimidates humungous cat.",
-    "Tiny canine never eats enormous feline.",
-    "Micro dog sometimes chases big cat.",
-    "Mini canine occasionally intimidates large feline.",
-    "Small dog rarely eats giant cat.",
-    "Little canine never chases huge feline.",
-    "Tiny dog sometimes intimidates humungous cat.",
-    "Micro canine occasionally eats enormous feline.",
-    "Mini dog rarely chases big cat.",
-    "Small canine never intimidates large feline.",
-    "Little dog sometimes eats giant cat.",
-    "Tiny canine occasionally chases huge feline.",
-    "Micro dog rarely intimidates humungous cat.",
-    "Mini canine never eats enormous feline.",
-    "Small dog sometimes chases big cat.",
-    "Little canine occasionally intimidates large feline.",
-    "Tiny dog rarely eats giant cat.",
-    "Micro canine never chases huge feline.",
-    "Mini dog sometimes intimidates humungous cat.",
-    "Small canine occasionally eats enormous feline.",
-    "Little dog rarely chases big cat.",
-    "Tiny canine never intimidates large feline.",
-    "Micro dog sometimes eats giant cat.",
-    "Mini canine occasionally chases huge feline."
-]
-
-# Count the frequency of each unique sentence
 from collections import Counter
-sentence_counts = Counter(sentences)
 
-# Convert to DataFrame for plotting
-import pandas as pd
-data = pd.DataFrame(list(sentence_counts.items()), columns=['Sentence', 'Count'])
 
-# Plot histograms of the training set and the generated set side by side
-# Set up the figure with two subplots, sharing the y-axis
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
+# The validation function
+def validate_sentences(sentences_list):
 
-# Plot training data on the first subplot
-sns.barplot(x='Training Count', y='Sentence', data=data, color='blue', ax=ax1)
-ax1.set_title('Training Data')
-ax1.set_xlabel('Count')
-ax1.set_ylabel('Sentences')
+    valid_words = {
+        1: {"small", "little", "tiny", "micro", "mini"},
+        2: {"dog", "canine"},
+        3: {"often", "usually", "commonly", "frequently", "sometimes", "occasionally", "rarely", "never"},
+        4: {"fears", "avoids", "chases", "intimidates", "eats"},
+        5: {"large", "giant", "huge", "humongous", "enormous", "big"},
+        6: {"cat", "feline"}
+    }
+    
+    valid_first_pairs = {
+        (1, 2): {
+            ("small", "dog"), ("small", "canine"),
+            ("little", "dog"), ("little", "canine"),
+            ("tiny", "dog"), ("tiny", "canine"),
+            ("micro", "dog"), ("micro", "canine"),
+            ("mini", "dog"), ("mini", "canine"),
+        }
+    }
+    
+    valid_middle_pairs = {
+        (3, 4): {
+            ("often", "fears"), ("often", "avoids"),
+            ("usually", "fears"), ("usually", "avoids"),
+            ("commonly", "fears"), ("commonly", "avoids"),
+            ("frequently", "fears"), ("frequently", "avoids"),
+            ("sometimes", "chases"), ("sometimes", "intimidates"), ("sometimes", "eats"),
+            ("occasionally", "chases"), ("occasionally", "intimidates"), ("occasionally", "eats"),
+            ("rarely", "fears"), ("rarely", "avoids"),
+            ("never", "fears"), ("never", "avoids")
+        }
+    }
 
-# Plot generated data on the second subplot
-sns.barplot(x='Generated Count', y='Sentence', data=data, color='green', ax=ax2)
-ax2.set_title('Generated Data')
-ax2.set_xlabel('Count')
-ax2.set_ylabel('')  # No y-label for the right plot
+    valid_last_pairs = {
+        (5, 6): {
+            ("large", "cat"), ("large", "feline"),
+            ("giant", "cat"), ("giant", "feline"),
+            ("huge", "cat"), ("huge", "feline"),
+            ("humongous", "cat"), ("humongous", "feline"),
+            ("enormous", "cat"), ("enormous", "feline"),
+            ("big", "cat"), ("big", "feline")
+        }
+    }
+    results = {}
+    for sentence in sentences_list:
+        words = sentence.split()
 
-# Adjust subplot parameters to give more space and align them nicely
-plt.subplots_adjust(wspace=0.5)  # Increase space between the plots
+        results[sentence] = "valid"
 
-# Show the plot
-plt.show()
+        if len(words) != 6:
+            results[sentence] = "invalid"
+            continue
+        
+        if (words[0], words[1]) not in valid_first_pairs.get((1, 2), []):
+            results[sentence] = "invalid"
+            continue
+        
+        if (words[2], words[3]) not in valid_middle_pairs.get((3, 4), []):
+            results[sentence] = "invalid"
+            continue
+        
+        if (words[4], words[5]) not in valid_last_pairs.get((5, 6), []):
+            results[sentence] = "invalid"
+
+    return results
+
+
+# Function to plot side-by-side horizontal histograms with shared y-axis
+def plot_side_by_side_histograms(data1, data2):
+    # Set up the figure with two subplots, sharing the y-axis
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
+
+    # Plot training data on the first subplot
+    sns.barplot(x='Count', y='Sentence', data=data1, color='blue', ax=ax1)
+    ax1.set_title("Training Data")
+    ax1.set_xlabel('Count')
+    ax1.set_ylabel('Sentences')
+    palette = {'valid': 'green', 'invalid': 'red'}
+    # Plot generated data on the second subplot
+    # sns.barplot(x='Count', y='Sentence', data=data2, color=data2["Color"], ax=ax2)
+    sns.barplot(x='Count', y='Sentence', data=data2, hue='Status', palette=palette, ax=ax2)
+    ax2.set_title("Generated Data")
+    ax2.set_xlabel('Count')
+    ax2.set_ylabel('')  # No y-label for the right plot
+
+    # Adjust subplot parameters to give more space and align them nicely
+    plt.subplots_adjust(wspace=0.2)  # Increase space between the plots
+
+    # Show the plot
+    plt.show()
+
+
+# Function to prepare data and plot results
+def histogram_results(training_sentences, generated_sentences):
+    training_counts = Counter(training_sentences)
+    generated_counts = Counter(generated_sentences)
+    training_data = pd.DataFrame(list(training_counts.items()), columns=['Sentence', 'Count'])
+    generated_data = pd.DataFrame(list(generated_counts.items()), columns=['Sentence', 'Count'])
+    valid_generated = validate_sentences(training_sentences + generated_sentences)
+    generated_data["Status"] = ['valid' if valid_generated[sentence] == 'valid' else 'invalid' for sentence in generated_data["Sentence"]]
+
+    # Plot side-by-side histograms for both datasets
+    plot_side_by_side_histograms(training_data, generated_data)
+
+
+def main():
+    training_data = [
+        "tiny dog often avoids large cat",  # valid
+        "mini canine usually fears huge feline",  # valid
+    ]
+    generated_data = [
+        "tiny dog often avoids large cat",  # valid
+        "mini canine usually fears huge feline",  # valid
+        "tiny dog often avoids large cat",  # valid
+        "mini canine usually fears huge feline",  # valid
+        
+        "tiny dog often avoids dog cat",  # invalid
+        "dog tiny avoids often cat cat",  # invalid
+
+        "micro cat rarely fears big dog",  # valid
+        "mini canine sometimes chases huge cat",  # valid
+        "little dog occasionally intimidates enormous cat",  # valid
+        "micro dog rarely fears big cat",  # valid
+ 
+    ]
+    histogram_results(training_data, generated_data)
+
+
+if __name__ == '__main__':
+    main()
