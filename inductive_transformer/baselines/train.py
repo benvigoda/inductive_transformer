@@ -12,8 +12,10 @@ from models import FullyConnected
 
 def make_train_state(key, model, dataset, learning_rate):
     x = jnp.zeros((1, dataset.sentence_length, dataset.vocab_size))
-    params = model.init(key, x)
+    key, subkey = jax.random.split(key)
+    params = model.init(subkey, x)
     optimizer = optax.adam(learning_rate)
+    print(model.tabulate(key, x, compute_flops=True, compute_vjp_flops=True))
     return model, train_state.TrainState.create(
         apply_fn=model.apply, params=params, tx=optimizer
     )
@@ -114,6 +116,7 @@ def main(dataset):
     model, train_state = make_train_state(
         subkey, FullyConnected(layers=layers), data, learning_rate
     )
+    key, subkey = jax.random.split(key)
     print("")
 
     print("Training...")
