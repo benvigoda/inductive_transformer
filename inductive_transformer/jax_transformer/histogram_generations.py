@@ -7,25 +7,16 @@ from collections import Counter
 # The validation function
 def validate_sentences(sentences_list):
 
-    valid_words = {
-        1: {"small", "little", "tiny", "micro", "mini"},
-        2: {"dog", "canine"},
-        3: {"often", "usually", "commonly", "frequently", "sometimes", "occasionally", "rarely", "never"},
-        4: {"fears", "avoids", "chases", "intimidates", "eats"},
-        5: {"large", "giant", "huge", "humongous", "enormous", "big"},
-        6: {"cat", "feline"}
-    }
-    
     valid_first_pairs = {
         (1, 2): {
-            ("small", "dog"), ("small", "canine"),
-            ("little", "dog"), ("little", "canine"),
-            ("tiny", "dog"), ("tiny", "canine"),
-            ("micro", "dog"), ("micro", "canine"),
-            ("mini", "dog"), ("mini", "canine"),
+            ("Small", "dog"), ("Small", "canine"),
+            ("Little", "dog"), ("Little", "canine"),
+            ("Tiny", "dog"), ("Tiny", "canine"),
+            ("Micro", "dog"), ("Micro", "canine"),
+            ("Mini", "dog"), ("Mini", "canine"),
         }
     }
-    
+
     valid_middle_pairs = {
         (3, 4): {
             ("often", "fears"), ("often", "avoids"),
