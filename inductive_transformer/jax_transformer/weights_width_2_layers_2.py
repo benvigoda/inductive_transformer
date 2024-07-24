@@ -27,7 +27,7 @@ def set_position_pi_weights(layer, params, mask, prefix, layer_width):
         raise ValueError(f"Layer {layer_key} not found in params.")
 
 
-def set_weights(params, vocab, lock_all_weights=False):
+def init_weights(params, vocab, lock_all_weights=False):
     # Get shapes:
     num_positions, vocab_size, layer_width = params["params"]["encoders_0"]["encoder_token_pi"]["weights"].shape
     assert vocab_size == len(vocab)
