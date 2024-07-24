@@ -5,60 +5,84 @@ from collections import Counter
 
 
 # The validation function
-def validate_sentences(sentences_list):
+def validate_sentences(sentences_list, num_words=6):
 
-    valid_first_pairs = {
-        (1, 2): {
-            ("Small", "dog"), ("Small", "canine"),
-            ("Little", "dog"), ("Little", "canine"),
-            ("Tiny", "dog"), ("Tiny", "canine"),
-            ("Micro", "dog"), ("Micro", "canine"),
-            ("Mini", "dog"), ("Mini", "canine"),
+    if num_words == 6:
+        valid_first_pairs = {
+            (1, 2): {
+                ("Small", "dogs"), ("Small", "canines"),
+                ("Little", "dogs"), ("Little", "canines"),
+                ("Tiny", "dogs"), ("Tiny", "canines"),
+                ("Micro", "dogs"), ("Micro", "canines"),
+                ("Mini", "dogs"), ("Mini", "canines"),
+            }
         }
-    }
+    else:
+        valid_first_pairs = {
+            (1, 2): {
+                ("Small", "dogs"), ("Small", "canines"),
+                ("Little", "dogs"), ("Little", "canines"),
+                ("Tiny", "dogs"), ("Tiny", "canines"),
+                ("Micro", "dogs"), ("Micro", "canines"),
+                ("Mini", "dogs"), ("Mini", "canines"),
+                ("Extralarge", "cats"), ("Extralarge", "felines"),
+                ("Gargantuan", "cats"), ("Gargantuan", "felines"),
+                ("Large", "cats"), ("Large", "felines"),
+                ("Giant", "cats"), ("Giant", "felines"),
+                ("Huge", "cats"), ("Huge", "felines"),
+                ("Humongous", "cats"), ("Humongous", "felines"),
+                ("Enormous", "cats"), ("Enormous", "felines"),
+                ("Big", "cats"), ("Big", "felines"),
+                ("Pico", "dogs"), ("Pico", "canines"),
+                ("Femto", "dogs"), ("Femto", "canines"),
+                ("Diminimus", "dogs"), ("Diminimus", "canines"),
+                ("Itty", "dogs"), ("Itty", "canines"),
+                ("Teenyweeny", "dogs"), ("Teenyweeny", "canines"),
+            }
+        }
 
     valid_middle_pairs = {
         (3, 4): {
-            ("often", "fears"), ("often", "avoids"),
-            ("usually", "fears"), ("usually", "avoids"),
-            ("commonly", "fears"), ("commonly", "avoids"),
-            ("frequently", "fears"), ("frequently", "avoids"),
-            ("sometimes", "chases"), ("sometimes", "intimidates"), ("sometimes", "eats"),
-            ("occasionally", "chases"), ("occasionally", "intimidates"), ("occasionally", "eats"),
-            ("rarely", "fears"), ("rarely", "avoids"),
-            ("never", "fears"), ("never", "avoids")
+            ("often", "fear"), ("often", "avoid"),
+            ("usually", "fear"), ("usually", "avoid"),
+            ("commonly", "fear"), ("commonly", "avoid"),
+            ("frequently", "fear"), ("frequently", "avoid"),
+            ("sometimes", "chase"), ("sometimes", "intimidate"), ("sometimes", "eat"),
+            ("occasionally", "chase"), ("occasionally", "intimidate"), ("occasionally", "eat"),
+            ("rarely", "fear"), ("rarely", "avoid"),
+            ("never", "fear"), ("never", "avoid")
         }
     }
 
     valid_last_pairs = {
         (5, 6): {
-            ("large", "cat"), ("large", "feline"),
-            ("giant", "cat"), ("giant", "feline"),
-            ("huge", "cat"), ("huge", "feline"),
-            ("humongous", "cat"), ("humongous", "feline"),
-            ("enormous", "cat"), ("enormous", "feline"),
-            ("big", "cat"), ("big", "feline")
+            ("large", "cats"), ("large", "felines"),
+            ("giant", "cats"), ("giant", "felines"),
+            ("huge", "cats"), ("huge", "felines"),
+            ("humongous", "cats"), ("humongous", "felines"),
+            ("enormous", "cats"), ("enormous", "felines"),
+            ("big", "cats"), ("big", "felines")
         }
     }
+
     results = {}
     for sentence in sentences_list:
         words = sentence.split()
-
         results[sentence] = "valid"
 
-        if len(words) != 6:
+        if len(words) != num_words:
             results[sentence] = "invalid"
             continue
         
-        if (words[0], words[1]) not in valid_first_pairs.get((1, 2), []):
+        if num_words >= 2 and (words[0], words[1]) not in valid_first_pairs.get((1, 2), []):
             results[sentence] = "invalid"
             continue
         
-        if (words[2], words[3]) not in valid_middle_pairs.get((3, 4), []):
+        if num_words >= 4 and (words[2], words[3]) not in valid_middle_pairs.get((3, 4), []):
             results[sentence] = "invalid"
             continue
         
-        if (words[4], words[5]) not in valid_last_pairs.get((5, 6), []):
+        if num_words >= 6 and (words[4], words[5]) not in valid_last_pairs.get((5, 6), []):
             results[sentence] = "invalid"
 
     return results
@@ -85,17 +109,20 @@ def plot_side_by_side_histograms(data1, data2):
     # Adjust subplot parameters to give more space and align them nicely
     plt.subplots_adjust(wspace=0.2)  # Increase space between the plots
 
+    plt.setp(ax1.get_yticklabels(), fontsize=5)
+
     # Show the plot
     plt.show()
 
 
 # Function to prepare data and plot results
 def histogram_results(training_sentences, generated_sentences):
+    num_words = len(training_sentences[0].split())
     training_counts = Counter(training_sentences)
     generated_counts = Counter(generated_sentences)
     training_data = pd.DataFrame(list(training_counts.items()), columns=['Sentence', 'Count'])
     generated_data = pd.DataFrame(list(generated_counts.items()), columns=['Sentence', 'Count'])
-    valid_generated = validate_sentences(training_sentences + generated_sentences)
+    valid_generated = validate_sentences(training_sentences + generated_sentences, num_words=num_words)
     generated_data["Status"] = ['valid' if valid_generated[sentence] == 'valid' else 'invalid' for sentence in generated_data["Sentence"]]
 
     # Plot side-by-side histograms for both datasets

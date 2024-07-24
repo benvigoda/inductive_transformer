@@ -10,7 +10,7 @@ from jax.tree_util import tree_flatten
 
 from inductive_transformer.jax_transformer.model import BatchedInductiveTransformer
 from inductive_transformer.jax_transformer.text_parsing import InputData, ProbTensors
-from inductive_transformer.jax_transformer.weights_width_2_layers_2 import set_weights
+from inductive_transformer.jax_transformer.weights_width_2_layers_2 import init_weights
 from inductive_transformer.jax_transformer.printing import print_params, print_activations
 from inductive_transformer.jax_transformer.sampling import sample
 from inductive_transformer.jax_transformer.histogram_generations import histogram_results
@@ -51,7 +51,7 @@ def create_train_state(
 
     # Update weights.
     # If perturb_flag is True, we will set weights as defined in weights.py.
-    params, set_weights = set_weights(params, vocab, set_all_weights=perturb_flag)
+    params, weight_mask = init_weights(params, vocab, lock_all_weights=perturb_flag)
 
     key, subkey = jax.random.split(key)
     if noise_seed is None:
@@ -71,7 +71,7 @@ def create_train_state(
         )
     # If perturb_flag is True, we will not update the weights set in weights.py.
     if perturb_flag:
-        grad_mask = set_weights
+        grad_mask = weight_mask
     else:
         grad_mask = None
     state = TrainState.create(
@@ -204,8 +204,13 @@ def main():
     # seed = 11675966
     # seed = 615523631
     # seed = 2819370678  # For NAN with 32 sentences
-    # seed = 3727924788 # For NAN with 2 sentences
-    seed = 1376424188 # Basic convergence of 32_6_layer_sentences.txt
+    # seed = 1376424188 # Basic convergence of 32_6_layer_sentences.txt
+
+    # seed = 3699294691 # awesome convergence of 32_2_layer_sentences.txt
+    # seed = 737435735 # partial convergence of 32_2_layer_sentences.txt
+    # seed = 3727924788 # partial convergence of 32_2_layer_sentences.txt in another way
+
+    
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
 
@@ -264,7 +269,7 @@ def main():
 
     # Train the model.
     if args.training_text:
-        n_epochs = 200
+        n_epochs = 300
         batch_size = 10
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
         print_every = 100

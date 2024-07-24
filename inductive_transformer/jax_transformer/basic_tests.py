@@ -21,7 +21,7 @@ from inductive_transformer.jax_transformer.encoder_universe import EncoderUniver
 from inductive_transformer.jax_transformer.encoder_layer import EncoderLayer
 
 from model import InductiveTransformer
-from inductive_transformer.jax_transformer.weights_width_2_layers_2 import set_weights
+from inductive_transformer.jax_transformer.weights_width_2_layers_2 import init_weights
 
 
 def main():
