@@ -10,7 +10,7 @@ from jax.tree_util import tree_flatten
 
 from inductive_transformer.jax_transformer.model import BatchedInductiveTransformer
 from inductive_transformer.jax_transformer.text_parsing import InputData, ProbTensors
-from inductive_transformer.jax_transformer.weights import update_weights
+from inductive_transformer.jax_transformer.weights_width_2_layers_2 import set_weights
 from inductive_transformer.jax_transformer.printing import print_params, print_activations
 from inductive_transformer.jax_transformer.sampling import sample
 from inductive_transformer.jax_transformer.histogram_generations import histogram_results
@@ -51,7 +51,7 @@ def create_train_state(
 
     # Update weights.
     # If perturb_flag is True, we will set weights as defined in weights.py.
-    params, set_weights = update_weights(params, vocab, set_all_weights=perturb_flag)
+    params, set_weights = set_weights(params, vocab, set_all_weights=perturb_flag)
 
     key, subkey = jax.random.split(key)
     if noise_seed is None:
