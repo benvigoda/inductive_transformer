@@ -8,28 +8,26 @@ weak = EPSILON  # Dampen the signal
 mask_type = int
 
 
-def update_position_pi_weights(layer, params, updated_params, set_weights, prefix, layer_width):
+def set_position_pi_weights(layer, params, mask, prefix, layer_width):
     layer_key = f"{prefix}s_{layer}"
     position_pi = f"{prefix}_position_pi"
-    if layer_key in updated_params["params"]:
+    if layer_key in params["params"]:
         # Get the shape of the original weights
-        old_weights = updated_params["params"][layer_key][position_pi]["weights"]
+        old_weights = params["params"][layer_key][position_pi]["weights"]
         # Set the weights to all "weak" values
-        new_weight = jnp.full(old_weights.shape, weak)  # (num_positions, layer_width)
+        new_weights = jnp.full(old_weights.shape, weak)  # (num_positions, layer_width)
 
-        # FIXME: once we change the layer indexing to make layer 0 into layer 1 and vice versa,
-        # this has to go back to non-negative indices:
-        new_weight = new_weight.at[-layer - 1].set(jnp.full(layer_width, strong))  # Match num_layer to the opposite position in the weights
-        updated_params["params"][layer_key][position_pi]["weights"] = new_weight
+        new_weights = new_weights.at[-layer - 1].set(jnp.full(layer_width, strong))  # Match num_layer to the opposite position in the weights
+        params["params"][layer_key][position_pi]["weights"] = new_weights
         # Note: We have constrained the model such that num_positions needs to be equal to num_layers for this setup to work right now.
         # In the future we'll have to remove that constraint
 
-        set_weights["params"][layer_key][position_pi]["weights"] = jnp.zeros_like(old_weights, dtype=mask_type)
+        mask["params"][layer_key][position_pi]["weights"] = jnp.zeros_like(old_weights, dtype=mask_type)
     else:
         raise ValueError(f"Layer {layer_key} not found in params.")
 
 
-def update_weights(params, vocab, set_all_weights=False):
+def set_weights(params, vocab, lock_all_weights=False):
     # Get shapes:
     num_positions, vocab_size, layer_width = params["params"]["encoders_0"]["encoder_token_pi"]["weights"].shape
     assert vocab_size == len(vocab)
@@ -44,10 +42,10 @@ def update_weights(params, vocab, set_all_weights=False):
         num_layers += 1
 
     for layer in range(num_layers):
-        update_position_pi_weights(layer, params, updated_params, set_weights, "decoder", layer_width)
-        update_position_pi_weights(layer, params, updated_params, set_weights, "encoder", layer_width)
+        set_position_pi_weights(layer, updated_params, set_weights, "decoder", layer_width)
+        set_position_pi_weights(layer, updated_params, set_weights, "encoder", layer_width)
 
-    if set_all_weights:
+    if lock_all_weights:
         """ Update the weights for layer 1 """
         for lw, target_words in zip(range(layer_width), [['small'], ['big']]):  # [['big', 'large'], ['small']]
             '''

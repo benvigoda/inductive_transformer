@@ -21,7 +21,7 @@ from inductive_transformer.jax_transformer.encoder_universe import EncoderUniver
 from inductive_transformer.jax_transformer.encoder_layer import EncoderLayer
 
 from model import InductiveTransformer
-from weights import update_weights
+from inductive_transformer.jax_transformer.weights_width_2_layers_2 import set_weights
 
 
 def main():
@@ -266,7 +266,7 @@ def main():
         subkey_1, (num_layers, num_positions, vocab_size, layer_width)
     )
     params = inductive_transformer.init(subkey_2, z_in, t_in)
-    updated_params, set_weights = update_weights(params)
+    updated_params, set_weights = set_weights(params)
     z_out, t_out, encoder_activations, decoder_activations = (
         inductive_transformer.apply(updated_params, z_in, t_in)
     )
