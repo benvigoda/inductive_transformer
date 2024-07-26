@@ -9,6 +9,7 @@ import optax
 from grammars import BigCatSmallDog
 from tokens import load_dataset, make_dataset_from_sentences
 from models import FullyConnected
+from histograms import SampleStatus, generate_histogram
 
 
 def make_train_state(key, model, dataset, learning_rate):
@@ -99,8 +100,13 @@ def main():
 
     print("Generating data...")
     grammar = BigCatSmallDog()
+    # This is a list of lists of words (strings).
     all_valid_sentences = grammar.all_valid_sentences()
+    # Convert each sentence to one string.
+    all_valid_sentences_set = set(" ".join(words) for words in all_valid_sentences)
+    print("all valid")
     print(all_valid_sentences)
+    print(all_valid_sentences_set)
     data = make_dataset_from_sentences(all_valid_sentences)
     print(
         f"Loaded {data.n_sentences} sentences of length {data.sentence_length} "
@@ -131,7 +137,7 @@ def main():
     print("")
 
     print("Sampling...")
-    n_samples = 50
+    n_samples = 250
     key, subkey = jax.random.split(key)
     sample_x_ids, sample_y_ids, mask = generate_batch(subkey, data.data, data.vocab_size, n_samples)
     assert sample_x_ids.shape == (n_samples, data.sentence_length)
@@ -152,11 +158,20 @@ def main():
     assert generated_ids.shape == (n_samples, data.sentence_length)
 
     generated_words = data.ids_to_strings(generated_ids)
-    for id in range(n_samples):
+    n_printed_samples = 50
+    limit = min(n_printed_samples, n_samples)
+    for id in range(limit):
         print(sample_y_words[id], "=>", sample_x_words[id], "=>", generated_words[id])
     print("")
 
     print("Generating histograms...")
+    def classify_sentence(sentence: str) -> SampleStatus:
+        # TODO train on a subset of valid sentences so that we have out of sample sentences.
+        if sentence in all_valid_sentences_set:
+            return SampleStatus.IN_SAMPLE
+        return SampleStatus.INVALID
+
+    generate_histogram(generated_words, classify_sentence)
 
 
 if __name__ == "__main__":
