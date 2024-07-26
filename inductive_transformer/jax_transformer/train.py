@@ -57,7 +57,7 @@ def create_train_state(
     if noise_seed is None:
         # Pick a random number between 1e-8 and 1e-1
         # lr = 10 ** np.random.uniform(-8, -1)
-        lr = 1e-4
+        lr = 1e-3
         tx = optax.chain(
             optax.adam(learning_rate=lr),
         )
@@ -204,6 +204,7 @@ def main():
     # seed = 11675966
     # seed = 615523631
     # seed = 2819370678  # For NAN with 32 sentences
+    seed = 1376424188 # Basic convergence of 32_6_layer_sentences.txt
 
     # seed = 3699294691 # awesome convergence of 32_2_layer_sentences.txt
     # seed = 737435735 # partial convergence of 32_2_layer_sentences.txt
@@ -331,19 +332,19 @@ def main():
     for example_idx, example in enumerate(data.raw_inference_text.replace(" .", ".").split(".")):
         if not example:
             continue
-        print(f"Example {example_idx}: {example}")
+        print(f"Example {example_idx}: {example.capitalize()}")
         single_decoder_t = decoder_t[example_idx]
-        for sample_idx in range(500):
+        for sample_idx in range(6):
             key, subkey = jax.random.split(key)
             samples = sample(subkey, single_decoder_t, temperature=temperature)
-            generated_sentence = " ".join([data.vocab[s] for s in samples])
+            generated_sentence = " ".join([data.vocab[s] for s in samples]).capitalize()
             print(generated_sentence)
             generated_sentences.append(generated_sentence)
         print("")
     print(f"seed: {seed}\n")
 
     # Generate histograms:
-    training_sentences = data.training_sentences
+    training_sentences = [t.capitalize() for t in data.training_sentences]
     histogram_results(training_sentences, generated_sentences)
     return seed, loss, lr
 
