@@ -2,68 +2,19 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from collections import Counter
-
+from synonyms import Synonyms
 
 # The validation function
 def validate_sentences(sentences_list, num_words=6):
-
+    synonyms = Synonyms()
     if num_words == 6:
-        valid_first_pairs = {
-            (1, 2): {
-                ("Small", "dogs"), ("Small", "canines"),
-                ("Little", "dogs"), ("Little", "canines"),
-                ("Tiny", "dogs"), ("Tiny", "canines"),
-                ("Micro", "dogs"), ("Micro", "canines"),
-                ("Mini", "dogs"), ("Mini", "canines"),
-            }
-        }
+        valid_first_pairs = synonyms.valid_first_pairs
     else:
-        valid_first_pairs = {
-            (1, 2): {
-                ("Small", "dogs"), ("Small", "canines"),
-                ("Little", "dogs"), ("Little", "canines"),
-                ("Tiny", "dogs"), ("Tiny", "canines"),
-                ("Micro", "dogs"), ("Micro", "canines"),
-                ("Mini", "dogs"), ("Mini", "canines"),
-                ("Extralarge", "cats"), ("Extralarge", "felines"),
-                ("Gargantuan", "cats"), ("Gargantuan", "felines"),
-                ("Large", "cats"), ("Large", "felines"),
-                ("Giant", "cats"), ("Giant", "felines"),
-                ("Huge", "cats"), ("Huge", "felines"),
-                ("Humongous", "cats"), ("Humongous", "felines"),
-                ("Enormous", "cats"), ("Enormous", "felines"),
-                ("Big", "cats"), ("Big", "felines"),
-                ("Pico", "dogs"), ("Pico", "canines"),
-                ("Femto", "dogs"), ("Femto", "canines"),
-                ("Diminimus", "dogs"), ("Diminimus", "canines"),
-                ("Itty", "dogs"), ("Itty", "canines"),
-                ("Teenyweeny", "dogs"), ("Teenyweeny", "canines"),
-            }
-        }
+        valid_first_pairs = synonyms.valid_first_pairs
 
-    valid_middle_pairs = {
-        (3, 4): {
-            ("often", "fear"), ("often", "avoid"),
-            ("usually", "fear"), ("usually", "avoid"),
-            ("commonly", "fear"), ("commonly", "avoid"),
-            ("frequently", "fear"), ("frequently", "avoid"),
-            ("sometimes", "chase"), ("sometimes", "intimidate"), ("sometimes", "eat"),
-            ("occasionally", "chase"), ("occasionally", "intimidate"), ("occasionally", "eat"),
-            ("rarely", "fear"), ("rarely", "avoid"),
-            ("never", "fear"), ("never", "avoid")
-        }
-    }
+    valid_middle_pairs = synonyms.valid_middle_pairs
 
-    valid_last_pairs = {
-        (5, 6): {
-            ("large", "cats"), ("large", "felines"),
-            ("giant", "cats"), ("giant", "felines"),
-            ("huge", "cats"), ("huge", "felines"),
-            ("humongous", "cats"), ("humongous", "felines"),
-            ("enormous", "cats"), ("enormous", "felines"),
-            ("big", "cats"), ("big", "felines")
-        }
-    }
+    valid_last_pairs = synonyms.valid_last_pairs
 
     results = {}
     for sentence in sentences_list:
