@@ -15,7 +15,7 @@ sample_status_names = {
 }
 
 
-def generate_histogram(sentences, classify_sentence):
+def generate_histogram_data(sentences, classify_sentence):
     # Count the number of times each sentence appears.
     sentence_counts = {}
     for sentence in sentences:
@@ -33,10 +33,16 @@ def generate_histogram(sentences, classify_sentence):
     sentence_list = list(sentence_counts.keys())
     sentence_list.sort(key=lambda x: (sentence_categories[x].value, x))
 
-    # Print
-    for sentence in sentence_list:
+    return [
+        (sentence, sentence_counts[sentence], sentence_categories[sentence])
+        for sentence in sentence_list
+    ]
+
+
+def print_histogram(data):
+    for sentence, count, category in data:
         print(
             sentence,
-            sentence_counts[sentence],
-            sample_status_names[sentence_categories[sentence]],
+            count,
+            sample_status_names[category],
         )

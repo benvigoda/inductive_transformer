@@ -9,7 +9,7 @@ import optax
 from grammars import BigCatSmallDog
 from tokens import load_dataset, make_dataset_from_sentences
 from models import FullyConnected
-from histograms import SampleStatus, sample_status_names, generate_histogram
+from histograms import SampleStatus, sample_status_names, generate_histogram_data, print_histogram
 
 
 def make_train_state(key, model, dataset, learning_rate):
@@ -193,7 +193,8 @@ def main():
     print("")
 
     print("Generating histograms...")
-    generate_histogram(generated_words, classify_sentence)
+    histogram_data = generate_histogram_data(generated_words, classify_sentence)
+    print_histogram(histogram_data)
 
 
 if __name__ == "__main__":
