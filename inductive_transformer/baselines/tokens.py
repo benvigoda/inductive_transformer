@@ -43,6 +43,13 @@ def load_dataset(filepath):
 
     # Split on ' '.
     words = [x.split() for x in sentences]
+    return make_dataset_from_sentences(words)
+
+
+def make_dataset_from_sentences(words):
+    # Words should be a list of lists of strings (or more generally an iterable of iterables of
+    # strings).
+    n_sentences = len(words)
 
     # Check that all sentences have the same length.
     lengths = set([len(x) for x in words])

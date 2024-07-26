@@ -6,7 +6,8 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 
-from tokens import load_dataset
+from grammars import BigCatSmallDog
+from tokens import load_dataset, make_dataset_from_sentences
 from models import FullyConnected
 
 
@@ -88,16 +89,19 @@ def train(key, dataset, state, batch_size, n_steps):
     return state
 
 
-@click.command()
-@click.option("--dataset", "-d", type=click.Path(exists=True), required=True)
-def main(dataset):
+# @click.command()
+# @click.option("--dataset", "-d", type=click.Path(exists=True), required=True)
+def main():
     np_rng = np.random.default_rng()
     seed = np_rng.integers(0, 2**32 - 1)
     print(f"seed: {seed}\n")
     key = jax.random.PRNGKey(seed)
 
-    print("Loading data...")
-    data = load_dataset(dataset)
+    print("Generating data...")
+    grammar = BigCatSmallDog()
+    all_valid_sentences = grammar.all_valid_sentences()
+    print(all_valid_sentences)
+    data = make_dataset_from_sentences(all_valid_sentences)
     print(
         f"Loaded {data.n_sentences} sentences of length {data.sentence_length} "
         "with a vocabulary size of {data.vocab_size}."
@@ -130,6 +134,9 @@ def main(dataset):
     n_samples = 50
     key, subkey = jax.random.split(key)
     sample_x_ids, sample_y_ids, mask = generate_batch(subkey, data.data, data.vocab_size, n_samples)
+    assert sample_x_ids.shape == (n_samples, data.sentence_length)
+    assert sample_y_ids.shape == sample_x_ids.shape
+    assert mask.shape == sample_x_ids.shape
     sample_x_words = data.ids_to_strings(sample_x_ids)
     sample_y_words = data.ids_to_strings(sample_y_ids)
     sample_x_one_hot = word_ids_to_one_hot(sample_x_ids, data.vocab_size)
@@ -142,10 +149,14 @@ def main(dataset):
     # This chooses the most likely word.
     probs = jax.nn.softmax(log_probs)
     generated_ids = jnp.argmax(probs, axis=-1)
+    assert generated_ids.shape == (n_samples, data.sentence_length)
 
     generated_words = data.ids_to_strings(generated_ids)
     for id in range(n_samples):
         print(sample_y_words[id], "=>", sample_x_words[id], "=>", generated_words[id])
+    print("")
+
+    print("Generating histograms...")
 
 
 if __name__ == "__main__":
