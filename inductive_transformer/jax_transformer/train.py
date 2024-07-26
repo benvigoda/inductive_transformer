@@ -10,7 +10,7 @@ from jax.tree_util import tree_flatten
 
 from inductive_transformer.jax_transformer.model import BatchedInductiveTransformer
 from inductive_transformer.jax_transformer.text_parsing import InputData, ProbTensors
-from inductive_transformer.jax_transformer.weights_width_2_layers_2 import init_weights
+from inductive_transformer.jax_transformer.weights_broad_init import init_weights
 from inductive_transformer.jax_transformer.printing import print_params, print_activations
 from inductive_transformer.jax_transformer.sampling import sample
 from inductive_transformer.jax_transformer.histogram_generations import histogram_results
@@ -57,7 +57,7 @@ def create_train_state(
     if noise_seed is None:
         # Pick a random number between 1e-8 and 1e-1
         # lr = 10 ** np.random.uniform(-8, -1)
-        lr = 1e-3
+        lr = 1e-4
         tx = optax.chain(
             optax.adam(learning_rate=lr),
         )
@@ -204,7 +204,6 @@ def main():
     # seed = 11675966
     # seed = 615523631
     # seed = 2819370678  # For NAN with 32 sentences
-    # seed = 1376424188 # Basic convergence of 32_6_layer_sentences.txt
 
     # seed = 3699294691 # awesome convergence of 32_2_layer_sentences.txt
     # seed = 737435735 # partial convergence of 32_2_layer_sentences.txt
