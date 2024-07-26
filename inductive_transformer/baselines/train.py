@@ -162,13 +162,13 @@ def main():
     key, subkey = jax.random.split(key)
 
     # This samples according to the categorical distribution given by log_probs.
-    # generated_ids = jax.random.categorical(subkey, log_probs)
+    generated_ids = jax.random.categorical(subkey, log_probs)
 
     # This chooses the most likely word.
-    probs = jax.nn.softmax(log_probs)
-    generated_ids = jnp.argmax(probs, axis=-1)
-    assert generated_ids.shape == (n_samples, data.sentence_length)
+    # probs = jax.nn.softmax(log_probs)
+    # generated_ids = jnp.argmax(probs, axis=-1)
 
+    assert generated_ids.shape == (n_samples, data.sentence_length)
     generated_words = data.ids_to_strings(generated_ids)
 
     def classify_sentence(sentence: str) -> SampleStatus:
