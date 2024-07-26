@@ -18,12 +18,12 @@ class InputData():
         if not training_path or not training_path.exists():
             raise FileNotFoundError(f"File {training_path} not found")
         with open(training_path) as f:
-            raw_training_text = " ".join(f.readlines())
+            raw_training_text = " ".join(f.readlines()).lower()
         if not inference_path or not inference_path.exists():
             raw_inference_text = ""
         else:
             with open(inference_path) as f:
-                raw_inference_text = " ".join(f.readlines())
+                raw_inference_text = " ".join(f.readlines()).lower()
 
         self.raw_training_text = self.clean(raw_training_text)
         self.raw_inference_text = self.clean(raw_inference_text)

@@ -7,34 +7,22 @@ from synonyms import Synonyms
 # The validation function
 def validate_sentences(sentences_list, num_words=6):
     synonyms = Synonyms()
-    if num_words == 6:
-        valid_first_pairs = synonyms.valid_first_pairs
-    else:
-        valid_first_pairs = synonyms.valid_first_pairs
-
-    valid_middle_pairs = synonyms.valid_middle_pairs
-
-    valid_last_pairs = synonyms.valid_last_pairs
+    valid_pairs = synonyms.get_valid_pairs()
 
     results = {}
     for sentence in sentences_list:
-        words = sentence.split()
+        words = sentence.lower().split()
         results[sentence] = "valid"
 
         if len(words) != num_words:
             results[sentence] = "invalid"
             continue
         
-        if num_words >= 2 and (words[0], words[1]) not in valid_first_pairs.get((1, 2), []):
-            results[sentence] = "invalid"
-            continue
-        
-        if num_words >= 4 and (words[2], words[3]) not in valid_middle_pairs.get((3, 4), []):
-            results[sentence] = "invalid"
-            continue
-        
-        if num_words >= 6 and (words[4], words[5]) not in valid_last_pairs.get((5, 6), []):
-            results[sentence] = "invalid"
+        relevant_pairs = {key: value for key, value in valid_pairs.items() if all(k < num_words for k in key)}
+        for key, value in relevant_pairs.items():
+            if (words[key[0]], words[key[1]]) not in value:
+                results[sentence] = "invalid"
+                break
 
     return results
 
