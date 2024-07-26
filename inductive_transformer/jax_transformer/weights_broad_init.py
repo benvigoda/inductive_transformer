@@ -84,8 +84,8 @@ def init_weights(params, vocab, lock_all_weights=False):
             new_weight = updated_params["params"]["decoders_1"]["decoder_token_pi"]["weights"]
             new_weight = new_weight.at[position, :, layer].set(jnp.full(vocab_size, weak))
             updated_params["params"]["decoders_1"]["decoder_token_pi"]["weights"] = new_weight
-    left_targets = synonyms.get_valid_left_ordered_words
-    right_targets = synonyms.get_valid_right_ordered_words
+    left_targets = synonyms.get_valid_left_ordered_words()
+    right_targets = synonyms.get_valid_right_ordered_words()
     for pos in range(num_positions):
         for lw, target_words in zip(range(layer_width), [left_targets[pos], right_targets[pos]]):  # [['big', 'large'], ['small']]
             set_token_weights(lw, pos, target_words)
@@ -106,20 +106,21 @@ def init_weights(params, vocab, lock_all_weights=False):
     # in lw=0, attention weight connecting to lw=0 should be strong and connecting to lw=1 weak
     # in lw=1, attention weight connecting to lw=0 should be weak and connecting to lw=1 strong
     # for the connection from layer=0 to the inputs/outputs, we can have all the weights be uniform
-    for encoder_decoder in ["encoders", "decoders"]:
+    for encoder_decoder in ["encoder", "decoder"]:
+        encoders_decoders = encoder_decoder + "s"
         for layer in range(num_layers):
-            new_weight = updated_params["params"][f"{encoder_decoder}_{layer}"][f"{encoder_decoder}_attention_pi"]["weights"]
+            new_weight = updated_params["params"][f"{encoders_decoders}_{layer}"][f"{encoder_decoder}_attention_pi"]["weights"]
             if set_flat_weights:
                 new_weight = new_weight.at[:, :].set(jnp.full((layer_width, layer_width), strong / 2))
             else:
                 new_weight = new_weight.at[:, :].set(jnp.full((layer_width, layer_width), weak))
                 new_weight = new_weight.at[0, 0].set(strong)
                 new_weight = new_weight.at[1, 1].set(strong)
-            updated_params["params"][f"{encoder_decoder}_{layer}"][f"{encoder_decoder}_attention_pi"]["weights"] = new_weight
+            updated_params["params"][f"{encoders_decoders}_{layer}"][f"{encoder_decoder}_attention_pi"]["weights"] = new_weight
             # Fix set_weights so the gradient does not update the weights
             if lock_all_weights:
-                set_weights["params"][f"{encoder_decoder}_{layer}"][f"{encoder_decoder}_attention_pi"]["weights"] = jnp.zeros_like(
-                    updated_params["params"][f"{encoder_decoder}_{layer}"][f"{encoder_decoder}_attention_pi"]["weights"], dtype=mask_type
+                set_weights["params"][f"{encoders_decoders}_{layer}"][f"{encoder_decoder}_attention_pi"]["weights"] = jnp.zeros_like(
+                    updated_params["params"][f"{encoders_decoders}_{layer}"][f"{encoder_decoder}_attention_pi"]["weights"], dtype=mask_type
                 )
 
     return updated_params, set_weights

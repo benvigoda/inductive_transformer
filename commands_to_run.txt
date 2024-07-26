@@ -44,3 +44,7 @@ PYTHONPATH=. python inductive_transformer/jax_transformer/histogram_generations.
 
 July 23
 PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 32_2_layer_sentences.txt --prompt_text inference_text_more_synonyms.txt --num_layer 2 --layer_width 2
+
+
+July 26
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 32_6_layer_sentences.txt --prompt_text inference_text_more_synonyms.txt --num_layer 6 --layer_width 2 --initialize_weights --lock_all_weights

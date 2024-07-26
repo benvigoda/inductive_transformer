@@ -23,7 +23,7 @@ class TrainState(train_state.TrainState):
 
 
 def create_train_state(
-    key, num_positions, vocab, layer_width, num_layers, noise_seed=None, perturb_flag=False
+    key, num_positions, vocab, layer_width, num_layers, noise_seed=None, initialize_weights=False, perturb_flag=False, lock_all_weights=False
 ):
     """Creates initial `TrainState`."""
     bernoulli_width = 2
@@ -50,8 +50,9 @@ def create_train_state(
     params = model.init(subkey_2, z_in, t_in)
 
     # Update weights.
-    # If perturb_flag is True, we will set weights as defined in weights.py.
-    params, weight_mask = init_weights(params, vocab, lock_all_weights=perturb_flag)
+    # If initialize_weights is True, we will set weights as defined in weights.py.
+    if initialize_weights:
+        params, weight_mask = init_weights(params, vocab, lock_all_weights=lock_all_weights)
 
     key, subkey = jax.random.split(key)
     if noise_seed is None:
@@ -69,8 +70,8 @@ def create_train_state(
         tx = optax.chain(
             optax.add_noise(eta=1.0e-2, gamma=0.999, seed=noise_seed),
         )
-    # If perturb_flag is True, we will not update the weights set in weights.py.
-    if perturb_flag:
+    # If lock_all_weights is True, we will not update the weights set in weights.py.
+    if lock_all_weights:
         grad_mask = weight_mask
     else:
         grad_mask = None
@@ -161,8 +162,9 @@ def parse_args():
         "--prompt_text", type=pathlib.Path
     )  # A text file of sentences to run inference on
     # if doing perturbation test, you also need to give it training_text
+    parser.add_argument("--initialize_weights", action="store_true")
     parser.add_argument("--perturb", action="store_true")
-
+    parser.add_argument("--lock_all_weights", action="store_true")
     '''
     if --train_text not empty
     train with entirely free weights
@@ -195,7 +197,7 @@ def main():
     # Parse args.
     args = parse_args()
     # If doing perturbation test, you also need to give it training_text
-    if args.perturb:
+    if args.initialize_weights:
         assert args.training_text
 
     # Initialize RNG state.
@@ -253,7 +255,9 @@ def main():
         layer_width=args.layer_width,
         num_layers=args.num_layers,
         noise_seed=noise_seed,
+        initialize_weights=args.initialize_weights,
         perturb_flag=args.perturb,
+        lock_all_weights=args.lock_all_weights,
     )
 
     # Check the initial loss.
@@ -269,7 +273,7 @@ def main():
 
     # Train the model.
     if args.training_text:
-        n_epochs = 300
+        n_epochs = 0
         batch_size = 10
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
         print_every = 100
