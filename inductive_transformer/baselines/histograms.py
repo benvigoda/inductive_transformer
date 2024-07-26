@@ -46,3 +46,39 @@ def print_histogram(data):
             count,
             sample_status_names[category],
         )
+
+
+def plot_histogram(data, filename):
+    # Extract the data for plotting
+    sentences = [item[0] for item in data]
+    counts = [item[1] for item in data]
+    categories = [item[2] for item in data]
+
+    # Reverse the order of the data so that the first item is at the top
+    sentences = sentences[::-1]
+    counts = counts[::-1]
+    categories = categories[::-1]
+
+    # Set up the figure and axes
+    fig, ax = plt.subplots()
+
+    # Create a color map for the categories
+    color_map = {
+        SampleStatus.IN_SAMPLE: "blue",
+        SampleStatus.OUT_OF_SAMPLE: "green",
+        SampleStatus.INVALID: "red",
+    }
+
+    # Plot the horizontal bar chart
+    ax.barh(sentences, counts, color=[color_map[category] for category in categories])
+
+    # Set labels and title
+    ax.set_xlabel("Count")
+    ax.set_ylabel("Sentence")
+    ax.set_title("Histogram")
+
+    # Ensure there is enough space for the labels
+    fig.tight_layout()
+
+    # Show the plot
+    plt.savefig(filename)

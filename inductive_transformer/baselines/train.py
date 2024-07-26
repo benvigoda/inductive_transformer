@@ -9,7 +9,7 @@ import optax
 from grammars import BigCatSmallDog
 from tokens import load_dataset, make_dataset_from_sentences
 from models import FullyConnected
-from histograms import SampleStatus, sample_status_names, generate_histogram_data, print_histogram
+from histograms import SampleStatus, sample_status_names, generate_histogram_data, plot_histogram
 
 
 def make_train_state(key, model, dataset, learning_rate):
@@ -141,7 +141,7 @@ def main():
 
     print("Training...")
     batch_size = 256
-    n_steps = 100
+    n_steps = 10000
     key, subkey = jax.random.split(key)
     state = train(subkey, data, train_state, batch_size, n_steps)
     print("")
@@ -194,7 +194,7 @@ def main():
 
     print("Generating histograms...")
     histogram_data = generate_histogram_data(generated_words, classify_sentence)
-    print_histogram(histogram_data)
+    plot_histogram(histogram_data, "histogram.png")
 
 
 if __name__ == "__main__":
