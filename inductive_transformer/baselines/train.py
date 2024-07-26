@@ -9,7 +9,7 @@ import optax
 from grammars import BigCatSmallDog
 from tokens import load_dataset, make_dataset_from_sentences
 from models import FullyConnected
-from histograms import SampleStatus, generate_histogram
+from histograms import SampleStatus, sample_status_names, generate_histogram
 
 
 def make_train_state(key, model, dataset, learning_rate):
@@ -50,7 +50,7 @@ def generate_batch(key, data, vocab_size, batch_size):
     key, subkey = jax.random.split(key)
     data = sample_sentences(subkey, data, batch_size)
     assert data.shape == (batch_size, sentence_length)
-    p = 1.0 / (sentence_length + 1)
+    p = 1.0 / sentence_length
     masked_data, mask = blank_out_words(key, data, p, vocab_size)
     assert masked_data.shape == (batch_size, sentence_length)
     return masked_data, data, mask
@@ -102,14 +102,24 @@ def main():
     grammar = BigCatSmallDog()
     # This is a list of lists of words (strings).
     all_valid_sentences = grammar.all_valid_sentences()
-    # Convert each sentence to one string.
+    n_total_sentences = len(all_valid_sentences)
     all_valid_sentences_set = set(" ".join(words) for words in all_valid_sentences)
-    print("all valid")
-    print(all_valid_sentences)
-    print(all_valid_sentences_set)
-    data = make_dataset_from_sentences(all_valid_sentences)
+    print(f"Generated {n_total_sentences} sentences.")
+
+    # Extract a subset of sentences to train on.
+    n_training_sentences = int(0.5 * n_total_sentences)
+    sentence_indices = jnp.arange(n_total_sentences)
+    key, subkey = jax.random.split(key)
+    sentence_indices = jax.random.permutation(subkey, sentence_indices)
+    training_sentences = [
+        all_valid_sentences[i] for i in sentence_indices[:n_training_sentences]
+    ]
+    training_sentences_set = set(" ".join(words) for words in training_sentences)
+
+    # Build the dataset.
+    data = make_dataset_from_sentences(training_sentences)
     print(
-        f"Loaded {data.n_sentences} sentences of length {data.sentence_length} "
+        f"Training on {data.n_sentences} sentences of length {data.sentence_length} "
         "with a vocabulary size of {data.vocab_size}."
     )
     print("")
@@ -131,15 +141,17 @@ def main():
 
     print("Training...")
     batch_size = 256
-    n_steps = 10000
+    n_steps = 100
     key, subkey = jax.random.split(key)
     state = train(subkey, data, train_state, batch_size, n_steps)
     print("")
 
     print("Sampling...")
-    n_samples = 250
+    n_samples = 1000
     key, subkey = jax.random.split(key)
-    sample_x_ids, sample_y_ids, mask = generate_batch(subkey, data.data, data.vocab_size, n_samples)
+    sample_x_ids, sample_y_ids, mask = generate_batch(
+        subkey, data.data, data.vocab_size, n_samples
+    )
     assert sample_x_ids.shape == (n_samples, data.sentence_length)
     assert sample_y_ids.shape == sample_x_ids.shape
     assert mask.shape == sample_x_ids.shape
@@ -158,19 +170,29 @@ def main():
     assert generated_ids.shape == (n_samples, data.sentence_length)
 
     generated_words = data.ids_to_strings(generated_ids)
+
+    def classify_sentence(sentence: str) -> SampleStatus:
+        if sentence in training_sentences_set:
+            return SampleStatus.IN_SAMPLE
+        if sentence in all_valid_sentences_set:
+            return SampleStatus.OUT_OF_SAMPLE
+        return SampleStatus.INVALID
+
     n_printed_samples = 50
     limit = min(n_printed_samples, n_samples)
     for id in range(limit):
-        print(sample_y_words[id], "=>", sample_x_words[id], "=>", generated_words[id])
+        category = classify_sentence(generated_words[id])
+        print(
+            sample_y_words[id],
+            "=>",
+            sample_x_words[id],
+            "=>",
+            generated_words[id],
+            sample_status_names[category],
+        )
     print("")
 
     print("Generating histograms...")
-    def classify_sentence(sentence: str) -> SampleStatus:
-        # TODO train on a subset of valid sentences so that we have out of sample sentences.
-        if sentence in all_valid_sentences_set:
-            return SampleStatus.IN_SAMPLE
-        return SampleStatus.INVALID
-
     generate_histogram(generated_words, classify_sentence)
 
 
