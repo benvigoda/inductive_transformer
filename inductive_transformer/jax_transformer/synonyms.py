@@ -1,31 +1,58 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class Synonyms:
-
     valid_left_zeroth_words = [
-        "small", "little", "tiny", "micro", "mini", "pico", "femto", "diminimus", "itty", "teenyweeny",
+        "small",
+        "little",
+        "tiny",
+        "micro",
+        "mini",
+        "pico",
+        "femto",
+        "diminimus",
+        "itty",
+        "teenyweeny",
     ]
     valid_right_zeroth_words = [
-        "extralarge", "gargantuan", "large", "giant", "huge", "humongous", "enormous", "big",
+        "extralarge",
+        "gargantuan",
+        "large",
+        "giant",
+        "huge",
+        "humongous",
+        "enormous",
+        "big",
     ]
     valid_left_first_words = [
-        "dogs", "canines",
+        "dogs",
+        "canines",
     ]
     valid_right_first_words = [
-        "cats", "felines",
+        "cats",
+        "felines",
     ]
     valid_left_second_words = [
-        "often", "usually", "commonly", "frequently",
+        "often",
+        "usually",
+        "commonly",
+        "frequently",
     ]
     valid_right_second_words = [
-        "sometimes", "occasionally", "rarely", "never",
+        "sometimes",
+        "occasionally",
+        "rarely",
+        "never",
     ]
     valid_left_third_words = [
-        "fear", "avoid",
+        "fear",
+        "avoid",
     ]
     valid_right_third_words = [
-        "chase", "intimidate", "eat",
+        "chase",
+        "intimidate",
+        "eat",
     ]
     valid_left_fourth_words = valid_right_zeroth_words
     valid_right_fourth_words = valid_left_zeroth_words
@@ -54,24 +81,58 @@ class Synonyms:
 
     def get_valid_pairs(self):
         valid_pairs = {
-            (0, 1): 
-                {(a, b) for a in self.valid_left_zeroth_words for b in self.valid_left_first_words} |
-                {(a, b) for a in self.valid_right_zeroth_words for b in self.valid_right_first_words},
-            (1, 3):
-                {(a, b) for a in self.valid_left_first_words for b in self.valid_left_third_words} |
-                {(a, b) for a in self.valid_right_first_words for b in self.valid_right_third_words},
-            (2, 3):
-                {(a, b) for a in self.valid_left_second_words for b in self.valid_left_third_words} |
-                {(a, b) for a in self.valid_right_second_words for b in self.valid_right_third_words},
-            (3, 5):
-                {(a, b) for a in self.valid_left_third_words for b in self.valid_left_fifth_words} |
-                {(a, b) for a in self.valid_right_third_words for b in self.valid_right_fifth_words},
-            (4, 5):
-                {(a, b) for a in self.valid_left_fourth_words for b in self.valid_left_fifth_words} |
-                {(a, b) for a in self.valid_right_fourth_words for b in self.valid_right_fifth_words},
+            (0, 1): {
+                (a, b)
+                for a in self.valid_left_zeroth_words
+                for b in self.valid_left_first_words
+            }
+            | {
+                (a, b)
+                for a in self.valid_right_zeroth_words
+                for b in self.valid_right_first_words
+            },
+            (1, 3): {
+                (a, b)
+                for a in self.valid_left_first_words
+                for b in self.valid_left_third_words
+            }
+            | {
+                (a, b)
+                for a in self.valid_right_first_words
+                for b in self.valid_right_third_words
+            },
+            (2, 3): {
+                (a, b)
+                for a in self.valid_left_second_words
+                for b in self.valid_left_third_words
+            }
+            | {
+                (a, b)
+                for a in self.valid_right_second_words
+                for b in self.valid_right_third_words
+            },
+            (3, 5): {
+                (a, b)
+                for a in self.valid_left_third_words
+                for b in self.valid_left_fifth_words
+            }
+            | {
+                (a, b)
+                for a in self.valid_right_third_words
+                for b in self.valid_right_fifth_words
+            },
+            (4, 5): {
+                (a, b)
+                for a in self.valid_left_fourth_words
+                for b in self.valid_left_fifth_words
+            }
+            | {
+                (a, b)
+                for a in self.valid_right_fourth_words
+                for b in self.valid_right_fifth_words
+            },
         }
         return valid_pairs
-
 
     # valid_pairs = {
     #     (0, 1): {

@@ -1,14 +1,19 @@
-
 from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
 
 from inductive_transformer.jax_transformer.encoder_universe import EncoderUniverse
-from inductive_transformer.jax_transformer.encoder_bernoulli_categorical import EncoderBernoulliCategorical
+from inductive_transformer.jax_transformer.encoder_bernoulli_categorical import (
+    EncoderBernoulliCategorical,
+)
 from inductive_transformer.jax_transformer.encoder_token_pi import EncoderTokenPi
 from inductive_transformer.jax_transformer.encoder_position_pi import EncoderPositionPi
-from inductive_transformer.jax_transformer.encoder_attention_pi import EncoderAttentionPi
-from inductive_transformer.jax_transformer.encoder_categorical_bernoulli import EncoderCategoricalBernoulli
+from inductive_transformer.jax_transformer.encoder_attention_pi import (
+    EncoderAttentionPi,
+)
+from inductive_transformer.jax_transformer.encoder_categorical_bernoulli import (
+    EncoderCategoricalBernoulli,
+)
 from inductive_transformer.jax_transformer.encoder_and import EncoderAnd
 
 
@@ -40,7 +45,7 @@ class EncoderLayer(nn.Module):
         self.encoder_attention_pi = EncoderAttentionPi(
             vocab_size=self.vocab_size,
             layer_width=self.layer_width,
-            weight_init=self.weight_init
+            weight_init=self.weight_init,
         )
         self.encoder_categorical_bernoulli = EncoderCategoricalBernoulli(
             layer_width=self.layer_width
@@ -49,7 +54,11 @@ class EncoderLayer(nn.Module):
 
     def __call__(self, z, t_categorical, masked):
         assert z.shape == (2, self.layer_width)
-        assert t_categorical.shape == (self.num_positions, self.vocab_size, self.layer_width)
+        assert t_categorical.shape == (
+            self.num_positions,
+            self.vocab_size,
+            self.layer_width,
+        )
 
         # axis=0 indexes the state of the variable e.g. cat or dog, 0 or 1, etc.
         # axis=1 indexes the layer width

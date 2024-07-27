@@ -2,7 +2,11 @@ from flax import linen as nn  # type: ignore
 import jax.numpy as jnp  # type: ignore
 from typing import Callable
 from inductive_transformer.jax_transformer.helper_functions import EPSILON
-from inductive_transformer.jax_transformer.helper_functions import custom_normalize, EPSILON
+from inductive_transformer.jax_transformer.helper_functions import (
+    custom_normalize,
+    EPSILON,
+)
+
 
 class EncoderTokenPi(nn.Module):
     num_positions: int
@@ -15,7 +19,11 @@ class EncoderTokenPi(nn.Module):
         assert t.shape == (self.num_positions, self.vocab_size, self.layer_width)
         # we expect t to be already normalized
 
-        weights = self.param('weights', self.weight_init, (self.num_positions, self.vocab_size, self.layer_width))
+        weights = self.param(
+            "weights",
+            self.weight_init,
+            (self.num_positions, self.vocab_size, self.layer_width),
+        )
         prob_weights = nn.relu(weights) + EPSILON
         # NOTE: we decided not to normalize the weights (it shouldn't matter)
         # prob_weights = nn.functional.normalize(prob_weights, p=1, axis=0)
@@ -28,7 +36,9 @@ class EncoderTokenPi(nn.Module):
         rho = prob_weights * t
 
         # make it an inner product by taking a sum along the token dimension
-        rho = jnp.sum(rho, axis=1)  # after summing it is size = (num_positions, layer_width)
+        rho = jnp.sum(
+            rho, axis=1
+        )  # after summing it is size = (num_positions, layer_width)
         # rho = custom_normalize(rho, dim=1)
 
         return rho  # rho is categorical

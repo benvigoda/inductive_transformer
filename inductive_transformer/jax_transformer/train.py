@@ -11,9 +11,14 @@ from jax.tree_util import tree_flatten
 from inductive_transformer.jax_transformer.model import BatchedInductiveTransformer
 from inductive_transformer.jax_transformer.text_parsing import InputData, ProbTensors
 from inductive_transformer.jax_transformer.weights_broad_init import init_weights
-from inductive_transformer.jax_transformer.printing import print_params, print_activations
+from inductive_transformer.jax_transformer.printing import (
+    print_params,
+    print_activations,
+)
 from inductive_transformer.jax_transformer.sampling import sample
-from inductive_transformer.jax_transformer.histogram_generations import histogram_results
+from inductive_transformer.jax_transformer.histogram_generations import (
+    histogram_results,
+)
 
 
 class TrainState(train_state.TrainState):
@@ -23,7 +28,15 @@ class TrainState(train_state.TrainState):
 
 
 def create_train_state(
-    key, num_positions, vocab, layer_width, num_layers, noise_seed=None, initialize_weights=False, perturb_flag=False, lock_all_weights=False
+    key,
+    num_positions,
+    vocab,
+    layer_width,
+    num_layers,
+    noise_seed=None,
+    initialize_weights=False,
+    perturb_flag=False,
+    lock_all_weights=False,
 ):
     """Creates initial `TrainState`."""
     bernoulli_width = 2
@@ -52,7 +65,9 @@ def create_train_state(
     # Update weights.
     # If initialize_weights is True, we will set weights as defined in weights.py.
     if initialize_weights:
-        params, weight_mask = init_weights(params, vocab, lock_all_weights=lock_all_weights)
+        params, weight_mask = init_weights(
+            params, vocab, lock_all_weights=lock_all_weights
+        )
 
     key, subkey = jax.random.split(key)
     if noise_seed is None:
@@ -143,7 +158,9 @@ def run_and_print_inference(state, prob_tensors, args):
         state.params, prob_tensors.attention_input, prompt_data
     )
 
-    print_activations(n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations)
+    print_activations(
+        n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations
+    )
 
     return decoder_t
 
@@ -165,7 +182,7 @@ def parse_args():
     parser.add_argument("--initialize_weights", action="store_true")
     parser.add_argument("--perturb", action="store_true")
     parser.add_argument("--lock_all_weights", action="store_true")
-    '''
+    """
     if --train_text not empty
     train with entirely free weights
 
@@ -186,7 +203,7 @@ def parse_args():
     then run inference with the prompt_text
     if the prompt_text does not completely fill the context window, set the
     z_prime appropriate activations in the encoder to all 1's
-    '''
+    """
 
     parser.add_argument("--layer_width", type=int, default=2)
     parser.add_argument("--num_layers", type=int, default=2)
@@ -206,13 +223,12 @@ def main():
     # seed = 11675966
     # seed = 615523631
     # seed = 2819370678  # For NAN with 32 sentences
-    seed = 1376424188 # Basic convergence of 32_6_layer_sentences.txt
+    seed = 1376424188  # Basic convergence of 32_6_layer_sentences.txt
 
     # seed = 3699294691 # awesome convergence of 32_2_layer_sentences.txt
     # seed = 737435735 # partial convergence of 32_2_layer_sentences.txt
     # seed = 3727924788 # partial convergence of 32_2_layer_sentences.txt in another way
 
-    
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
 
@@ -289,8 +305,10 @@ def main():
 
         for step_idx in range(0, n_steps_per_epoch):
             start = step_idx * batch_size
-            batch_input_data = all_t_tensors[start:start + batch_size]
-            batch_output_data = all_outputs[step_idx * batch_size: (step_idx + 1) * batch_size]
+            batch_input_data = all_t_tensors[start : start + batch_size]
+            batch_output_data = all_outputs[
+                step_idx * batch_size : (step_idx + 1) * batch_size
+            ]
             grads, loss = apply_model(
                 state, prob_tensors.attention_input, batch_input_data, batch_output_data
             )
@@ -333,7 +351,9 @@ def main():
 
     temperature = 1
     generated_sentences = []
-    for example_idx, example in enumerate(data.raw_inference_text.replace(" .", ".").split(".")):
+    for example_idx, example in enumerate(
+        data.raw_inference_text.replace(" .", ".").split(".")
+    ):
         if not example:
             continue
         print(f"Example {example_idx}: {example.capitalize()}")

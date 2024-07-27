@@ -11,7 +11,6 @@ class EncoderCategoricalBernoulli:
     layer_width: int
 
     def __call__(self, categorical):
-
         # categorical is size = (1, layer_width)
         assert categorical.shape == (1, self.layer_width)
         # bernoulli is size (2, layer_width)
@@ -40,7 +39,9 @@ class EncoderCategoricalBernoulli:
         # print("All values are in the range [0, 1].")
 
         bernoulli_1 = categorical
-        bernoulli_0 = 1 - categorical  # The assumption here is that the categorical variable is properly normalized already
+        bernoulli_0 = (
+            1 - categorical
+        )  # The assumption here is that the categorical variable is properly normalized already
         bernoulli = jnp.concatenate([bernoulli_0, bernoulli_1])
 
         # by construction these are each normalized

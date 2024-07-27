@@ -4,7 +4,6 @@ from inductive_transformer.torch_transformer.helper_functions import custom_norm
 
 
 class EncoderBernoulliCategorical(nn.Module):
-
     def __init__(self, hyperparams, active_layer: int):
         super(EncoderBernoulliCategorical, self).__init__()
         self.hyperparams = hyperparams
@@ -13,7 +12,10 @@ class EncoderBernoulliCategorical(nn.Module):
         self.v = None
 
     def forward(self, u):
-        v = torch.empty((self.hyperparams.layer_width, self.hyperparams.layer_width), device=u.device)
+        v = torch.empty(
+            (self.hyperparams.layer_width, self.hyperparams.layer_width),
+            device=u.device,
+        )
 
         # there's four coins coming in
         # to convert coins to categorical, it's always head divided by tails

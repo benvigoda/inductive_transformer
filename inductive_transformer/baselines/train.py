@@ -129,7 +129,9 @@ def main(dataset):
     print("Sampling...")
     n_samples = 50
     key, subkey = jax.random.split(key)
-    sample_x_ids, sample_y_ids, mask = generate_batch(subkey, data.data, data.vocab_size, n_samples)
+    sample_x_ids, sample_y_ids, mask = generate_batch(
+        subkey, data.data, data.vocab_size, n_samples
+    )
     sample_x_words = data.ids_to_strings(sample_x_ids)
     sample_y_words = data.ids_to_strings(sample_y_ids)
     sample_x_one_hot = word_ids_to_one_hot(sample_x_ids, data.vocab_size)
