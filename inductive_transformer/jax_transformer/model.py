@@ -16,27 +16,38 @@ class InductiveTransformer(nn.Module):
     use_encoder_message: bool = True
 
     def setup(self):
-        self.encoders = [EncoderLayer(
-            layer_width=self.layer_width,
-            num_positions=self.num_positions,
-            vocab_size=self.vocab_size,
-            weight_init=self.weight_init,
-        ) for _ in range(self.num_layers)]
+        self.encoders = [
+            EncoderLayer(
+                layer_width=self.layer_width,
+                num_positions=self.num_positions,
+                vocab_size=self.vocab_size,
+                weight_init=self.weight_init,
+            )
+            for _ in range(self.num_layers)
+        ]
 
-        self.decoders = [DecoderLayer(
-            layer_width=self.layer_width,
-            num_positions=self.num_positions,
-            vocab_size=self.vocab_size,
-            weight_init=self.weight_init,
-            use_encoder_message=self.use_encoder_message
-        ) for _ in range(self.num_layers)]
+        self.decoders = [
+            DecoderLayer(
+                layer_width=self.layer_width,
+                num_positions=self.num_positions,
+                vocab_size=self.vocab_size,
+                weight_init=self.weight_init,
+                use_encoder_message=self.use_encoder_message,
+            )
+            for _ in range(self.num_layers)
+        ]
 
     def __call__(self, z, t_categorical):
         """
         This is the forward pass of the model, defined without batches.
         """
         assert z.shape == (2, self.layer_width)
-        assert t_categorical.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
+        assert t_categorical.shape == (
+            self.num_layers,
+            self.num_positions,
+            self.vocab_size,
+            self.layer_width,
+        )
 
         encoder_z = []
         encoder_x = []  # bernoulli
@@ -66,8 +77,14 @@ class InductiveTransformer(nn.Module):
             # has word "big" flow to layer 1 and "cat" flow to layer 0
             # if "cat" was <padding> then we flow <padding> to layer 0
             layer_t_categorical = t_categorical[layer_idx]
-            assert layer_t_categorical.shape == (self.num_positions, self.vocab_size, self.layer_width)
-            z, x, y, activations = encoder(z, layer_t_categorical, mask[self.num_layers - layer_idx - 1])
+            assert layer_t_categorical.shape == (
+                self.num_positions,
+                self.vocab_size,
+                self.layer_width,
+            )
+            z, x, y, activations = encoder(
+                z, layer_t_categorical, mask[self.num_layers - layer_idx - 1]
+            )
             assert z.shape == (2, self.layer_width)
             assert x.shape == (2, self.layer_width)
             assert y.shape == (2, self.layer_width)
@@ -92,7 +109,12 @@ class InductiveTransformer(nn.Module):
         decoder_z = jnp.stack(decoder_z, axis=0)
         assert decoder_z.shape == (self.num_layers, 2, self.layer_width)
         decoder_t = jnp.stack(decoder_t, axis=0)
-        assert decoder_t.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
+        assert decoder_t.shape == (
+            self.num_layers,
+            self.num_positions,
+            self.vocab_size,
+            self.layer_width,
+        )
         decoder_t = decoder_t.sum(axis=(0, -1))
         assert decoder_t.shape == (self.num_positions, self.vocab_size)
 
@@ -106,6 +128,6 @@ BatchedInductiveTransformer = nn.vmap(
     InductiveTransformer,
     in_axes=(None, 0),
     out_axes=(0, 0, 0, 0),
-    variable_axes={'params': None},
-    split_rngs={'params': False},
+    variable_axes={"params": None},
+    split_rngs={"params": False},
 )

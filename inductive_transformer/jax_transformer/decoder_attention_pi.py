@@ -1,7 +1,10 @@
 from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
-from inductive_transformer.jax_transformer.helper_functions import custom_normalize, EPSILON
+from inductive_transformer.jax_transformer.helper_functions import (
+    custom_normalize,
+    EPSILON,
+)
 
 
 class DecoderAttentionPi(nn.Module):
@@ -13,7 +16,9 @@ class DecoderAttentionPi(nn.Module):
         # we expect y to be already normalized categorical
         assert y.shape == (1, self.layer_width)
 
-        weights = self.param('weights', self.weight_init, (self.layer_width, self.layer_width))
+        weights = self.param(
+            "weights", self.weight_init, (self.layer_width, self.layer_width)
+        )
 
         # We want to interpret the weights as probabilities. To ensure they're all strictly between
         # 0 and 1, we pass them through a relu and then normalize.
@@ -31,12 +36,12 @@ class DecoderAttentionPi(nn.Module):
         # element-wise product of weight tensor and y
         v = prob_weights * y + EPSILON
 
-        # added this because like Bayes rule, Loeliger, chapter 2 of Ben's thesis, and 
+        # added this because like Bayes rule, Loeliger, chapter 2 of Ben's thesis, and
         # our deep belief in Bayes rule as foundational to concepts and thinking in transformers and humans
         # on the other hand, it works better if we don't normalize, because if the left hand pi_z is off
         # we want all it to send a message to all of its children to be OFF
         # v = custom_normalize(v, axis=0)
-        
+
         assert v.shape == (self.layer_width, self.layer_width)
         # v[:, 0] = the outputs of the left hand attention pi
         # v[0, 0] = the straight down on the left output of the left hand attention pi

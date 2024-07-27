@@ -1,4 +1,4 @@
-'''
+"""
 # Project Plan:
 TODO:
 Understand why the loss seems to get stuck and why layer_width doesn't make any difference
@@ -248,4 +248,4 @@ ideating:
 writing:
 
 1. annotated transformer comparison
-'''
+"""

@@ -1,6 +1,7 @@
 import numpy as np
 from flax import linen as nn
 
+
 def print_params(state, vocab):
     # Print trained weights.
     decoder_layers = ["decoders_0", "decoders_1"]
@@ -23,13 +24,19 @@ def print_params(state, vocab):
         for sublayer in decoder_sublayers:
             print(sublayer)
             if sublayer == "decoder_token_pi":
-                for position, position_weights in enumerate(layer_params[sublayer]["weights"]):
+                for position, position_weights in enumerate(
+                    layer_params[sublayer]["weights"]
+                ):
                     print(f"-- position {position}")
                     for token_num, token_weights in enumerate(position_weights):
                         if any(token_weights > 0.1):
-                            print(f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000} -- {vocab[token_num]}")
+                            print(
+                                f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000} -- {vocab[token_num]}"
+                            )
                         else:
-                            print(f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000}")
+                            print(
+                                f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000}"
+                            )
                     print()
             else:
                 print(layer_params[sublayer]["weights"])
@@ -42,20 +49,28 @@ def print_params(state, vocab):
         for sublayer in encoder_sublayers:
             print(sublayer)
             if sublayer == "encoder_token_pi":
-                for position, position_weights in enumerate(layer_params[sublayer]["weights"]):
+                for position, position_weights in enumerate(
+                    layer_params[sublayer]["weights"]
+                ):
                     print(f"-- position {position}")
                     for token_num, token_weights in enumerate(position_weights):
                         if any(token_weights > 0.1):
-                            print(f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000} -- {vocab[token_num]}")
+                            print(
+                                f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000} -- {vocab[token_num]}"
+                            )
                         else:
-                            print(f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000}")
+                            print(
+                                f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000}"
+                            )
                     print()
             else:
                 print(layer_params[sublayer]["weights"])
         print("")
 
-def print_activations(n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations):
 
+def print_activations(
+    n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations
+):
     print("===================== Inference Activations ======================")
 
     encoder_activation_keys = [

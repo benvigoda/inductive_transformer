@@ -3,7 +3,6 @@ from torch import nn  # type: ignore
 
 
 class EncoderTokenPi(nn.Module):
-
     # We have a token pi for each position pi, so we'll make num_positions clones of the token pi
     def __init__(self, hyperparams, active_layer: int):
         super(EncoderTokenPi, self).__init__()
@@ -16,15 +15,23 @@ class EncoderTokenPi(nn.Module):
         if hyperparams.encoder_token_pi_weights is not None:
             initial_weights = hyperparams.encoder_token_pi_weights[active_layer]
             if hyperparams.init_perturb_weights:
-                random_noise = torch.randn(self.num_positions, self.vocab_size, self.layer_width) * 0.1
+                random_noise = (
+                    torch.randn(self.num_positions, self.vocab_size, self.layer_width)
+                    * 0.1
+                )
                 self.weights = nn.Parameter(
-                    torch.zeros(self.num_positions, self.vocab_size, self.layer_width) + initial_weights + random_noise,
-                    requires_grad=True
+                    torch.zeros(self.num_positions, self.vocab_size, self.layer_width)
+                    + initial_weights
+                    + random_noise,
+                    requires_grad=True,
                 )
             else:
                 self.weights = initial_weights
         else:
-            self.weights = nn.Parameter(torch.ones(self.num_positions, self.vocab_size, self.layer_width), requires_grad=True)
+            self.weights = nn.Parameter(
+                torch.ones(self.num_positions, self.vocab_size, self.layer_width),
+                requires_grad=True,
+            )
             nn.init.normal_(self.weights, mean=1, std=0.1)
         self.relu = nn.ReLU()
 

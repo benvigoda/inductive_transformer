@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 
+
 def sample(key: jax.Array, decoder_t: jax.Array, temperature: float = 1.0):
     assert decoder_t.ndim == 2
     num_positions, vocab_size = decoder_t.shape

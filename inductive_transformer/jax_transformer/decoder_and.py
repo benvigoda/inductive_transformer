@@ -13,8 +13,6 @@ class DecoderAnd:
     use_encoder_message: bool = True
 
     def __call__(self, z, x_encoder, y_encoder):
-
-
         assert z.shape == (2, self.layer_width)
 
         if self.use_encoder_message and x_encoder is not None and y_encoder is not None:
@@ -51,4 +49,4 @@ class DecoderAnd:
         x = custom_normalize(x, axis=0)
         y = custom_normalize(y, axis=0)
 
-        return x, y   # Bernoullis
+        return x, y  # Bernoullis

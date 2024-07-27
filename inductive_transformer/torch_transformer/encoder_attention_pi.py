@@ -4,7 +4,6 @@ from inductive_transformer.torch_transformer.helper_functions import custom_norm
 
 
 class EncoderAttentionPi(nn.Module):
-
     def __init__(self, hyperparams, active_layer: int):
         super(EncoderAttentionPi, self).__init__()
         self.hyperparams = hyperparams
@@ -17,17 +16,23 @@ class EncoderAttentionPi(nn.Module):
             if hyperparams.init_perturb_weights:
                 random_noise = torch.randn(self.layer_width, self.layer_width) * 0.1
                 self.weights = nn.Parameter(
-                    torch.zeros(self.layer_width, self.layer_width) + initial_weights + random_noise,
-                    requires_grad=True
+                    torch.zeros(self.layer_width, self.layer_width)
+                    + initial_weights
+                    + random_noise,
+                    requires_grad=True,
                 )
             else:
                 self.weights = initial_weights
         else:
             if self.active_layer == 0:
-                self.weights = nn.Parameter(torch.ones(self.layer_width, self.layer_width), requires_grad=True)
+                self.weights = nn.Parameter(
+                    torch.ones(self.layer_width, self.layer_width), requires_grad=True
+                )
                 nn.init.normal_(self.weights, mean=1, std=0.1)
             else:
-                self.weights = nn.Parameter(torch.eye(self.layer_width), requires_grad=True)
+                self.weights = nn.Parameter(
+                    torch.eye(self.layer_width), requires_grad=True
+                )
                 self.weights.data += torch.randn_like(self.weights) * 0.1
         self.relu = nn.ReLU()
 
@@ -46,7 +51,9 @@ class EncoderAttentionPi(nn.Module):
         y = prob_weights * v
 
         # make it an inner product by taking a sum along the choice dimension
-        y = torch.sum(y, dim=0, keepdim=True)  # after summing it is size = (1, layer_width)
+        y = torch.sum(
+            y, dim=0, keepdim=True
+        )  # after summing it is size = (1, layer_width)
         assert y.shape == (1, self.layer_width)
 
         # y = nn.functional.normalize(y, p=1, dim=1)

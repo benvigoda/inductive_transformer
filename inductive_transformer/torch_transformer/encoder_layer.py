@@ -1,10 +1,18 @@
 from torch import nn  # type: ignore
 from inductive_transformer.torch_transformer.encoder_universe import EncoderUniverse
-from inductive_transformer.torch_transformer.encoder_bernoulli_categorical import EncoderBernoulliCategorical
+from inductive_transformer.torch_transformer.encoder_bernoulli_categorical import (
+    EncoderBernoulliCategorical,
+)
 from inductive_transformer.torch_transformer.encoder_token_pi import EncoderTokenPi
-from inductive_transformer.torch_transformer.encoder_position_pi import EncoderPositionPi
-from inductive_transformer.torch_transformer.encoder_attention_pi import EncoderAttentionPi
-from inductive_transformer.torch_transformer.encoder_categorical_bernoulli import EncoderCategoricalBernoulli
+from inductive_transformer.torch_transformer.encoder_position_pi import (
+    EncoderPositionPi,
+)
+from inductive_transformer.torch_transformer.encoder_attention_pi import (
+    EncoderAttentionPi,
+)
+from inductive_transformer.torch_transformer.encoder_categorical_bernoulli import (
+    EncoderCategoricalBernoulli,
+)
 from inductive_transformer.torch_transformer.encoder_and import EncoderAnd
 
 
@@ -14,18 +22,31 @@ from inductive_transformer.torch_transformer.encoder_and import EncoderAnd
 
 
 class EncoderLayer(nn.Module):
-
     def __init__(self, hyperparams, active_layer: int):
         super(EncoderLayer, self).__init__()
         self.active_layer = active_layer
         self.hyperparams = hyperparams
-        self.encoder_universe = EncoderUniverse(hyperparams=hyperparams, active_layer=active_layer)
-        self.encoder_bernoulli_categorical = EncoderBernoulliCategorical(hyperparams=hyperparams, active_layer=active_layer)
-        self.encoder_token_pi = EncoderTokenPi(hyperparams=hyperparams, active_layer=active_layer)
-        self.encoder_position_pi = EncoderPositionPi(hyperparams=hyperparams, active_layer=active_layer)
-        self.encoder_attention_pi = EncoderAttentionPi(hyperparams=hyperparams, active_layer=active_layer)
-        self.encoder_categorical_bernoulli = EncoderCategoricalBernoulli(hyperparams=hyperparams, active_layer=active_layer)
-        self.encoder_and = EncoderAnd(hyperparams=hyperparams, active_layer=active_layer)
+        self.encoder_universe = EncoderUniverse(
+            hyperparams=hyperparams, active_layer=active_layer
+        )
+        self.encoder_bernoulli_categorical = EncoderBernoulliCategorical(
+            hyperparams=hyperparams, active_layer=active_layer
+        )
+        self.encoder_token_pi = EncoderTokenPi(
+            hyperparams=hyperparams, active_layer=active_layer
+        )
+        self.encoder_position_pi = EncoderPositionPi(
+            hyperparams=hyperparams, active_layer=active_layer
+        )
+        self.encoder_attention_pi = EncoderAttentionPi(
+            hyperparams=hyperparams, active_layer=active_layer
+        )
+        self.encoder_categorical_bernoulli = EncoderCategoricalBernoulli(
+            hyperparams=hyperparams, active_layer=active_layer
+        )
+        self.encoder_and = EncoderAnd(
+            hyperparams=hyperparams, active_layer=active_layer
+        )
 
         self.z_prime = None
 
@@ -48,7 +69,11 @@ class EncoderLayer(nn.Module):
         # without position, we had
         # t_categorical.shape() = (vocab_size, layer_width)
         # now with position we have:
-        assert t_categorical.shape == (self.hyperparams.num_positions, self.hyperparams.vocab_size, self.hyperparams.layer_width)
+        assert t_categorical.shape == (
+            self.hyperparams.num_positions,
+            self.hyperparams.vocab_size,
+            self.hyperparams.layer_width,
+        )
 
         # Hook 3 pi_t's to their parent pi_rho, everywhere this occurs.
         # The encoder open-closed universe without backwards info from the decoder simply clones the input data for a given token and position
@@ -59,7 +84,10 @@ class EncoderLayer(nn.Module):
         # without position, we had pi_t outputting x_categorical, with
         # t_categorical.shape() = (vocab_size, layer_width)
         # now this is the job of pi_rho which is replacing pi_t, so we have this:
-        assert rho_categorical.shape == (self.hyperparams.num_positions, self.hyperparams.layer_width)
+        assert rho_categorical.shape == (
+            self.hyperparams.num_positions,
+            self.hyperparams.layer_width,
+        )
 
         # Encoder Word $\pi$
         x_categorical = self.encoder_position_pi(rho_categorical)

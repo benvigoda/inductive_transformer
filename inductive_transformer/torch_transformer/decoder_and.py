@@ -4,7 +4,6 @@ from inductive_transformer.torch_transformer.helper_functions import custom_norm
 
 
 class DecoderAnd(nn.Module):
-
     def __init__(self, hyperparams, active_layer: int):
         super(DecoderAnd, self).__init__()
         self.hyperparams = hyperparams
@@ -14,7 +13,7 @@ class DecoderAnd(nn.Module):
         self.x = None
 
     def forward(self, z, x_encoder, y_encoder):
-        '''
+        """
         x y z prob
         0 0 0   1
         0 0 1   0
@@ -32,7 +31,7 @@ class DecoderAnd(nn.Module):
         prob = 1 states when y = 0
         0 0 0   1
         1 0 0   1
-        '''
+        """
 
         # left
         # y[1][0] = x[0][0]*z[0][0] + x[1][0]*z[1][0]
@@ -90,4 +89,4 @@ class DecoderAnd(nn.Module):
         self.y = y
         self.x = x
 
-        return x, y   # Bernoullis
+        return x, y  # Bernoullis

@@ -3,18 +3,30 @@ import jax
 import numpy as np
 
 from inductive_transformer.jax_transformer.decoder_and import DecoderAnd
-from inductive_transformer.jax_transformer.decoder_attention_pi import DecoderAttentionPi
-from inductive_transformer.jax_transformer.decoder_bernoulli_categorical import DecoderBernoulliCategorical
-from inductive_transformer.jax_transformer.decoder_categorical_bernoulli import DecoderCategoricalBernoulli
+from inductive_transformer.jax_transformer.decoder_attention_pi import (
+    DecoderAttentionPi,
+)
+from inductive_transformer.jax_transformer.decoder_bernoulli_categorical import (
+    DecoderBernoulliCategorical,
+)
+from inductive_transformer.jax_transformer.decoder_categorical_bernoulli import (
+    DecoderCategoricalBernoulli,
+)
 from inductive_transformer.jax_transformer.decoder_position_pi import DecoderPositionPi
 from inductive_transformer.jax_transformer.decoder_token_pi import DecoderTokenPi
 from inductive_transformer.jax_transformer.decoder_universe import DecoderUniverse
 from inductive_transformer.jax_transformer.decoder_layer import DecoderLayer
 
 from inductive_transformer.jax_transformer.encoder_and import EncoderAnd
-from inductive_transformer.jax_transformer.encoder_attention_pi import EncoderAttentionPi
-from inductive_transformer.jax_transformer.encoder_bernoulli_categorical import EncoderBernoulliCategorical
-from inductive_transformer.jax_transformer.encoder_categorical_bernoulli import EncoderCategoricalBernoulli
+from inductive_transformer.jax_transformer.encoder_attention_pi import (
+    EncoderAttentionPi,
+)
+from inductive_transformer.jax_transformer.encoder_bernoulli_categorical import (
+    EncoderBernoulliCategorical,
+)
+from inductive_transformer.jax_transformer.encoder_categorical_bernoulli import (
+    EncoderCategoricalBernoulli,
+)
 from inductive_transformer.jax_transformer.encoder_position_pi import EncoderPositionPi
 from inductive_transformer.jax_transformer.encoder_token_pi import EncoderTokenPi
 from inductive_transformer.jax_transformer.encoder_universe import EncoderUniverse
@@ -242,9 +254,12 @@ def main():
         subkey_1, (num_layers, num_positions, vocab_size, layer_width)
     )
     params = inductive_transformer.init(subkey_2, z_in, t_in)
-    z_out, t_out, encoder_activations, decoder_activations = (
-        inductive_transformer.apply(params, z_in, t_in)
-    )
+    (
+        z_out,
+        t_out,
+        encoder_activations,
+        decoder_activations,
+    ) = inductive_transformer.apply(params, z_in, t_in)
     param_shapes = jax.tree_map(lambda x: x.shape, params)
     print("params (shapes)")
     pprint(param_shapes["params"])
@@ -267,9 +282,12 @@ def main():
     )
     params = inductive_transformer.init(subkey_2, z_in, t_in)
     updated_params, set_weights = set_weights(params)
-    z_out, t_out, encoder_activations, decoder_activations = (
-        inductive_transformer.apply(updated_params, z_in, t_in)
-    )
+    (
+        z_out,
+        t_out,
+        encoder_activations,
+        decoder_activations,
+    ) = inductive_transformer.apply(updated_params, z_in, t_in)
     param_shapes = jax.tree_map(lambda x: x.shape, updated_params)
     print("params (shapes)")
     pprint(param_shapes["params"])

@@ -4,7 +4,6 @@ from inductive_transformer.torch_transformer.helper_functions import custom_norm
 
 
 class DecoderCategoricalBernoulli(nn.Module):
-
     def __init__(self, hyperparams, active_layer: int):
         super(DecoderCategoricalBernoulli, self).__init__()
         self.hyperparams = hyperparams
@@ -30,7 +29,7 @@ class DecoderCategoricalBernoulli(nn.Module):
         # we need to convert all of these to bernoullis
         # left:
 
-        '''
+        """
         v is size (layer_width, layer_width)
         # Note that "above" is incoming in the decoder while "below" is outgoing
         v, dim = 1 indexes across the layer above, with index above_lw which is short for "above layer width"
@@ -53,7 +52,7 @@ class DecoderCategoricalBernoulli(nn.Module):
 
         the v indexing is [below_lw][above_lw]
         the u indexing is [heads/tails][below_lw][above_lw]
-        '''
+        """
         if self.active_layer == 1 and False:  # Used for testing only
             v[0][0] = 1
             v[0][1] = 1  # --> z[0]=1
@@ -64,7 +63,10 @@ class DecoderCategoricalBernoulli(nn.Module):
 
         assert v.shape == (self.hyperparams.layer_width, self.hyperparams.layer_width)
         # v = torch.transpose(v, 0, 1)  # FIXME XXX FINDME THIS HELPS SOME BREAKS SOME
-        u = torch.empty((2, self.hyperparams.layer_width, self.hyperparams.layer_width), device=v.device)
+        u = torch.empty(
+            (2, self.hyperparams.layer_width, self.hyperparams.layer_width),
+            device=v.device,
+        )
 
         # The probability of a bernoulli variable being true is the same as the probability of the
         # corresponding categorical state.

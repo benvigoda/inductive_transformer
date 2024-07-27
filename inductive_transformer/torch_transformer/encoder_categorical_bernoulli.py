@@ -4,7 +4,6 @@ from inductive_transformer.torch_transformer.helper_functions import custom_norm
 
 
 class EncoderCategoricalBernoulli(nn.Module):
-
     def __init__(self, hyperparams, active_layer: int):
         super(EncoderCategoricalBernoulli, self).__init__()
         self.hyperparams = hyperparams
@@ -16,7 +15,9 @@ class EncoderCategoricalBernoulli(nn.Module):
         # categorical is size = (1, layer_width)
         assert categorical.shape == (1, self.hyperparams.layer_width)
         # bernoulli is size (2, layer_width)
-        bernoulli = torch.empty((2, self.hyperparams.layer_width), device=categorical.device)
+        bernoulli = torch.empty(
+            (2, self.hyperparams.layer_width), device=categorical.device
+        )
 
         # The probability of a bernoulli variable being true is the same as the probability of the
         # corresponding categorical state.

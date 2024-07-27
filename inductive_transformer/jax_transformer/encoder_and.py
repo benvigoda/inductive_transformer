@@ -6,9 +6,7 @@ from inductive_transformer.jax_transformer.helper_functions import custom_normal
 
 @dataclass
 class EncoderAnd:
-
     def __call__(self, x, y):
-
         # OLD AND:
         # z_1 = x[1] * y[1]
         # z_0 = x[0] * y[1] + x[1] * y[0] + x[0] * y[0]
