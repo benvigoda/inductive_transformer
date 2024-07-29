@@ -1,11 +1,14 @@
 import numpy as np
 from flax import linen as nn
+from helper_functions import get_num_layers
 
 
 def print_params(state, vocab):
+    num_layers = get_num_layers(state.params)
     # Print trained weights.
-    decoder_layers = ["decoders_0", "decoders_1"]
-    encoder_layers = ["encoders_0", "encoders_1"]
+    print("===================== Model WEIGHTS ======================")
+    decoder_layers = [f"decoders_{i}" for i in range(num_layers)]
+    encoder_layers = [f"encoders_{i}" for i in range(num_layers)]
     decoder_sublayers = [
         "decoder_attention_pi",
         "decoder_position_pi",

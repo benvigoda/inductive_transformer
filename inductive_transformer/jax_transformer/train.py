@@ -343,11 +343,11 @@ def main():
     print_params(state, data.vocab)
 
     if not args.prompt_text:
-        print("No prompt text given, exiting.")
+        ##### FIXME ###### print("No prompt text given, exiting.")
         exit()
 
     decoder_t = run_and_print_inference(state, prob_tensors, args)
-    print("decoder_t", decoder_t.shape)
+    ##### FIXME ###### print("decoder_t", decoder_t.shape)
 
     temperature = 1
     generated_sentences = []
@@ -356,20 +356,20 @@ def main():
     ):
         if not example:
             continue
-        print(f"Example {example_idx}: {example.capitalize()}")
+        ##### FIXME ###### print(f"Example {example_idx}: {example.capitalize()}")
         single_decoder_t = decoder_t[example_idx]
         for sample_idx in range(6):
             key, subkey = jax.random.split(key)
             samples = sample(subkey, single_decoder_t, temperature=temperature)
             generated_sentence = " ".join([data.vocab[s] for s in samples]).capitalize()
-            print(generated_sentence)
+            ##### FIXME ###### print(generated_sentence)
             generated_sentences.append(generated_sentence)
         print("")
     print(f"seed: {seed}\n")
 
     # Generate histograms:
     training_sentences = [t.capitalize() for t in data.training_sentences]
-    histogram_results(training_sentences, generated_sentences)
+    ##### FIXME ###### histogram_results(training_sentences, generated_sentences)
     return seed, loss, lr
 
 

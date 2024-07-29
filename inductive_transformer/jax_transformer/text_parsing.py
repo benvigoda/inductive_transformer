@@ -44,7 +44,8 @@ class InputData:
             stop_token=self.stop_token,
             min_window_size=self.window_size,
         )
-        self.window_size = max(self.window_size, self.inference_windows.shape[1])
+        if len(self.inference_windows) > 0:
+            self.window_size = max(self.window_size, self.inference_windows.shape[1])
 
         # Returns an ordered list of all the words that appear in the file
         if print_vals:
