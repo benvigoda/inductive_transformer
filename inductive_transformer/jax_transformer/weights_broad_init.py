@@ -1,6 +1,6 @@
 import jax
 import jax.numpy as jnp  # type: ignore
-from inductive_transformer.jax_transformer.helper_functions import EPSILON
+from inductive_transformer.jax_transformer.helper_functions import EPSILON, get_num_layers
 from synonyms import Synonyms
 
 strong = 1.0 - EPSILON  # Amplify the signal
@@ -9,7 +9,7 @@ weak = EPSILON  # Dampen the signal
 mask_type = int
 
 
-def set_position_pi_weights(layer, params, mask, prefix, layer_width):
+def set_position_pi_weights(layer, params, mask, prefix, layer_width):    
     layer_key = f"{prefix}s_{layer}"
     position_pi = f"{prefix}_position_pi"
     if layer_key in params["params"]:
@@ -29,6 +29,7 @@ def set_position_pi_weights(layer, params, mask, prefix, layer_width):
         mask["params"][layer_key][position_pi]["weights"] = jnp.zeros_like(
             old_weights, dtype=mask_type
         )
+        # import pdb; pdb.set_trace()
     else:
         raise ValueError(f"Layer {layer_key} not found in params.")
 
@@ -46,12 +47,9 @@ def init_weights(params, vocab, lock_all_weights=False):
         lambda x: jnp.ones_like(x, dtype=mask_type), params
     )
 
-    num_layers = 0
-    while True:
-        if f"encoders_{num_layers}" not in params["params"]:
-            break
-        num_layers += 1
-
+    num_layers = get_num_layers(params)
+    # print(params["params"]["encoders_0"]["encoder_position_pi"]["weights"])
+    # import pdb; pdb.set_trace()
     for layer in range(num_layers):
         set_position_pi_weights(
             layer, updated_params, set_weights, "decoder", layer_width
@@ -59,6 +57,8 @@ def init_weights(params, vocab, lock_all_weights=False):
         set_position_pi_weights(
             layer, updated_params, set_weights, "encoder", layer_width
         )
+    # print(params["params"]["encoders_0"]["encoder_position_pi"]["weights"])
+    # import pdb; pdb.set_trace()
 
     def set_token_weights(layer, position, target_words):
         """
