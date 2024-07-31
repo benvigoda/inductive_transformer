@@ -44,6 +44,7 @@ def print_params(state, vocab):
             else:
                 print(layer_params[sublayer]["weights"])
         print("")
+        import pdb; pdb.set_trace()
 
     print("===================== Encoder Layers ======================")
     for layer in encoder_layers:
@@ -69,6 +70,7 @@ def print_params(state, vocab):
             else:
                 print(layer_params[sublayer]["weights"])
         print("")
+        import pdb; pdb.set_trace()
 
 
 def print_activations(
