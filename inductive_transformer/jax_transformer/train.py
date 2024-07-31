@@ -305,9 +305,9 @@ def main():
 
         for step_idx in range(0, n_steps_per_epoch):
             start = step_idx * batch_size
-            batch_input_data = all_t_tensors[start : start + batch_size]
+            batch_input_data = all_t_tensors[start: start + batch_size]
             batch_output_data = all_outputs[
-                step_idx * batch_size : (step_idx + 1) * batch_size
+                step_idx * batch_size: (step_idx + 1) * batch_size
             ]
             grads, loss = apply_model(
                 state, prob_tensors.attention_input, batch_input_data, batch_output_data
@@ -343,11 +343,11 @@ def main():
     print_params(state, data.vocab)
 
     if not args.prompt_text:
-        ##### FIXME ###### print("No prompt text given, exiting.")
+        print("No prompt text given, exiting.")
         exit()
 
     decoder_t = run_and_print_inference(state, prob_tensors, args)
-    ##### FIXME ###### print("decoder_t", decoder_t.shape)
+    print("decoder_t", decoder_t.shape)
 
     temperature = 1
     generated_sentences = []
@@ -356,20 +356,20 @@ def main():
     ):
         if not example:
             continue
-        ##### FIXME ###### print(f"Example {example_idx}: {example.capitalize()}")
+        print(f"Example {example_idx}: {example.capitalize()}")
         single_decoder_t = decoder_t[example_idx]
         for sample_idx in range(6):
             key, subkey = jax.random.split(key)
             samples = sample(subkey, single_decoder_t, temperature=temperature)
             generated_sentence = " ".join([data.vocab[s] for s in samples]).capitalize()
-            ##### FIXME ###### print(generated_sentence)
+            print(generated_sentence)
             generated_sentences.append(generated_sentence)
         print("")
     print(f"seed: {seed}\n")
 
     # Generate histograms:
     training_sentences = [t.capitalize() for t in data.training_sentences]
-    ##### FIXME ###### histogram_results(training_sentences, generated_sentences)
+    histogram_results(training_sentences, generated_sentences)
     return seed, loss, lr
 
 

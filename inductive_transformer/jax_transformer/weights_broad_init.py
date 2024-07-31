@@ -29,7 +29,6 @@ def set_position_pi_weights(layer, params, mask, prefix, layer_width):
         mask["params"][layer_key][position_pi]["weights"] = jnp.zeros_like(
             old_weights, dtype=mask_type
         )
-        # import pdb; pdb.set_trace()
     else:
         raise ValueError(f"Layer {layer_key} not found in params.")
 
@@ -48,8 +47,7 @@ def init_weights(params, vocab, lock_all_weights=False):
     )
 
     num_layers = get_num_layers(params)
-    # print(params["params"]["encoders_0"]["encoder_position_pi"]["weights"])
-    # import pdb; pdb.set_trace()
+
     for layer in range(num_layers):
         set_position_pi_weights(
             layer, updated_params, set_weights, "decoder", layer_width
@@ -57,39 +55,43 @@ def init_weights(params, vocab, lock_all_weights=False):
         set_position_pi_weights(
             layer, updated_params, set_weights, "encoder", layer_width
         )
-    # print(params["params"]["encoders_0"]["encoder_position_pi"]["weights"])
-    # import pdb; pdb.set_trace()
 
-    def set_token_weights(layer, position, target_words):
+    def set_token_weights(num_layer, layer_w, position, target_words):
         """
         in the position where we want to listen for a particular word
         set a single word weight to strong and all the others to weak
         """
         # encoders_1 is layer=1
-        new_weight = updated_params["params"]["encoders_1"]["encoder_token_pi"][
+        new_weight = updated_params["params"][f"encoders_{num_layer}"]["encoder_token_pi"][
             "weights"
         ]
-        new_weight = new_weight.at[position, :, layer].set(jnp.full(vocab_size, weak))
+        new_weight = new_weight.at[position, :, layer_w].set(jnp.full(vocab_size, weak))
+
         for target_word in target_words:
-            vocab_idx = next(
-                (i for i, word in enumerate(vocab) if word.lower() == target_word), None
-            )
-            new_weight = new_weight.at[position, vocab_idx, layer].set(strong)
-        updated_params["params"]["encoders_1"]["encoder_token_pi"][
+            if target_word in vocab:
+                vocab_idx = next(i for i, word in enumerate(vocab) if word.lower() == target_word)
+                new_weight = new_weight.at[position, vocab_idx, layer_w].set(strong)
+            else:
+                print(f"WARNING: Target word '{target_word}' not found in vocab")
+                continue
+        updated_params["params"][f"encoders_{num_layer}"]["encoder_token_pi"][
             "weights"
         ] = new_weight
 
         # decoder_1 is layer=1
-        new_weight = updated_params["params"]["decoders_1"]["decoder_token_pi"][
+        new_weight = updated_params["params"][f"decoders_{num_layer}"]["decoder_token_pi"][
             "weights"
         ]
-        new_weight = new_weight.at[position, :, layer].set(jnp.full(vocab_size, weak))
+        new_weight = new_weight.at[position, :, layer_w].set(jnp.full(vocab_size, weak))
         for target_word in target_words:
-            vocab_idx = next(
-                (i for i, word in enumerate(vocab) if word.lower() == target_word), None
-            )
-            new_weight = new_weight.at[position, vocab_idx, layer].set(strong)
-        updated_params["params"]["decoders_1"]["decoder_token_pi"][
+            if target_word in vocab:
+                vocab_idx = next(i for i, word in enumerate(vocab) if word.lower() == target_word)
+                new_weight = new_weight.at[position, vocab_idx, layer_w].set(strong)
+            else:
+                print(f"WARNING: Target word '{target_word}' not found in vocab")
+                continue
+            new_weight = new_weight.at[position, vocab_idx, layer_w].set(strong)
+        updated_params["params"][f"decoders_{num_layer}"]["decoder_token_pi"][
             "weights"
         ] = new_weight
 
@@ -101,24 +103,24 @@ def init_weights(params, vocab, lock_all_weights=False):
             if other_position == position:
                 continue
             # encoders_1 is layer=1
-            new_weight = updated_params["params"]["encoders_1"]["encoder_token_pi"][
+            new_weight = updated_params["params"][f"encoders_{num_layer}"]["encoder_token_pi"][
                 "weights"
             ]
-            new_weight = new_weight.at[position, :, layer].set(
+            new_weight = new_weight.at[position, :, layer_w].set(
                 jnp.full(vocab_size, weak)
             )
-            updated_params["params"]["encoders_1"]["encoder_token_pi"][
+            updated_params["params"][f"encoders_{num_layer}"]["encoder_token_pi"][
                 "weights"
             ] = new_weight
 
             # decoder_1 is layer=1
-            new_weight = updated_params["params"]["decoders_1"]["decoder_token_pi"][
+            new_weight = updated_params["params"][f"decoders_{num_layer}"]["decoder_token_pi"][
                 "weights"
             ]
-            new_weight = new_weight.at[position, :, layer].set(
+            new_weight = new_weight.at[position, :, layer_w].set(
                 jnp.full(vocab_size, weak)
             )
-            updated_params["params"]["decoders_1"]["decoder_token_pi"][
+            updated_params["params"][f"decoders_{num_layer}"]["decoder_token_pi"][
                 "weights"
             ] = new_weight
 
@@ -128,8 +130,9 @@ def init_weights(params, vocab, lock_all_weights=False):
         for lw, target_words in zip(
             range(layer_width), [left_targets[pos], right_targets[pos]]
         ):  # [['big', 'large'], ['small']]
-            set_token_weights(lw, pos, target_words)
             num_lay = num_positions - pos - 1
+            set_token_weights(num_lay, lw, pos, target_words)
+            print(updated_params["params"][f"decoders_{num_lay}"]["decoder_token_pi"]["weights"])
             # Fix set_weights so the gradient does not update the weights
             if lock_all_weights:
                 set_weights["params"][f"encoders_{num_lay}"]["encoder_token_pi"][

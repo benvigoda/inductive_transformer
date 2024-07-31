@@ -11,6 +11,7 @@ def get_num_layers(params: dict) -> int:
         if f"encoders_{num_layers}" not in params["params"]:
             break
         num_layers += 1
+    return num_layers
 
 
 def custom_normalize(tensor: jnp.ndarray, axis=0, default_constant=0.5) -> jnp.ndarray:
