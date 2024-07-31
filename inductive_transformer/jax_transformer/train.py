@@ -358,7 +358,7 @@ def main():
             continue
         print(f"Example {example_idx}: {example.capitalize()}")
         single_decoder_t = decoder_t[example_idx]
-        for sample_idx in range(6):
+        for sample_idx in range(50):
             key, subkey = jax.random.split(key)
             samples = sample(subkey, single_decoder_t, temperature=temperature)
             generated_sentence = " ".join([data.vocab[s] for s in samples]).capitalize()
@@ -369,6 +369,7 @@ def main():
 
     # Generate histograms:
     training_sentences = [t.capitalize() for t in data.training_sentences]
+    print(f"loss: {loss:.3e}")
     histogram_results(training_sentences, generated_sentences)
     return seed, loss, lr
 
