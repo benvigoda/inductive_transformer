@@ -7,7 +7,7 @@ import numpy as np
 class Dataset(NamedTuple):
     word_to_id: dict[str, int]
     id_to_word: dict[int, str]
-    data: jax.Array  # axes are sentence, word position (in sentence), word id
+    data: jax.Array  # axes are sentence, word position (in sentence)
 
     @property
     def n_sentences(self):
