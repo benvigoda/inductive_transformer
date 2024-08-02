@@ -48,7 +48,7 @@ def print_histogram(data):
         )
 
 
-def plot_histogram(data, filename):
+def plot_histogram(data, filename, size=(6.4, 4.8)):
     # Extract the data for plotting
     sentences = [item[0] for item in data]
     counts = [item[1] for item in data]
@@ -60,7 +60,7 @@ def plot_histogram(data, filename):
     categories = categories[::-1]
 
     # Set up the figure and axes
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=size)
 
     # Create a color map for the categories
     color_map = {
