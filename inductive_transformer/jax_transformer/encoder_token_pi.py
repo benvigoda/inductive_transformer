@@ -27,7 +27,7 @@ class EncoderTokenPi(nn.Module):
         prob_weights = nn.relu(weights) + EPSILON
         # NOTE: we decided not to normalize the weights (it shouldn't matter)
         # prob_weights = nn.functional.normalize(prob_weights, p=1, axis=0)
-        prob_weights = custom_normalize(prob_weights, axis=1) + EPSILON
+        # prob_weights = custom_normalize(prob_weights, axis=1) + EPSILON
 
         # Add this?
         # t = custom_normalize(t, axis=1)
