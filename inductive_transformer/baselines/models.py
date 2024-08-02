@@ -1,7 +1,7 @@
 import flax.linen as nn
 
 
-class FullyConnected(nn.Module):
+class FullyConnectedSeqToSeq(nn.Module):
     # Each entry gives the number of units in a dense hidden layer.
     layers: list[int]
 

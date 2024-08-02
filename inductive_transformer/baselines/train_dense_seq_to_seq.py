@@ -8,8 +8,23 @@ import optax
 
 from grammars import BigCatSmallDog
 from tokens import load_dataset, make_dataset_from_sentences
-from models import FullyConnected
-from histograms import SampleStatus, sample_status_names, generate_histogram_data, plot_histogram
+from models import FullyConnectedSeqToSeq
+from histograms import (
+    SampleStatus,
+    sample_status_names,
+    generate_histogram_data,
+    plot_histogram,
+)
+
+
+# This file trains a fully connected network to output a probability distribution over tokens for
+# each position in a sentence. During training, words in the input sentence are randomly replaced
+# with a BLANK token. Each output distribution is allowed to see all input tokens, including
+# non-blanks that occur after the output position in question. So if only one word is blanked out,
+# the network is trained to output the distribution conditioned on all other words (before and
+# after). If all words are replaced with blanks, the network will try to generate marginal
+# distributions for all output positions. (Of course if you sample from these distributions
+# independently, the tokens in different positions will not be correlated.)
 
 
 def make_train_state(key, model, dataset, learning_rate):
@@ -134,7 +149,10 @@ def main():
     ]
     key, subkey = jax.random.split(key)
     model, train_state = make_train_state(
-        subkey, FullyConnected(layers=layers), data, learning_rate
+        subkey,
+        FullyConnectedSeqToSeq(layers=layers),
+        data,
+        learning_rate,
     )
     key, subkey = jax.random.split(key)
     print("")
