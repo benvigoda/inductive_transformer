@@ -49,5 +49,23 @@ PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 32_2_layer_se
 July 26
 PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 32_6_layer_sentences.txt --prompt_text inference_text_more_synonyms.txt --num_layer 6 --layer_width 2 --initialize_weights --lock_all_weights
 
+
 August 2:
 PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 30_6_layer_sentences.txt --prompt_text inference_text_6_words_sentence.txt --num_layer 6 --layer_width 2 --initialize_weights --lock_all_weights
+
+Include number of samples to generate (per input prompt)
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 30_6_layer_sentences.txt --prompt_text inference_text_small.txt --num_layer 6 --layer_width 2 --initialize_weights --lock_all_weights --num_samples 50 --zero_out_weights_right_weights
+
+
+mystery #1: SOLVE THIS FIRST
+this command is only outputting green, yeah!  but new mystery it is not outputting a green for every blue, and the eloss is not 0.
+
+mystery #2: SOLVE THIS NEXT IF IT DOESN'T BY SOLVING MYSTERY #1
+same commit, same model, if we use only 2 layers, training no longer converges?!:
+python inductive_transformer/jax_transformer/train.py 32_curated_sentences.txt --prompt_text inference_text_32.txt --num_layer 2 --layer_width 2
+
+So for mystery #1, one question to ask is whether it thinks the weights we gave it are indeed a minima?  Let's unlock the weights and let it train:
+
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 30_6_layer_sentences.txt --prompt_text inference_text_small.txt --num_layer 6 --layer_width 2 --initialize_weights --num_samples 10 --num_epochs 100 --zero_out_weights_right_weights
+
+This results in red all over the place, and no blue-greens.

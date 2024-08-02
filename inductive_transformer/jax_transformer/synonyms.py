@@ -58,13 +58,14 @@ class Synonyms:
     valid_right_fourth_words = valid_left_zeroth_words
     valid_left_fifth_words = valid_right_first_words
     valid_right_fifth_words = valid_left_first_words
-    # FIXME: Setting the right hand side to zero for now
-    valid_right_zeroth_words = []
-    valid_right_first_words = []
-    valid_right_second_words = []
-    valid_right_third_words = []
-    valid_right_fourth_words = []
-    valid_right_fifth_words = []
+
+    def zero_right_words(self):
+        self.valid_right_zeroth_words = []
+        self.valid_right_first_words = []
+        self.valid_right_second_words = []
+        self.valid_right_third_words = []
+        self.valid_right_fourth_words = []
+        self.valid_right_fifth_words = []
 
     def get_valid_left_ordered_words(self):
         return [
