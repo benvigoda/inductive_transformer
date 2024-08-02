@@ -37,6 +37,7 @@ def create_train_state(
     initialize_weights=False,
     perturb_flag=False,
     lock_all_weights=False,
+    zero_out_weights_right_weights=False,
 ):
     """Creates initial `TrainState`."""
     bernoulli_width = 2
@@ -66,7 +67,7 @@ def create_train_state(
     # If initialize_weights is True, we will set weights as defined in weights.py.
     if initialize_weights:
         params, weight_mask = init_weights(
-            params, vocab, lock_all_weights=lock_all_weights
+            params, vocab, lock_all_weights=lock_all_weights, zero_out_right_weights=zero_out_weights_right_weights
         )
 
     key, subkey = jax.random.split(key)
@@ -207,6 +208,9 @@ def parse_args():
 
     parser.add_argument("--layer_width", type=int, default=2)
     parser.add_argument("--num_layers", type=int, default=2)
+    parser.add_argument("--num_epochs", type=int, default=100)
+    parser.add_argument("--num_samples", type=int, default=5)
+    parser.add_argument("--zero_out_weights_right_weights", action="store_true")
     return parser.parse_args()
 
 
@@ -220,14 +224,13 @@ def main():
     # Initialize RNG state.
     np_rng = np.random.default_rng()
     seed = np_rng.integers(0, 2**32 - 1)
-    # seed = 11675966
-    # seed = 615523631
-    # seed = 2819370678  # For NAN with 32 sentences
-    seed = 1376424188  # Basic convergence of 32_6_layer_sentences.txt
-
-    # seed = 3699294691 # awesome convergence of 32_2_layer_sentences.txt
     # seed = 737435735 # partial convergence of 32_2_layer_sentences.txt
     # seed = 3727924788 # partial convergence of 32_2_layer_sentences.txt in another way
+
+
+    # seed = 3699294691 # awesome convergence of 32_2_layer_sentences.txt
+    # seed = 1376424188  # Basic convergence of 32_6_layer_sentences.txt
+
 
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
@@ -274,6 +277,7 @@ def main():
         initialize_weights=args.initialize_weights,
         perturb_flag=args.perturb,
         lock_all_weights=args.lock_all_weights,
+        zero_out_weights_right_weights=args.zero_out_weights_right_weights,
     )
 
     # Check the initial loss.
@@ -289,10 +293,10 @@ def main():
 
     # Train the model.
     if args.training_text:
-        n_epochs = 0
+        n_epochs = args.num_epochs
         batch_size = 10
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
-        print_every = 100
+        print_every = 10
         print(f"{n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
         key, subkey = jax.random.split(key)
     else:
@@ -358,7 +362,7 @@ def main():
             continue
         print(f"Example {example_idx}: {example.capitalize()}")
         single_decoder_t = decoder_t[example_idx]
-        for sample_idx in range(50):
+        for sample_idx in range(args.num_samples):
             key, subkey = jax.random.split(key)
             samples = sample(subkey, single_decoder_t, temperature=temperature)
             generated_sentence = " ".join([data.vocab[s] for s in samples]).capitalize()
