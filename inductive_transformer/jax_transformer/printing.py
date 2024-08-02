@@ -4,6 +4,7 @@ from helper_functions import get_num_layers  # type: ignore
 
 
 def print_params(state, vocab):
+    np.set_printoptions(threshold=np.inf)
     num_layers = get_num_layers(state.params)
     # Print trained weights.
     print("===================== Model WEIGHTS ======================")
@@ -44,6 +45,7 @@ def print_params(state, vocab):
             else:
                 print(layer_params[sublayer]["weights"])
         print("")
+        import pdb; pdb.set_trace()
 
     print("===================== Encoder Layers ======================")
     for layer in encoder_layers:
@@ -69,11 +71,13 @@ def print_params(state, vocab):
             else:
                 print(layer_params[sublayer]["weights"])
         print("")
+        import pdb; pdb.set_trace()
 
 
 def print_activations(
     n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations
 ):
+    np.set_printoptions(threshold=np.inf)
     print("===================== Inference Activations ======================")
 
     encoder_activation_keys = [
@@ -128,3 +132,4 @@ def print_activations(
                 print(layer_activation[key][idx])
                 print("")
         print("--------------------------")
+        import pdb; pdb.set_trace()
