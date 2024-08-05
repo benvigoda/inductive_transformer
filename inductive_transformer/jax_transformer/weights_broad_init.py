@@ -33,10 +33,12 @@ def set_position_pi_weights(layer, params, mask, prefix, layer_width):
         raise ValueError(f"Layer {layer_key} not found in params.")
 
 
-def init_weights(params, vocab, lock_all_weights=False, zero_out_right_weights=False):
+def init_weights(params, vocab, lock_all_weights=False, zero_out_right_weights=False, zero_out_left_weights=False):
     synonyms = Synonyms()
     if zero_out_right_weights:
-        synonyms.zero_right_words(params, vocab)
+        synonyms.zero_right_words()
+    if zero_out_left_weights:
+        synonyms.zero_left_words()
     # Get shapes:
     num_positions, vocab_size, layer_width = params["params"]["encoders_0"][
         "encoder_token_pi"
@@ -90,7 +92,7 @@ def init_weights(params, vocab, lock_all_weights=False, zero_out_right_weights=F
                 vocab_idx = next(i for i, word in enumerate(vocab) if word.lower() == target_word)
                 new_weight_decoder = new_weight_decoder.at[position, vocab_idx, layer_w].set(strong)
             else:
-                # print(f"WARNING: Target word '{target_word}' not found in vocab")
+                print(f"WARNING: Target word '{target_word}' not found in vocab")
                 continue
         updated_params["params"][f"decoders_{num_layer}"]["decoder_token_pi"][
             "weights"
@@ -174,8 +176,9 @@ def init_weights(params, vocab, lock_all_weights=False, zero_out_right_weights=F
                 new_weight = new_weight.at[:, :].set(
                     jnp.full((layer_width, layer_width), weak)
                 )
+                new_weight = new_weight.at[1, 1].set(strong) 
                 new_weight = new_weight.at[0, 0].set(strong)
-                new_weight = new_weight.at[1, 1].set(strong)
+
             updated_params["params"][f"{encoders_decoders}_{layer}"][
                 f"{encoder_decoder}_attention_pi"
             ]["weights"] = new_weight
