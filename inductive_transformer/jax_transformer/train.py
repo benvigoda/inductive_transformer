@@ -37,7 +37,8 @@ def create_train_state(
     initialize_weights=False,
     perturb_flag=False,
     lock_all_weights=False,
-    zero_out_weights_right_weights=False,
+    zero_out_right_weights=False,
+    zero_out_left_weights=False,
 ):
     """Creates initial `TrainState`."""
     bernoulli_width = 2
@@ -67,7 +68,7 @@ def create_train_state(
     # If initialize_weights is True, we will set weights as defined in weights.py.
     if initialize_weights:
         params, weight_mask = init_weights(
-            params, vocab, lock_all_weights=lock_all_weights, zero_out_right_weights=zero_out_weights_right_weights
+            params, vocab, lock_all_weights=lock_all_weights, zero_out_right_weights=zero_out_right_weights, zero_out_left_weights=zero_out_left_weights
         )
 
     key, subkey = jax.random.split(key)
@@ -210,7 +211,8 @@ def parse_args():
     parser.add_argument("--num_layers", type=int, default=2)
     parser.add_argument("--num_epochs", type=int, default=100)
     parser.add_argument("--num_samples", type=int, default=5)
-    parser.add_argument("--zero_out_weights_right_weights", action="store_true")
+    parser.add_argument("--zero_out_right_weights", action="store_true")
+    parser.add_argument("--zero_out_left_weights", action="store_true")
     return parser.parse_args()
 
 
@@ -277,7 +279,8 @@ def main():
         initialize_weights=args.initialize_weights,
         perturb_flag=args.perturb,
         lock_all_weights=args.lock_all_weights,
-        zero_out_weights_right_weights=args.zero_out_weights_right_weights,
+        zero_out_right_weights=args.zero_out_right_weights,
+        zero_out_left_weights=args.zero_out_left_weights,
     )
 
     # Check the initial loss.

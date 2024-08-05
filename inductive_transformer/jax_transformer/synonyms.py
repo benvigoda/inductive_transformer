@@ -67,6 +67,14 @@ class Synonyms:
         self.valid_right_fourth_words = []
         self.valid_right_fifth_words = []
 
+    def zero_left_words(self):
+        self.valid_left_zeroth_words = []
+        self.valid_left_first_words = []
+        self.valid_left_second_words = []
+        self.valid_left_third_words = []
+        self.valid_left_fourth_words = []
+        self.valid_left_fifth_words = []
+
     def get_valid_left_ordered_words(self):
         return [
             self.valid_left_zeroth_words,

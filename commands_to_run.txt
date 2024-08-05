@@ -66,6 +66,14 @@ python inductive_transformer/jax_transformer/train.py 32_curated_sentences.txt -
 
 So for mystery #1, one question to ask is whether it thinks the weights we gave it are indeed a minima?  Let's unlock the weights and let it train:
 
-PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 30_6_layer_sentences.txt --prompt_text inference_text_small.txt --num_layer 6 --layer_width 2 --initialize_weights --num_samples 10 --num_epochs 100 --zero_out_weights_right_weights
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 30_6_layer_sentences.txt --prompt_text inference_text_small.txt --num_layer 6 --layer_width 2 --initialize_weights --num_samples 10 --num_epochs 100 --zero_out_right_weights
 
 This results in red all over the place, and no blue-greens.
+
+
+Aug 3:
+
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 30_6_layer_sentences_small.txt --prompt_text inference_text_big.txt --num_layer 6 --layer_width 2 --initialize_weights --num_samples 4 --num_epochs 0
+
+--zero_out_right_weights
+
