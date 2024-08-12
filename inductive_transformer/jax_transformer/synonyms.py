@@ -12,8 +12,8 @@ class Synonyms:
         "pico",
         "femto",
         "diminimus",
-        "itty",
-        "teenyweeny",
+        # "itty",
+        # "teenyweeny",
     ]
     valid_right_zeroth_words = [
         "extralarge",

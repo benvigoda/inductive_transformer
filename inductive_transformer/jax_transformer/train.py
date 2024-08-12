@@ -213,6 +213,7 @@ def parse_args():
     parser.add_argument("--num_samples", type=int, default=5)
     parser.add_argument("--zero_out_right_weights", action="store_true")
     parser.add_argument("--zero_out_left_weights", action="store_true")
+    parser.add_argument("--loss_threshold", type=float, default=None)
     return parser.parse_args()
 
 
@@ -232,6 +233,9 @@ def main():
 
     # seed = 3699294691 # awesome convergence of 32_2_layer_sentences.txt
     # seed = 1376424188  # Basic convergence of 32_6_layer_sentences.txt
+
+
+    # seed = 1053121381
 
 
     key = jax.random.PRNGKey(seed)
@@ -332,6 +336,8 @@ def main():
             #     print("*" * 100)
             #     # Print activations:
             #     run_and_print_inference(state, prob_tensors, args)
+            if args.loss_threshold and loss < args.loss_threshold:
+                break
 
         if epoch % print_every == 0:
             # print("\n\n\n\n\n")
@@ -345,6 +351,8 @@ def main():
             # print("*" * 100)
             # # Print activations:
             # run_and_print_inference(state, prob_tensors, args)
+        if args.loss_threshold and loss < args.loss_threshold:
+            break
 
     # Print trained weights.
     print_params(state, data.vocab)

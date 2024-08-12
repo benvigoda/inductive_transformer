@@ -44,7 +44,6 @@ def plot_side_by_side_histograms(data1, data2):
     ax1.set_ylabel("Sentences")
     palette = {"valid": "green", "invalid": "red"}
     # Plot generated data on the second subplot
-    # sns.barplot(x='Count', y='Sentence', data=data2, color=data2["Color"], ax=ax2)
     sns.barplot(
         x="Count", y="Sentence", data=data2, hue="Status", palette=palette, ax=ax2
     )
