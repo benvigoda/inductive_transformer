@@ -77,3 +77,24 @@ PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 30_6_layer_se
 
 --zero_out_right_weights
 
+
+
+Aug 7:
+
+
+To see what happens if we initialize to what we consider to be a minimum:
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 60_6_layer_sentences_small_big.txt --prompt_text inference_text_big_small_balanced_synonyms.txt --num_layer 6 --layer_width 2 --num_samples 40 --num_epochs 300 --loss_threshold 0.018 --initialize_weights
+seed = 1053121381
+initial loss: 1.944e-02
+final loss: 1.797e-02
+still looks good!
+
+With random initialization of weights:
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 60_6_layer_sentences_small_big.txt --prompt_text inference_text_big_small_balanced_synonyms.txt --num_layer 6 --layer_width 2 --num_samples 4 --num_epochs 500 --loss_threshold 0.018
+got all reds, and no bluegreens
+
+
+
+
+
+
