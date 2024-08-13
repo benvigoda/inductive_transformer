@@ -12,26 +12,24 @@ class Synonyms:
         "pico",
         "femto",
         "diminimus",
-        # "itty",
-        # "teenyweeny",
     ]
     valid_right_zeroth_words = [
-        "extralarge",
-        "gargantuan",
-        "large",
-        "giant",
-        "huge",
-        "humongous",
-        "enormous",
-        "big",
+        "angry",
+        "hateful",
+        "mean",
+        "nasty",
+        "unpleasant",
+        "vicious",
+        "violent",
+        "wicked",
     ]
     valid_left_first_words = [
         "dogs",
         "canines",
     ]
     valid_right_first_words = [
-        "cats",
-        "felines",
+        "birds",
+        "avians",
     ]
     valid_left_second_words = [
         "often",
@@ -55,10 +53,39 @@ class Synonyms:
         "eat",
     ]
     
-    valid_left_fourth_words = valid_right_zeroth_words
-    valid_right_fourth_words = valid_left_zeroth_words
-    valid_left_fifth_words = valid_right_first_words
-    valid_right_fifth_words = valid_left_first_words
+    valid_left_fourth_words = [
+        "extralarge",
+        "gargantuan",
+        "large",
+        "giant",
+        "huge",
+        "humongous",
+        "enormous",
+        "big",
+    ]
+
+    valid_right_fourth_words = [
+        "extralarge",
+        "gargantuan",
+        "large",
+        "giant",
+        "huge",
+        "humongous",
+        "enormous",
+        "big",
+    ]
+
+    valid_left_fifth_words = [
+        "cats",
+        "felines"
+    ]
+
+    valid_right_fifth_words = [
+        "worms",
+        "earthworms"
+    ]
+
+
 
     def zero_right_words(self):
         self.valid_right_zeroth_words = []
