@@ -37,6 +37,7 @@ def create_train_state(
     initialize_weights=False,
     perturb_flag=False,
     lock_all_weights=False,
+    noise_value=0.01,
     zero_out_right_weights=False,
     zero_out_left_weights=False,
 ):
@@ -72,6 +73,7 @@ def create_train_state(
             vocab,
             lock_all_weights=lock_all_weights,
             perturb_weights=perturb_flag,
+            noise_value=noise_value,
             zero_out_right_weights=zero_out_right_weights,
             zero_out_left_weights=zero_out_left_weights,
         )
@@ -189,6 +191,7 @@ def parse_args():
     parser.add_argument("--initialize_weights", action="store_true")
     parser.add_argument("--perturb", action="store_true")
     parser.add_argument("--lock_all_weights", action="store_true")
+    parser.add_argument("--noise_value", type=float, default=0.01)
     """
     if --train_text not empty
     train with entirely free weights
@@ -285,6 +288,7 @@ def main():
         initialize_weights=args.initialize_weights,
         perturb_flag=args.perturb,
         lock_all_weights=args.lock_all_weights,
+        noise_value=args.noise_value,
         zero_out_right_weights=args.zero_out_right_weights,
         zero_out_left_weights=args.zero_out_left_weights,
     )
