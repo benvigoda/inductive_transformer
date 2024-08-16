@@ -159,9 +159,9 @@ def main():
     layers = [
         # 2 * sentence_words,
         # 3 * data.vocab_size,
-        2 * data.vocab_size,
-        2 * data.vocab_size,
-        2 * data.vocab_size,
+        5 * data.vocab_size,
+        5 * data.vocab_size,
+        5 * data.vocab_size,
     ]
     key, subkey = jax.random.split(key)
     model, train_state = make_train_state(
@@ -175,7 +175,7 @@ def main():
 
     print("Training...")
     batch_size = 256
-    n_steps = 20000
+    n_steps = 1000
     key, subkey = jax.random.split(key)
     state = train(subkey, data, train_state, batch_size, n_steps)
     print("")
@@ -227,7 +227,7 @@ def main():
 
     print("Generating histograms...")
     histogram_data = generate_histogram_data(generated_sentences, classify_sentence)
-    plot_histogram(histogram_data, "histogram.png", size=(8.0, 8.0))
+    plot_histogram(histogram_data, "histogram.png", size=(8.0, 12.0))
 
 
 if __name__ == "__main__":

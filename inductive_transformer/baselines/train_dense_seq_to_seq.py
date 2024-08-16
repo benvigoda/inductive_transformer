@@ -165,7 +165,7 @@ def main():
     print("")
 
     print("Sampling...")
-    n_samples = 1000
+    n_samples = 10000
     key, subkey = jax.random.split(key)
     sample_x_ids, sample_y_ids, mask = generate_batch(
         subkey, data.data, data.vocab_size, n_samples
