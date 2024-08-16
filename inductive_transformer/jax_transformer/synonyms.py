@@ -1,3 +1,4 @@
+from typing import List, Optional
 from dataclasses import dataclass
 
 
@@ -220,3 +221,46 @@ class Synonyms:
     #         ("big", "cats"), ("big", "felines")
     #     }
     # }
+
+    def generate(self, num_sentences: int, side: str = 'both', single_synonyms: Optional[List[int]] = None) -> List[str]:
+        sentences = []
+
+        if single_synonyms is None:
+            single_synonyms = []
+
+        def generate_side(words_lists: List[List[str]], single_positions: List[int]) -> List[str]:
+            # Generate all combinations for the given side
+            from itertools import product
+            # Adjust lists for single synonyms
+            adjusted_lists = []
+            for idx, word_list in enumerate(words_lists):
+                if idx in single_positions:
+                    adjusted_lists.append([word_list[0]])  # Use only the first synonym
+                else:
+                    adjusted_lists.append(word_list)
+
+            return [' '.join(sentence) for sentence in product(*adjusted_lists)]
+
+        if side in ['left', 'both']:
+            left_lists = self.get_valid_left_ordered_words()
+            left_single_positions = [i for i in range(len(left_lists)) if i in single_synonyms]
+            left_sentences = generate_side(left_lists, left_single_positions)
+            sentences.extend(left_sentences)
+
+        if side in ['right', 'both']:
+            right_lists = self.get_valid_right_ordered_words()
+            right_single_positions = [i for i in range(len(right_lists)) if i in single_synonyms]
+            right_sentences = generate_side(right_lists, right_single_positions)
+            sentences.extend(right_sentences)
+
+        # Limit the number of sentences if necessary
+        return sentences[:num_sentences]
+
+
+if __name__ == "__main__":
+    synonyms = Synonyms()
+    sentences = synonyms.generate(500, side='both', single_synonyms=[0, 4])
+    for sentence in sentences:
+        print(sentence.capitalize(), end='. ')
+    print()
+    print(len(sentences))
