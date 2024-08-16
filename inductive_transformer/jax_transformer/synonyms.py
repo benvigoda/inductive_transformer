@@ -12,10 +12,22 @@ class Synonyms:
         "pico",
         "femto",
         "diminimus",
-        # "itty",
-        # "teenyweeny",
     ]
-    valid_right_zeroth_words = [
+    valid_left_first_words = [
+        "dogs",
+        "canines",
+    ]
+    valid_left_second_words = [
+        "often",
+        "usually",
+        "commonly",
+        "frequently",
+    ]
+    valid_left_third_words = [
+        "fear",
+        "avoid",
+    ]
+    valid_left_fourth_words = [
         "extralarge",
         "gargantuan",
         "large",
@@ -25,19 +37,24 @@ class Synonyms:
         "enormous",
         "big",
     ]
-    valid_left_first_words = [
-        "dogs",
-        "canines",
+    valid_left_fifth_words = [
+        "cats",
+        "felines"
+    ]
+
+    valid_right_zeroth_words = [
+        "wriggley",
+        "gross",
+        "slimy",
+        "disgusting",
+        "icky",
+        "lousy",
+        "juicy",
+        "squishy",
     ]
     valid_right_first_words = [
-        "cats",
-        "felines",
-    ]
-    valid_left_second_words = [
-        "often",
-        "usually",
-        "commonly",
-        "frequently",
+        "worms",
+        "earthworms"
     ]
     valid_right_second_words = [
         "sometimes",
@@ -45,20 +62,26 @@ class Synonyms:
         "rarely",
         "never",
     ]
-    valid_left_third_words = [
-        "fear",
-        "avoid",
-    ]
     valid_right_third_words = [
         "chase",
         "intimidate",
-        "eat",
     ]
-    
-    valid_left_fourth_words = valid_right_zeroth_words
-    valid_right_fourth_words = valid_left_zeroth_words
-    valid_left_fifth_words = valid_right_first_words
-    valid_right_fifth_words = valid_left_first_words
+    valid_right_fourth_words = [
+        "angry",
+        "hateful",
+        "mean",
+        "nasty",
+        "unpleasant",
+        "vicious",
+        "violent",
+        "wicked",
+    ]
+    valid_right_fifth_words = [
+        "birds",
+        "avians",
+    ]
+
+
 
     def zero_right_words(self):
         self.valid_right_zeroth_words = []
