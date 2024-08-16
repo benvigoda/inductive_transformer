@@ -1,9 +1,5 @@
 from dataclasses import dataclass
-import jax
 import jax.numpy as jnp  # type: ignore
-import numpy as np
-
-from inductive_transformer.jax_transformer.helper_functions import custom_normalize
 
 
 @dataclass

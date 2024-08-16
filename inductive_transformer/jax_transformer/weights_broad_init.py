@@ -1,7 +1,7 @@
-import jax
+import jax  # type: ignore
 import jax.numpy as jnp  # type: ignore
 from inductive_transformer.jax_transformer.helper_functions import EPSILON, get_num_layers
-from synonyms import Synonyms
+from synonyms import Synonyms  # type: ignore
 
 strong = 1.0 - EPSILON  # Amplify the signal
 weak = EPSILON  # Dampen the signal
@@ -9,7 +9,16 @@ weak = EPSILON  # Dampen the signal
 mask_type = int
 
 
-def set_position_pi_weights(layer, params, mask, prefix, layer_width):    
+def set_position_pi_weights(
+    layer,
+    params,
+    mask,
+    prefix,
+    layer_width,
+    perturb_weights=False,
+    lock_weights=True,
+    noise_value=0.01,
+):
     layer_key = f"{prefix}s_{layer}"
     position_pi = f"{prefix}_position_pi"
     if layer_key in params["params"]:
@@ -21,19 +30,33 @@ def set_position_pi_weights(layer, params, mask, prefix, layer_width):
         new_weights = new_weights.at[-layer - 1].set(
             jnp.full(layer_width, strong)
         )  # Match num_layer to the opposite position in the weights
+        if perturb_weights:
+            # Add a small amount of noise to the weights
+            new_weights = new_weights + jax.random.normal(
+                jax.random.PRNGKey(0), new_weights.shape
+            ) * noise_value
         params["params"][layer_key][position_pi]["weights"] = new_weights
         # Note: We have constrained the model such that num_positions needs to be equal
         # to num_layers for this setup to work right now.
         # In the future we'll have to remove that constraint
 
-        mask["params"][layer_key][position_pi]["weights"] = jnp.zeros_like(
-            old_weights, dtype=mask_type
-        )
+        if lock_weights:
+            mask["params"][layer_key][position_pi]["weights"] = jnp.zeros_like(
+                old_weights, dtype=mask_type
+            )
     else:
         raise ValueError(f"Layer {layer_key} not found in params.")
 
 
-def init_weights(params, vocab, lock_all_weights=False, zero_out_right_weights=False, zero_out_left_weights=False):
+def init_weights(
+    params,
+    vocab,
+    lock_all_weights=False,
+    perturb_weights=False,
+    zero_out_right_weights=False,
+    zero_out_left_weights=False,
+    noise_value=0.01,
+):
     synonyms = Synonyms()
     if zero_out_right_weights:
         synonyms.zero_right_words()
@@ -54,13 +77,33 @@ def init_weights(params, vocab, lock_all_weights=False, zero_out_right_weights=F
 
     for layer in range(num_layers):
         set_position_pi_weights(
-            layer, updated_params, set_weights, "decoder", layer_width
+            layer=layer,
+            params=updated_params,
+            mask=set_weights,
+            perturb_weights=False,
+            lock_weights=True,
+            prefix="decoder",
+            layer_width=layer_width,
+            noise_value=noise_value,
         )
         set_position_pi_weights(
-            layer, updated_params, set_weights, "encoder", layer_width
+            layer=layer,
+            params=updated_params,
+            mask=set_weights,
+            perturb_weights=False,
+            lock_weights=True,
+            prefix="encoder",
+            layer_width=layer_width,
+            noise_value=noise_value,
         )
 
-    def set_token_weights(num_layer, layer_w, position, target_words):
+    def set_token_weights(
+        num_layer,
+        layer_w,
+        position,
+        target_words,
+        perturb_weights=False,
+    ):
         """
         in the position where we want to listen for a particular word
         set a single word weight to strong and all the others to weak
@@ -78,6 +121,12 @@ def init_weights(params, vocab, lock_all_weights=False, zero_out_right_weights=F
             else:
                 # print(f"WARNING: Target word '{target_word}' not found in vocab")
                 continue
+
+        if perturb_weights:
+            # Add a small amount of noise to the weights
+            new_weight_encoder = new_weight_encoder + jax.random.normal(
+                jax.random.PRNGKey(0), new_weight_encoder.shape
+            ) * noise_value
         updated_params["params"][f"encoders_{num_layer}"]["encoder_token_pi"][
             "weights"
         ] = new_weight_encoder
@@ -94,6 +143,12 @@ def init_weights(params, vocab, lock_all_weights=False, zero_out_right_weights=F
             else:
                 print(f"WARNING: Target word '{target_word}' not found in vocab")
                 continue
+
+        if perturb_weights:
+            # Add a small amount of noise to the weights
+            new_weight_decoder = new_weight_decoder + jax.random.normal(
+                jax.random.PRNGKey(0), new_weight_decoder.shape
+            ) * noise_value
         updated_params["params"][f"decoders_{num_layer}"]["decoder_token_pi"][
             "weights"
         ] = new_weight_decoder
@@ -112,6 +167,12 @@ def init_weights(params, vocab, lock_all_weights=False, zero_out_right_weights=F
             new_weight_encoder = new_weight_encoder.at[other_position, :, layer_w].set(
                 jnp.full(vocab_size, weak)
             )
+
+            if perturb_weights:
+                # Add a small amount of noise to the weights
+                new_weight_encoder = new_weight_encoder + jax.random.normal(
+                    jax.random.PRNGKey(0), new_weight_encoder.shape
+                ) * noise_value
             updated_params["params"][f"encoders_{num_layer}"]["encoder_token_pi"][
                 "weights"
             ] = new_weight_encoder
@@ -123,6 +184,11 @@ def init_weights(params, vocab, lock_all_weights=False, zero_out_right_weights=F
             new_weight_decoder = new_weight_decoder.at[other_position, :, layer_w].set(
                 jnp.full(vocab_size, weak)
             )
+            if perturb_weights:
+                # Add a small amount of noise to the weights
+                new_weight_decoder = new_weight_decoder + jax.random.normal(
+                    jax.random.PRNGKey(0), new_weight_decoder.shape
+                ) * noise_value
             updated_params["params"][f"decoders_{num_layer}"]["decoder_token_pi"][
                 "weights"
             ] = new_weight_decoder
@@ -176,9 +242,14 @@ def init_weights(params, vocab, lock_all_weights=False, zero_out_right_weights=F
                 new_weight = new_weight.at[:, :].set(
                     jnp.full((layer_width, layer_width), weak)
                 )
-                new_weight = new_weight.at[1, 1].set(strong) 
+                new_weight = new_weight.at[1, 1].set(strong)
                 new_weight = new_weight.at[0, 0].set(strong)
 
+            if perturb_weights:
+                # Add a small amount of noise to the weights
+                new_weight = new_weight + jax.random.normal(
+                    jax.random.PRNGKey(0), new_weight.shape
+                ) * noise_value
             updated_params["params"][f"{encoders_decoders}_{layer}"][
                 f"{encoder_decoder}_attention_pi"
             ]["weights"] = new_weight

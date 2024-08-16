@@ -81,8 +81,6 @@ class Synonyms:
         "avians",
     ]
 
-
-
     def zero_right_words(self):
         self.valid_right_zeroth_words = []
         self.valid_right_first_words = []
@@ -125,8 +123,7 @@ class Synonyms:
                 (a, b)
                 for a in self.valid_left_zeroth_words
                 for b in self.valid_left_first_words
-            }
-            | {
+            } | {
                 (a, b)
                 for a in self.valid_right_zeroth_words
                 for b in self.valid_right_first_words
@@ -135,8 +132,7 @@ class Synonyms:
                 (a, b)
                 for a in self.valid_left_first_words
                 for b in self.valid_left_third_words
-            }
-            | {
+            } | {
                 (a, b)
                 for a in self.valid_right_first_words
                 for b in self.valid_right_third_words
@@ -145,8 +141,7 @@ class Synonyms:
                 (a, b)
                 for a in self.valid_left_second_words
                 for b in self.valid_left_third_words
-            }
-            | {
+            } | {
                 (a, b)
                 for a in self.valid_right_second_words
                 for b in self.valid_right_third_words
@@ -155,8 +150,7 @@ class Synonyms:
                 (a, b)
                 for a in self.valid_left_third_words
                 for b in self.valid_left_fifth_words
-            }
-            | {
+            } | {
                 (a, b)
                 for a in self.valid_right_third_words
                 for b in self.valid_right_fifth_words
@@ -165,8 +159,7 @@ class Synonyms:
                 (a, b)
                 for a in self.valid_left_fourth_words
                 for b in self.valid_left_fifth_words
-            }
-            | {
+            } | {
                 (a, b)
                 for a in self.valid_right_fourth_words
                 for b in self.valid_right_fifth_words

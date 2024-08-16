@@ -1,11 +1,11 @@
-from flax.training import train_state
+from flax.training import train_state  # type: ignore
 import argparse
-import jax
-import jax.numpy as jnp
+import jax  # type: ignore
+import jax.numpy as jnp  # type: ignore
 import numpy as np
 import optax  # type: ignore
 import pathlib
-from jax.tree_util import tree_flatten
+from jax.tree_util import tree_flatten  # type: ignore
 
 
 from inductive_transformer.jax_transformer.model import BatchedInductiveTransformer
@@ -68,7 +68,12 @@ def create_train_state(
     # If initialize_weights is True, we will set weights as defined in weights.py.
     if initialize_weights:
         params, weight_mask = init_weights(
-            params, vocab, lock_all_weights=lock_all_weights, zero_out_right_weights=zero_out_right_weights, zero_out_left_weights=zero_out_left_weights
+            params,
+            vocab,
+            lock_all_weights=lock_all_weights,
+            perturb_weights=perturb_flag,
+            zero_out_right_weights=zero_out_right_weights,
+            zero_out_left_weights=zero_out_left_weights,
         )
 
     key, subkey = jax.random.split(key)
@@ -230,13 +235,10 @@ def main():
     # seed = 737435735 # partial convergence of 32_2_layer_sentences.txt
     # seed = 3727924788 # partial convergence of 32_2_layer_sentences.txt in another way
 
-
     # seed = 3699294691 # awesome convergence of 32_2_layer_sentences.txt
     # seed = 1376424188  # Basic convergence of 32_6_layer_sentences.txt
 
-
     # seed = 1053121381
-
 
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
