@@ -238,7 +238,6 @@ class Synonyms:
                     adjusted_lists.append([word_list[0]])  # Use only the first synonym
                 else:
                     adjusted_lists.append(word_list)
-            import pdb; pdb.set_trace()
             return [' '.join(sentence) for sentence in product(*adjusted_lists)]
 
         if side in ['left', 'both']:
