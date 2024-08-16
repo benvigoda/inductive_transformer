@@ -49,7 +49,7 @@ class EncoderPositionPi(nn.Module):
         prob_weights = custom_normalize(prob_weights, axis=0)
 
         # Add this?
-        # rho = custom_normalize(rho, axis=0) 
+        # rho = custom_normalize(rho, axis=0)
 
         # element-wise product of weight vector and token vector for each column in the layer
         x = prob_weights * rho

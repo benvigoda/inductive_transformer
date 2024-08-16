@@ -9,7 +9,7 @@ def sample(key: jax.Array, decoder_t: jax.Array, temperature: float = 1.0):
     # The categorical distribution over tokens (at each position) should sum to one.
     sums = decoder_t.sum(axis=1)
     if not jnp.allclose(sums, 1.0):
-        print(f"WARNING: categorical distributions do not all sum to one")
+        print("WARNING: categorical distributions do not all sum to one")
         print(sums)
 
     # For now we just generate a single sample.
