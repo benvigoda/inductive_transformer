@@ -2,7 +2,7 @@ from flax.training import train_state  # type: ignore
 import argparse
 import jax  # type: ignore
 import jax.numpy as jnp  # type: ignore
-import numpy as np
+import numpy as np  # type: ignore
 import optax  # type: ignore
 import pathlib
 from jax.tree_util import tree_flatten  # type: ignore
