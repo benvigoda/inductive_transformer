@@ -80,8 +80,6 @@ PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 30_6_layer_se
 
 
 Aug 7:
-
-
 To see what happens if we initialize to what we consider to be a minimum:
 PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 60_6_layer_sentences_small_big.txt --prompt_text inference_text_big_small_balanced_synonyms.txt --num_layer 6 --layer_width 2 --num_samples 40 --num_epochs 300 --loss_threshold 0.018 --initialize_weights
 seed = 1053121381
@@ -93,9 +91,63 @@ With random initialization of weights:
 PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 60_6_layer_sentences_small_big.txt --prompt_text inference_text_big_small_balanced_synonyms.txt --num_layer 6 --layer_width 2 --num_samples 4 --num_epochs 500 --loss_threshold 0.018
 got all reds, and no bluegreens
 
+
 Friday August 16th, 2024
 With perturbation and some noise_value set:
-python inductive_transformer/jax_transformer/train.py 64_6_layer_sentences_balanced_dogs_birds.txt --prompt_text inference_text_small_wriggley.txt --num_layer 6 --layer_width 2 --num_samples 4 --num_epochs 50 --initialize_weights --perturb --noise_value 0.1 
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 64_6_layer_sentences_balanced_dogs_birds.txt --prompt_text inference_text_small_wriggley.txt --num_layer 6 --layer_width 2 --num_samples 4 --num_epochs 50 --initialize_weights --perturb --noise_value 0.1 
 
 And with all the synonyms included:
-python inductive_transformer/jax_transformer/train.py 48_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_dog_bird.txt --num_layer 6 --layer_width 2 --num_samples 400 --num_epochs 50 --initialize_weights --perturb --noise_value 0.001
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 48_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_dog_worm.txt --num_layer 6 --layer_width 2 --num_samples 400 --num_epochs 50 --initialize_weights --perturb --noise_value 0.001
+
+
+
+Monday August 19
+in all of these trainings, even if we do not initialize weights the position weights are initialized and cannot move:
+
+first just verify that with 6 layers and two sentences (one on left, one on right), it runs and makes a histogram correctly:
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 2_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_just_small_wriggley.txt --num_layer 6 --layer_width 2 --num_samples 4 --num_epochs 0 --initialize_weights
+this generates only blue green
+
+then see what happens when we train it for 50 epochs starting from perfect:
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 2_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_just_small_wriggley.txt --num_layer 6 --layer_width 2 --num_samples 40 --initialize_weights --num_epochs 300 --perturb --noise_value 1.0
+noise = 1.0, generates only blue green every time
+noise = 10.0 causes nans.  why?
+
+then see what happens when we train it for 100 epochs from scratch, which initializes weights between 0 and 1 which is pretty similar to --noise_value 1.0:
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 2_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_just_small_wriggley.txt --num_layer 6 --layer_width 2 --num_samples 40 --num_epochs 300
+doesn't converge as well as when we add noise.  we get reds, not just blue green.
+
+Open questions even for two sentences:
+questions: 1. why does it not converge from scratch?  2. why does noise =10.0 cause nans?
+- also we were not adding noise to tokens.  we were only adding noise to attention.  Maybe that is why adding noise didn't hurt?
+- Next: try adding noise to tokens and see if it converges to all blue green.
+- If yes, then still ask questions 1 and 2.  If no, make new questions.
+
+
+
+then verify that with 6 layers and 4 sentences, it runs and makes a histogram correctly:
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 4_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_just_small_wriggley.txt --num_layer 6 --layer_width 2 --num_samples 4 --num_epochs 0 --initialize_weights --num_epochs 0
+
+
+then see what happens when we train it for 50 epochs starting from perfect:
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 4_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_just_small_wriggley.txt --num_layer 6 --layer_width 2 --num_samples 400 --num_epochs 0 --initialize_weights --num_epochs 50
+
+
+now perturb and it trains perfectly:
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 4_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_just_small_wriggley.txt --num_layer 6 --layer_width 2 --num_samples 400 --num_epochs 0 --initialize_weights --num_epochs 50 --perturb --noise_value 0.001
+
+
+now try training from scratch:
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 4_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_just_small_wriggley.txt --num_layer 6 --layer_width 2 --num_samples 400 --num_epochs 100
+it didn't land on blue-green
+
+the perfect loss is loss: 5.208e-03
+the trained loss is loss: 3.866e-03 which is actually LOWER! the histogram contain reds. and we are not hitting all the bluegreens - it is only generating the left-hand side (small).  the wriggley side is not good, but the small side is good.
+
+
+
+
+
+
+now perturb and it trains perfectly:
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 4_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_just_small_wriggley.txt --num_layer 6 --layer_width 2 --num_samples 400 --num_epochs 0 --initialize_weights --num_epochs 50 --perturb --noise_value 0.001
