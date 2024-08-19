@@ -7,37 +7,37 @@ from itertools import product
 class Synonyms:
     valid_left_zeroth_words = [
         "small",
-        "little",
-        "tiny",
-        "micro",
-        "mini",
-        "pico",
-        "femto",
-        "diminimus",
+        # "little",
+        # "tiny",
+        # "micro",
+        # "mini",
+        # "pico",
+        # "femto",
+        # "diminimus",
     ]
     valid_left_first_words = [
         "dogs",
-        "canines",
+        # "canines",
     ]
     valid_left_second_words = [
         "often",
-        "usually",
-        "commonly",
-        "frequently",
+        # "usually",
+        # "commonly",
+        # "frequently",
     ]
     valid_left_third_words = [
         "fear",
-        "avoid",
+        # "avoid",
     ]
     valid_left_fourth_words = [
         "extralarge",
-        "gargantuan",
-        "large",
-        "giant",
-        "huge",
-        "humongous",
-        "enormous",
-        "big",
+        # "gargantuan",
+        # "large",
+        # "giant",
+        # "huge",
+        # "humongous",
+        # "enormous",
+        # "big",
     ]
     valid_left_fifth_words = [
         "cats",
@@ -46,37 +46,37 @@ class Synonyms:
 
     valid_right_zeroth_words = [
         "wriggley",
-        "gross",
-        "slimy",
-        "disgusting",
-        "icky",
-        "lousy",
-        "juicy",
-        "squishy",
+        # "gross",
+        # "slimy",
+        # "disgusting",
+        # "icky",
+        # "lousy",
+        # "juicy",
+        # "squishy",
     ]
     valid_right_first_words = [
         "worms",
-        "earthworms"
+        # "earthworms"
     ]
     valid_right_second_words = [
         "sometimes",
-        "occasionally",
-        "rarely",
-        "never",
+        # "occasionally",
+        # "rarely",
+        # "never",
     ]
     valid_right_third_words = [
         "chase",
-        "intimidate",
+        # "intimidate",
     ]
     valid_right_fourth_words = [
         "angry",
-        "hateful",
-        "mean",
-        "nasty",
-        "unpleasant",
-        "vicious",
-        "violent",
-        "wicked",
+        # "hateful",
+        # "mean",
+        # "nasty",
+        # "unpleasant",
+        # "vicious",
+        # "violent",
+        # "wicked",
     ]
     valid_right_fifth_words = [
         "birds",

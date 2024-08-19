@@ -80,8 +80,8 @@ def init_weights(
             layer=layer,
             params=updated_params,
             mask=set_weights,
-            perturb_weights=False,
-            lock_weights=True,
+            perturb_weights=perturb_weights,
+            lock_weights=lock_all_weights,
             prefix="decoder",
             layer_width=layer_width,
             noise_value=noise_value,
@@ -90,8 +90,8 @@ def init_weights(
             layer=layer,
             params=updated_params,
             mask=set_weights,
-            perturb_weights=False,
-            lock_weights=True,
+            perturb_weights=perturb_weights,
+            lock_weights=lock_all_weights,
             prefix="encoder",
             layer_width=layer_width,
             noise_value=noise_value,
@@ -200,7 +200,7 @@ def init_weights(
             range(layer_width), [left_targets[pos], right_targets[pos]]
         ):  # [['big', 'large'], ['small']]
             num_lay = num_positions - pos - 1
-            set_token_weights(num_lay, lw, pos, target_words)
+            set_token_weights(num_lay, lw, pos, target_words, perturb_weights=perturb_weights)
             # print(updated_params["params"][f"decoders_{num_lay}"]["decoder_token_pi"]["weights"])
             # Fix set_weights so the gradient does not update the weights
             if lock_all_weights:
