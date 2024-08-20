@@ -102,6 +102,12 @@ PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 48_6_layer_se
 
 
 Monday August 19
+
+initialize to perfect with lots of synonyms in the training sentences and the inference prompt:
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 48_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_dog_worm.txt --num_layer 6 --layer_width 2 --num_samples 400 --num_epochs 0 --initialize_weights
+***this used to generate all green, but now doesn't so we broke something with how we initialize the weights
+
+
 in all of these trainings, even if we do not initialize weights the position weights are initialized and cannot move:
 
 first just verify that with 6 layers and two sentences (one on left, one on right), it runs and makes a histogram correctly:
@@ -122,7 +128,9 @@ questions: 1. why does it not converge from scratch?  2. why does noise =10.0 ca
 - also we were not adding noise to tokens.  we were only adding noise to attention.  Maybe that is why adding noise didn't hurt?
 - Next: try adding noise to tokens and see if it converges to all blue green.
 - If yes, then still ask questions 1 and 2.  If no, make new questions.
+- Also is the loss for a bad situation worse than for a good one?
 
+once we get it to fully converge a thing to try is, what if we do not train on entire data set?
 
 
 then verify that with 6 layers and 4 sentences, it runs and makes a histogram correctly:
