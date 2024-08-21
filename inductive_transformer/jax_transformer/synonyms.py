@@ -83,6 +83,65 @@ class Synonyms:
         "avians",
     ]
 
+    def cats_and_dogs_overwrite(self):
+        # Use a different synonym set
+        self.valid_left_zeroth_words = [
+            "small",
+            "little",
+            "tiny",
+            "micro",
+            "mini",
+            "pico",
+            "femto",
+            "diminimus",
+            # "itty",
+            # "teenyweeny",
+        ]
+        self.valid_right_zeroth_words = [
+            "extralarge",
+            "gargantuan",
+            "large",
+            "giant",
+            "huge",
+            "humongous",
+            "enormous",
+            "big",
+        ]
+        self.valid_left_first_words = [
+            "dogs",
+            "canines",
+        ]
+        self.valid_right_first_words = [
+            "cats",
+            "felines",
+        ]
+        self.valid_left_second_words = [
+            "often",
+            "usually",
+            "commonly",
+            "frequently",
+        ]
+        self.valid_right_second_words = [
+            "sometimes",
+            "occasionally",
+            "rarely",
+            "never",
+        ]
+        self.valid_left_third_words = [
+            "fear",
+            "avoid",
+        ]
+        self.valid_right_third_words = [
+            "chase",
+            "intimidate",
+            "eat",
+        ]
+
+        self.valid_left_fourth_words = self.valid_right_zeroth_words
+        self.valid_right_fourth_words = self.valid_left_zeroth_words
+        self.valid_left_fifth_words = self.valid_right_first_words
+        self.valid_right_fifth_words = self.valid_left_first_words
+
     def zero_right_words(self):
         self.valid_right_zeroth_words = []
         self.valid_right_first_words = []
@@ -273,7 +332,8 @@ class Synonyms:
 
             for i in range(max(len(sublist) for sublist in adjusted_lists)):
                 sentence = " ".join([s[i % len(s)] for s in adjusted_lists])
-                sentences.append(sentence)
+                if sentence not in sentences:
+                    sentences.append(sentence)
             return sentences
 
         if side in ['left', 'both']:
@@ -295,7 +355,8 @@ class Synonyms:
 if __name__ == "__main__":
     synonyms = Synonyms()
     # sentences = synonyms.generate(500, side='both', single_synonyms=[0, 4])
-    sentences = synonyms.generate_all_syns(side='both')
+    sentences = synonyms.generate(50000, side='both')
+    # sentences = synonyms.generate_all_syns(side='both')
     for sentence in sentences:
         print(sentence.capitalize(), end='. ')
     print()

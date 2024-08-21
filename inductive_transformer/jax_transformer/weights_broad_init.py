@@ -1,5 +1,6 @@
 import jax  # type: ignore
 import jax.numpy as jnp  # type: ignore
+import numpy as np  # type: ignore
 from inductive_transformer.jax_transformer.helper_functions import EPSILON, get_num_layers
 from synonyms import Synonyms  # type: ignore
 
@@ -33,7 +34,7 @@ def set_position_pi_weights(
         if perturb_weights:
             # Add a small amount of noise to the weights
             new_weights = new_weights + jax.random.normal(
-                jax.random.PRNGKey(0), new_weights.shape
+                jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weights.shape
             ) * noise_value
         params["params"][layer_key][position_pi]["weights"] = new_weights
         # Note: We have constrained the model such that num_positions needs to be equal
@@ -56,8 +57,11 @@ def init_weights(
     zero_out_right_weights=False,
     zero_out_left_weights=False,
     noise_value=0.01,
+    catsanddogs=False,
 ):
     synonyms = Synonyms()
+    if catsanddogs:
+        synonyms.cats_and_dogs_overwrite()
     if zero_out_right_weights:
         synonyms.zero_right_words()
     if zero_out_left_weights:
@@ -125,7 +129,7 @@ def init_weights(
         if perturb_weights:
             # Add a small amount of noise to the weights
             new_weight_encoder = new_weight_encoder + jax.random.normal(
-                jax.random.PRNGKey(0), new_weight_encoder.shape
+                jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weight_encoder.shape
             ) * noise_value
         updated_params["params"][f"encoders_{num_layer}"]["encoder_token_pi"][
             "weights"
@@ -147,7 +151,7 @@ def init_weights(
         if perturb_weights:
             # Add a small amount of noise to the weights
             new_weight_decoder = new_weight_decoder + jax.random.normal(
-                jax.random.PRNGKey(0), new_weight_decoder.shape
+                jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weight_decoder.shape
             ) * noise_value
         updated_params["params"][f"decoders_{num_layer}"]["decoder_token_pi"][
             "weights"
@@ -171,7 +175,7 @@ def init_weights(
             if perturb_weights:
                 # Add a small amount of noise to the weights
                 new_weight_encoder = new_weight_encoder + jax.random.normal(
-                    jax.random.PRNGKey(0), new_weight_encoder.shape
+                    jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weight_encoder.shape
                 ) * noise_value
             updated_params["params"][f"encoders_{num_layer}"]["encoder_token_pi"][
                 "weights"
@@ -187,7 +191,7 @@ def init_weights(
             if perturb_weights:
                 # Add a small amount of noise to the weights
                 new_weight_decoder = new_weight_decoder + jax.random.normal(
-                    jax.random.PRNGKey(0), new_weight_decoder.shape
+                    jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weight_decoder.shape
                 ) * noise_value
             updated_params["params"][f"decoders_{num_layer}"]["decoder_token_pi"][
                 "weights"
@@ -248,7 +252,7 @@ def init_weights(
             if perturb_weights:
                 # Add a small amount of noise to the weights
                 new_weight = new_weight + jax.random.normal(
-                    jax.random.PRNGKey(0), new_weight.shape
+                    jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weight.shape
                 ) * noise_value
             updated_params["params"][f"{encoders_decoders}_{layer}"][
                 f"{encoder_decoder}_attention_pi"
