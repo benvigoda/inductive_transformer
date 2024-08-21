@@ -1,7 +1,7 @@
 import argparse
-import jax
-import jax.numpy as jnp
-import numpy as np
+import jax  # type: ignore
+import jax.numpy as jnp  # type: ignore
+import numpy as np  # type: ignore
 import pathlib
 import re
 import string

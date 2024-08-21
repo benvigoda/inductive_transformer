@@ -40,6 +40,7 @@ def create_train_state(
     noise_value=0.01,
     zero_out_right_weights=False,
     zero_out_left_weights=False,
+    catsanddogs=False,
 ):
     """Creates initial `TrainState`."""
     bernoulli_width = 2
@@ -76,6 +77,7 @@ def create_train_state(
             noise_value=noise_value,
             zero_out_right_weights=zero_out_right_weights,
             zero_out_left_weights=zero_out_left_weights,
+            catsanddogs=catsanddogs,
         )
 
     key, subkey = jax.random.split(key)
@@ -222,6 +224,7 @@ def parse_args():
     parser.add_argument("--zero_out_right_weights", action="store_true")
     parser.add_argument("--zero_out_left_weights", action="store_true")
     parser.add_argument("--loss_threshold", type=float, default=None)
+    parser.add_argument("--catsanddogs", action="store_true")
     return parser.parse_args()
 
 
@@ -291,6 +294,7 @@ def main():
         noise_value=args.noise_value,
         zero_out_right_weights=args.zero_out_right_weights,
         zero_out_left_weights=args.zero_out_left_weights,
+        catsanddogs=args.catsanddogs,
     )
 
     # Check the initial loss.
@@ -391,7 +395,7 @@ def main():
     # Generate histograms:
     training_sentences = [t.capitalize() for t in data.training_sentences]
     print(f"loss: {loss:.3e}")
-    histogram_results(training_sentences, generated_sentences)
+    histogram_results(training_sentences, generated_sentences, catsanddogs=args.catsanddogs)
     return seed, loss, lr
 
 

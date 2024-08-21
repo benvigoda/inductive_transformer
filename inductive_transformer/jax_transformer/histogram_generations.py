@@ -6,8 +6,10 @@ from synonyms import Synonyms  # type: ignore
 
 
 # The validation function
-def validate_sentences(sentences_list, num_words=6):
+def validate_sentences(sentences_list, num_words=6, catsanddogs=False):
     synonyms = Synonyms()
+    if catsanddogs:
+        synonyms.cats_and_dogs_overwrite()
     valid_pairs = synonyms.get_valid_pairs()
 
     results = {}
@@ -35,7 +37,7 @@ def validate_sentences(sentences_list, num_words=6):
 # Function to plot side-by-side horizontal histograms with shared y-axis
 def plot_side_by_side_histograms(data1, data2):
     # Set up the figure with two subplots, sharing the y-axis
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6), sharey=True)
 
     # Plot training data on the first subplot
     sns.barplot(x="Count", y="Sentence", data=data1, color="blue", ax=ax1)
@@ -61,7 +63,7 @@ def plot_side_by_side_histograms(data1, data2):
 
 
 # Function to prepare data and plot results
-def histogram_results(training_sentences, generated_sentences):
+def histogram_results(training_sentences, generated_sentences, catsanddogs=False):
     num_words = len(training_sentences[0].split())
     training_counts = Counter(training_sentences)
     generated_counts = Counter(generated_sentences)
@@ -72,7 +74,7 @@ def histogram_results(training_sentences, generated_sentences):
         list(generated_counts.items()), columns=["Sentence", "Count"]
     )
     valid_generated = validate_sentences(
-        training_sentences + generated_sentences, num_words=num_words
+        training_sentences + generated_sentences, num_words=num_words, catsanddogs=catsanddogs
     )
     generated_data["Status"] = [
         "valid" if valid_generated[sentence] == "valid" else "invalid"
