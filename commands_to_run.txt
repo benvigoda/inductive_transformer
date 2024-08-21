@@ -159,3 +159,19 @@ the trained loss is loss: 3.866e-03 which is actually LOWER! the histogram conta
 
 now perturb and it trains perfectly:
 PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 4_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_just_small_wriggley.txt --num_layer 6 --layer_width 2 --num_samples 400 --num_epochs 0 --initialize_weights --num_epochs 50 --perturb --noise_value 0.001
+
+
+Monday August 21 - going back carefully through commands to make sure we understand the behavior completely
+
+
+So with cats and dogs initialization to put dogs first on the left, and cats first on the right, we get bluegreens generated (trainings sentences, synonyms are dogs and cats)
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 60_6_layer_sentences_small_big.txt --prompt_text inference_text_big_small_balanced_synonyms.txt --num_layer 6 --layer_width 2 --num_samples 40 --num_epochs 0 --initialize_weights --catsanddogs
+
+This works with all of the cat-worm synonyms available in the synonyms file:
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 48_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_dog_worm.txt --num_layer 6 --layer_width 2 --num_samples 40 --num_epochs 0 --initialize_weights
+
+Training on this gives us red:
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 48_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_dog_worm.txt --num_layer 6 --layer_width 2 --num_samples 40 --num_epochs 100 --initialize_weights
+
+
+Then we said let's go to 2 or 4 sentences 

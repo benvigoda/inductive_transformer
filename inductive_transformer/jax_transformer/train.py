@@ -301,7 +301,7 @@ def main():
     grads, loss = apply_model(
         state, prob_tensors.attention_input, all_t_tensors, all_outputs
     )
-    print(f"initial loss: {loss:.3e}")
+    print(f"initial loss: {loss:.20e}")
 
     # temp: duplicate our training data
     all_t_tensors = jnp.concatenate([all_t_tensors] * 100, axis=0)
@@ -340,7 +340,7 @@ def main():
             #     print("*" * 100)
             #     print("-" * 100)
             #     print("*" * 100)
-            #     print(f"epoch {epoch}, step {step_idx}, loss: {loss:.3e}")
+            #     print(f"epoch {epoch}, step {step_idx}, loss: {loss:.20e}")
             #     # Print the trained weights:
             #     print_params(state, data.vocab)
             #     print("*" * 100)
@@ -354,7 +354,7 @@ def main():
             # print("*" * 100)
             # print("-" * 100)
             # print("*" * 100)
-            print(f"epoch {epoch}, loss: {loss:.3e}")
+            print(f"epoch {epoch}, loss: {loss:.20e}")
             # # Print the trained weights:
             # print()
             # print_params(state, data.vocab)
@@ -394,7 +394,7 @@ def main():
 
     # Generate histograms:
     training_sentences = [t.capitalize() for t in data.training_sentences]
-    print(f"loss: {loss:.3e}")
+    print(f"loss: {loss:.20e}")
     histogram_results(training_sentences, generated_sentences, catsanddogs=args.catsanddogs)
     return seed, loss, lr
 
@@ -406,4 +406,4 @@ if __name__ == "__main__":
             # Save seed and loss to a file
             # Append to the file if it already exists
             with open("seed_loss.txt", "a") as f:
-                f.write(f"seed: {seed}, loss: {loss:.3e}, learning rate: {lr}\n")
+                f.write(f"seed: {seed}, loss: {loss:.20e}, learning rate: {lr}\n")
