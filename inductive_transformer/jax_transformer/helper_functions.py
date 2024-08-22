@@ -1,8 +1,8 @@
 import jax.numpy as jnp  # type: ignore
 
-EPSILON = 1e-9
-PROBABLE = 1 - EPSILON
-IMPROBABLE = EPSILON
+EPSILON = 1e-20
+IMPROBABLE = 1e-9
+PROBABLE = 1 - IMPROBABLE
 
 
 def get_num_layers(params: dict) -> int:

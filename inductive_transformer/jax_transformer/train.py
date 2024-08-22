@@ -36,6 +36,9 @@ def create_train_state(
     noise_seed=None,
     initialize_weights=False,
     perturb_flag=False,
+    perturb_position=None,
+    perturb_token=None,
+    perturb_attention=None,
     lock_all_weights=False,
     noise_value=0.01,
     zero_out_right_weights=False,
@@ -68,17 +71,22 @@ def create_train_state(
 
     # Update weights.
     # If initialize_weights is True, we will set weights as defined in weights.py.
+    grad_mask = None
     if initialize_weights:
         params, weight_mask = init_weights(
             params,
             vocab,
             lock_all_weights=lock_all_weights,
             perturb_weights=perturb_flag,
+            perturb_position=perturb_position,
+            perturb_token=perturb_token,
+            perturb_attention=perturb_attention,
             noise_value=noise_value,
             zero_out_right_weights=zero_out_right_weights,
             zero_out_left_weights=zero_out_left_weights,
             catsanddogs=catsanddogs,
         )
+        grad_mask = weight_mask
 
     key, subkey = jax.random.split(key)
     if noise_seed is None:
@@ -96,11 +104,6 @@ def create_train_state(
         tx = optax.chain(
             optax.add_noise(eta=1.0e-2, gamma=0.999, seed=noise_seed),
         )
-    # If lock_all_weights is True, we will not update the weights set in weights.py.
-    if lock_all_weights:
-        grad_mask = weight_mask
-    else:
-        grad_mask = None
     state = TrainState.create(
         apply_fn=model.apply,
         params=params,
@@ -194,28 +197,9 @@ def parse_args():
     parser.add_argument("--perturb", action="store_true")
     parser.add_argument("--lock_all_weights", action="store_true")
     parser.add_argument("--noise_value", type=float, default=0.01)
-    """
-    if --train_text not empty
-    train with entirely free weights
-
-    if --prompt_text not empty
-    do inference on the prompt_text
-    if the prompt_text does not completely fill the context window, set the
-    z_prime appropriate activations in the encoder to all 1's
-
-    if both training_text and prompt_text are non-empty
-    first train the weights with training_text,
-    then run inference with the prompt text
-
-    if both --perturb is True and training_text is non-empty:
-    train but do not modify the weights that are set in weights.py
-
-    if --perturb is True and training_text is non-empty and prompt_text is non-empty:
-    train but do not modify the weights that are set in weights.py
-    then run inference with the prompt_text
-    if the prompt_text does not completely fill the context window, set the
-    z_prime appropriate activations in the encoder to all 1's
-    """
+    parser.add_argument("--perturb_position", type=float, default=None)
+    parser.add_argument("--perturb_token", type=float, default=None)
+    parser.add_argument("--perturb_attention", type=float, default=None)
 
     parser.add_argument("--layer_width", type=int, default=2)
     parser.add_argument("--num_layers", type=int, default=2)
@@ -225,6 +209,7 @@ def parse_args():
     parser.add_argument("--zero_out_left_weights", action="store_true")
     parser.add_argument("--loss_threshold", type=float, default=None)
     parser.add_argument("--catsanddogs", action="store_true")
+    parser.add_argument("--seed", type=int, default=None)
     return parser.parse_args()
 
 
@@ -237,14 +222,10 @@ def main():
 
     # Initialize RNG state.
     np_rng = np.random.default_rng()
-    seed = np_rng.integers(0, 2**32 - 1)
-    # seed = 737435735 # partial convergence of 32_2_layer_sentences.txt
-    # seed = 3727924788 # partial convergence of 32_2_layer_sentences.txt in another way
-
-    # seed = 3699294691 # awesome convergence of 32_2_layer_sentences.txt
-    # seed = 1376424188  # Basic convergence of 32_6_layer_sentences.txt
-
-    # seed = 1053121381
+    if args.seed:
+        seed = args.seed
+    else:
+        seed = np_rng.integers(0, 2**32 - 1)
 
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
@@ -290,6 +271,9 @@ def main():
         noise_seed=noise_seed,
         initialize_weights=args.initialize_weights,
         perturb_flag=args.perturb,
+        perturb_position=args.perturb_position,
+        perturb_token=args.perturb_token,
+        perturb_attention=args.perturb_attention,
         lock_all_weights=args.lock_all_weights,
         noise_value=args.noise_value,
         zero_out_right_weights=args.zero_out_right_weights,
