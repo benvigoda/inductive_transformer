@@ -1,5 +1,5 @@
-import numpy as np
-from flax import linen as nn
+import numpy as np  # type: ignore
+from flax import linen as nn  # type: ignore
 from helper_functions import get_num_layers  # type: ignore
 
 
