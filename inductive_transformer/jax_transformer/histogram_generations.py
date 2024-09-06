@@ -35,7 +35,7 @@ def validate_sentences(sentences_list, num_words=6, catsanddogs=False):
 
 
 # Function to plot side-by-side horizontal histograms with shared y-axis
-def plot_side_by_side_histograms(data1, data2):
+def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=None):
     # Set up the figure with two subplots, sharing the y-axis
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6), sharey=True)
 
@@ -57,13 +57,18 @@ def plot_side_by_side_histograms(data1, data2):
     plt.subplots_adjust(wspace=0.2)  # Increase space between the plots
 
     plt.setp(ax1.get_yticklabels(), fontsize=5)
+    if subtitle:
+        plt.suptitle(subtitle, fontsize=16)
 
     # Show the plot
-    plt.show()
+    if plot_file_name:
+        plt.savefig(plot_file_name)
+    else:
+        plt.show()
 
 
 # Function to prepare data and plot results
-def histogram_results(training_sentences, generated_sentences, catsanddogs=False):
+def histogram_results(training_sentences, generated_sentences, catsanddogs=False, subtitle=None, plot_file_name=None):
     num_words = len(training_sentences[0].split())
     training_counts = Counter(training_sentences)
     generated_counts = Counter(generated_sentences)
@@ -82,7 +87,7 @@ def histogram_results(training_sentences, generated_sentences, catsanddogs=False
     ]
 
     # Plot side-by-side histograms for both datasets
-    plot_side_by_side_histograms(training_data, generated_data)
+    plot_side_by_side_histograms(training_data, generated_data, subtitle=subtitle, plot_file_name=plot_file_name)
 
 
 def main():
