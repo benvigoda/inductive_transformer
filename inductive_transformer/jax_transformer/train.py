@@ -186,6 +186,44 @@ def count_params(params):
     return sum(leaf.size for leaf in leaves)
 
 
+def inference_and_plot(state, prob_tensors, key, args, data, seed, n_epochs, epoch, loss, plot_file_name, silence_print=False):
+    decoder_t = run_and_print_inference(state, prob_tensors, args)
+    text = ""
+    text += f"decoder_t {decoder_t.shape}\n"
+
+    temperature = 1
+    generated_sentences = []
+    for example_idx, example in enumerate(
+        data.raw_inference_text.replace(" .", ".").split(".")
+    ):
+        if not example:
+            continue
+        text += f"Example {example_idx}: {example.capitalize()}\n"
+        single_decoder_t = decoder_t[example_idx]
+        for sample_idx in range(args.num_samples):
+            key, subkey = jax.random.split(key)
+            samples = sample(subkey, single_decoder_t, temperature=temperature)
+            generated_sentence = " ".join([data.vocab[s] for s in samples]).capitalize()
+            text += f"{generated_sentence}\n"
+            generated_sentences.append(generated_sentence)
+        text += "\n"
+    text += f"seed: {seed}\n"
+
+    # Generate histograms:
+    training_sentences = [t.capitalize() for t in data.training_sentences]
+    text += f"loss: {loss:.20e}\n"
+    if not silence_print:
+        print(text)
+
+    histogram_results(
+        training_sentences,
+        generated_sentences,
+        catsanddogs=args.catsanddogs,
+        subtitle=f"seed: {seed}, total epochs: {n_epochs}, epoch: {epoch}, loss: {loss:.10e}",
+        plot_file_name=plot_file_name,
+    )
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Model arguments")
     parser.add_argument(
@@ -322,68 +360,54 @@ def main():
                 state, prob_tensors.attention_input, batch_input_data, batch_output_data
             )
             state = update_model(state, grads)
-            # First Nan is at epoch 357, step 5
-            # if epoch == 356 and step_idx >= 4 and step_idx <= 5:
-            #     print("\n\n\n\n\n")
-            #     print("*" * 100)
-            #     print("-" * 100)
-            #     print("*" * 100)
-            #     print(f"epoch {epoch}, step {step_idx}, loss: {loss:.20e}")
-            #     # Print the trained weights:
-            #     print_params(state, data.vocab)
-            #     print("*" * 100)
-            #     # Print activations:
-            #     run_and_print_inference(state, prob_tensors, args)
             if args.loss_threshold and loss < args.loss_threshold:
                 break
 
         if epoch % print_every == 0:
-            # print("\n\n\n\n\n")
-            # print("*" * 100)
-            # print("-" * 100)
-            # print("*" * 100)
             print(f"epoch {epoch}, loss: {loss:.20e}")
-            # # Print the trained weights:
-            # print()
-            # print_params(state, data.vocab)
-            # print("*" * 100)
-            # # Print activations:
-            # run_and_print_inference(state, prob_tensors, args)
+            printed_weights = print_params(state, data.vocab, silence_print=True)
+            with open(f"{seed}_seed_{n_epochs}_num_epochs_{epoch}_epoch_output_weights.txt", "w") as f:
+                f.write(printed_weights)
+            inference_and_plot(
+                state=state,
+                prob_tensors=prob_tensors,
+                key=key,
+                args=args,
+                data=data,
+                seed=seed,
+                n_epochs=n_epochs,
+                epoch=epoch,
+                loss=loss,
+                plot_file_name=f"{seed}_seed_{n_epochs}_num_epochs_{epoch}_epoch_output_histograms.png",
+                silence_print=True,
+            )
+
         if args.loss_threshold and loss < args.loss_threshold:
             break
 
     # Print trained weights.
-    print_params(state, data.vocab)
+    printed_weights = print_params(state, data.vocab)
+    # save printed weights to a file
+    with open(f"{seed}_seed_{n_epochs}_num_epochs_output_weights.txt", "w") as f:
+        f.write(printed_weights)
 
     if not args.prompt_text:
         print("No prompt text given, exiting.")
         exit()
 
-    decoder_t = run_and_print_inference(state, prob_tensors, args)
-    print("decoder_t", decoder_t.shape)
+    inference_and_plot(
+        state=state,
+        prob_tensors=prob_tensors,
+        key=key,
+        args=args,
+        data=data,
+        seed=seed,
+        n_epochs=n_epochs,
+        epoch=epoch,
+        loss=loss,
+        plot_file_name=f"{seed}_seed_{n_epochs}_num_epochs_output_histograms.png",
+    )
 
-    temperature = 1
-    generated_sentences = []
-    for example_idx, example in enumerate(
-        data.raw_inference_text.replace(" .", ".").split(".")
-    ):
-        if not example:
-            continue
-        print(f"Example {example_idx}: {example.capitalize()}")
-        single_decoder_t = decoder_t[example_idx]
-        for sample_idx in range(args.num_samples):
-            key, subkey = jax.random.split(key)
-            samples = sample(subkey, single_decoder_t, temperature=temperature)
-            generated_sentence = " ".join([data.vocab[s] for s in samples]).capitalize()
-            print(generated_sentence)
-            generated_sentences.append(generated_sentence)
-        print("")
-    print(f"seed: {seed}\n")
-
-    # Generate histograms:
-    training_sentences = [t.capitalize() for t in data.training_sentences]
-    print(f"loss: {loss:.20e}")
-    histogram_results(training_sentences, generated_sentences, catsanddogs=args.catsanddogs)
     return seed, loss, lr
 
 
