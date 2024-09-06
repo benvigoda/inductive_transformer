@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from inductive_transformer.jax_transformer.helper_functions import custom_normalize
 import jax.numpy as jnp  # type: ignore
 
 
@@ -15,7 +14,7 @@ class DecoderCategoricalBernoulli:
         u_1 = v
 
         # The probability of a bernoulli variable being False is 1 - the probability of it being True.
-        u_0 = 1. - u_1
+        u_0 = 1.0 - u_1
 
         u = jnp.stack([u_0, u_1], axis=0)
 

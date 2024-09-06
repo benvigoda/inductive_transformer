@@ -1,19 +1,24 @@
-from flax.training import train_state
+from flax.training import train_state  # type: ignore
 import argparse
-import jax
-import jax.numpy as jnp
-import numpy as np
+import jax  # type: ignore
+import jax.numpy as jnp  # type: ignore
+import numpy as np  # type: ignore
 import optax  # type: ignore
 import pathlib
-from jax.tree_util import tree_flatten
+from jax.tree_util import tree_flatten  # type: ignore
 
 
 from inductive_transformer.jax_transformer.model import BatchedInductiveTransformer
 from inductive_transformer.jax_transformer.text_parsing import InputData, ProbTensors
-from inductive_transformer.jax_transformer.weights_width_2_layers_2 import init_weights
-from inductive_transformer.jax_transformer.printing import print_params, print_activations
+from inductive_transformer.jax_transformer.weights_broad_init import init_weights
+from inductive_transformer.jax_transformer.printing import (
+    print_params,
+    print_activations,
+)
 from inductive_transformer.jax_transformer.sampling import sample
-from inductive_transformer.jax_transformer.histogram_generations import histogram_results
+from inductive_transformer.jax_transformer.histogram_generations import (
+    histogram_results,
+)
 
 
 class TrainState(train_state.TrainState):
@@ -23,7 +28,23 @@ class TrainState(train_state.TrainState):
 
 
 def create_train_state(
-    key, num_positions, vocab, layer_width, num_layers, noise_seed=None, perturb_flag=False
+    key,
+    num_positions,
+    vocab,
+    layer_width,
+    num_layers,
+    noise_seed=None,
+    initialize_weights=False,
+    perturb_flag=False,
+    perturb_position=None,
+    perturb_token=None,
+    perturb_attention=None,
+    surgical_perturb=False,
+    lock_all_weights=False,
+    noise_value=0.01,
+    zero_out_right_weights=False,
+    zero_out_left_weights=False,
+    catsanddogs=False,
 ):
     """Creates initial `TrainState`."""
     bernoulli_width = 2
@@ -50,8 +71,24 @@ def create_train_state(
     params = model.init(subkey_2, z_in, t_in)
 
     # Update weights.
-    # If perturb_flag is True, we will set weights as defined in weights.py.
-    params, weight_mask = init_weights(params, vocab, lock_all_weights=perturb_flag)
+    # If initialize_weights is True, we will set weights as defined in weights.py.
+    grad_mask = None
+    if initialize_weights:
+        params, weight_mask = init_weights(
+            params,
+            vocab,
+            lock_all_weights=lock_all_weights,
+            perturb_weights=perturb_flag,
+            perturb_position=perturb_position,
+            perturb_token=perturb_token,
+            perturb_attention=perturb_attention,
+            surgical_perturb=surgical_perturb,
+            noise_value=noise_value,
+            zero_out_right_weights=zero_out_right_weights,
+            zero_out_left_weights=zero_out_left_weights,
+            catsanddogs=catsanddogs,
+        )
+        grad_mask = weight_mask
 
     key, subkey = jax.random.split(key)
     if noise_seed is None:
@@ -69,11 +106,6 @@ def create_train_state(
         tx = optax.chain(
             optax.add_noise(eta=1.0e-2, gamma=0.999, seed=noise_seed),
         )
-    # If perturb_flag is True, we will not update the weights set in weights.py.
-    if perturb_flag:
-        grad_mask = weight_mask
-    else:
-        grad_mask = None
     state = TrainState.create(
         apply_fn=model.apply,
         params=params,
@@ -142,7 +174,9 @@ def run_and_print_inference(state, prob_tensors, args):
         state.params, prob_tensors.attention_input, prompt_data
     )
 
-    print_activations(n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations)
+    print_activations(
+        n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations
+    )
 
     return decoder_t
 
@@ -150,6 +184,44 @@ def run_and_print_inference(state, prob_tensors, args):
 def count_params(params):
     leaves, _ = tree_flatten(params)
     return sum(leaf.size for leaf in leaves)
+
+
+def inference_and_plot(state, prob_tensors, key, args, data, seed, n_epochs, epoch, loss, plot_file_name, silence_print=False):
+    decoder_t = run_and_print_inference(state, prob_tensors, args)
+    text = ""
+    text += f"decoder_t {decoder_t.shape}\n"
+
+    temperature = 1
+    generated_sentences = []
+    for example_idx, example in enumerate(
+        data.raw_inference_text.replace(" .", ".").split(".")
+    ):
+        if not example:
+            continue
+        text += f"Example {example_idx}: {example.capitalize()}\n"
+        single_decoder_t = decoder_t[example_idx]
+        for sample_idx in range(args.num_samples):
+            key, subkey = jax.random.split(key)
+            samples = sample(subkey, single_decoder_t, temperature=temperature)
+            generated_sentence = " ".join([data.vocab[s] for s in samples]).capitalize()
+            text += f"{generated_sentence}\n"
+            generated_sentences.append(generated_sentence)
+        text += "\n"
+    text += f"seed: {seed}\n"
+
+    # Generate histograms:
+    training_sentences = [t.capitalize() for t in data.training_sentences]
+    text += f"loss: {loss:.20e}\n"
+    if not silence_print:
+        print(text)
+
+    histogram_results(
+        training_sentences,
+        generated_sentences,
+        catsanddogs=args.catsanddogs,
+        subtitle=f"seed: {seed}, total epochs: {n_epochs}, epoch: {epoch}, loss: {loss:.10e}",
+        plot_file_name=plot_file_name,
+    )
 
 
 def parse_args():
@@ -161,33 +233,24 @@ def parse_args():
         "--prompt_text", type=pathlib.Path
     )  # A text file of sentences to run inference on
     # if doing perturbation test, you also need to give it training_text
+    parser.add_argument("--initialize_weights", action="store_true")
     parser.add_argument("--perturb", action="store_true")
-
-    '''
-    if --train_text not empty
-    train with entirely free weights
-
-    if --prompt_text not empty
-    do inference on the prompt_text
-    if the prompt_text does not completely fill the context window, set the
-    z_prime appropriate activations in the encoder to all 1's
-
-    if both training_text and prompt_text are non-empty
-    first train the weights with training_text,
-    then run inference with the prompt text
-
-    if both --perturb is True and training_text is non-empty:
-    train but do not modify the weights that are set in weights.py
-
-    if --perturb is True and training_text is non-empty and prompt_text is non-empty:
-    train but do not modify the weights that are set in weights.py
-    then run inference with the prompt_text
-    if the prompt_text does not completely fill the context window, set the
-    z_prime appropriate activations in the encoder to all 1's
-    '''
+    parser.add_argument("--lock_all_weights", action="store_true")
+    parser.add_argument("--noise_value", type=float, default=0.01)
+    parser.add_argument("--perturb_position", type=float, default=None)
+    parser.add_argument("--perturb_token", type=float, default=None)
+    parser.add_argument("--perturb_attention", type=float, default=None)
+    parser.add_argument("--surgical_perturb", action="store_true", default=False)
 
     parser.add_argument("--layer_width", type=int, default=2)
     parser.add_argument("--num_layers", type=int, default=2)
+    parser.add_argument("--num_epochs", type=int, default=100)
+    parser.add_argument("--num_samples", type=int, default=5)
+    parser.add_argument("--zero_out_right_weights", action="store_true")
+    parser.add_argument("--zero_out_left_weights", action="store_true")
+    parser.add_argument("--loss_threshold", type=float, default=None)
+    parser.add_argument("--catsanddogs", action="store_true")
+    parser.add_argument("--seed", type=int, default=None)
     return parser.parse_args()
 
 
@@ -195,22 +258,16 @@ def main():
     # Parse args.
     args = parse_args()
     # If doing perturbation test, you also need to give it training_text
-    if args.perturb:
+    if args.initialize_weights:
         assert args.training_text
 
     # Initialize RNG state.
     np_rng = np.random.default_rng()
-    seed = np_rng.integers(0, 2**32 - 1)
-    # seed = 11675966
-    # seed = 615523631
-    # seed = 2819370678  # For NAN with 32 sentences
-    # seed = 1376424188 # Basic convergence of 32_6_layer_sentences.txt
+    if args.seed:
+        seed = args.seed
+    else:
+        seed = np_rng.integers(0, 2**32 - 1)
 
-    # seed = 3699294691 # awesome convergence of 32_2_layer_sentences.txt
-    # seed = 737435735 # partial convergence of 32_2_layer_sentences.txt
-    # seed = 3727924788 # partial convergence of 32_2_layer_sentences.txt in another way
-
-    
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
 
@@ -253,14 +310,24 @@ def main():
         layer_width=args.layer_width,
         num_layers=args.num_layers,
         noise_seed=noise_seed,
+        initialize_weights=args.initialize_weights,
         perturb_flag=args.perturb,
+        perturb_position=args.perturb_position,
+        perturb_token=args.perturb_token,
+        perturb_attention=args.perturb_attention,
+        surgical_perturb=args.surgical_perturb,
+        lock_all_weights=args.lock_all_weights,
+        noise_value=args.noise_value,
+        zero_out_right_weights=args.zero_out_right_weights,
+        zero_out_left_weights=args.zero_out_left_weights,
+        catsanddogs=args.catsanddogs,
     )
 
     # Check the initial loss.
     grads, loss = apply_model(
         state, prob_tensors.attention_input, all_t_tensors, all_outputs
     )
-    print(f"initial loss: {loss:.3e}")
+    print(f"initial loss: {loss:.20e}")
 
     # temp: duplicate our training data
     all_t_tensors = jnp.concatenate([all_t_tensors] * 100, axis=0)
@@ -269,10 +336,10 @@ def main():
 
     # Train the model.
     if args.training_text:
-        n_epochs = 300
+        n_epochs = args.num_epochs
         batch_size = 10
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
-        print_every = 100
+        print_every = 10
         print(f"{n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
         key, subkey = jax.random.split(key)
     else:
@@ -285,67 +352,62 @@ def main():
 
         for step_idx in range(0, n_steps_per_epoch):
             start = step_idx * batch_size
-            batch_input_data = all_t_tensors[start:start + batch_size]
-            batch_output_data = all_outputs[step_idx * batch_size: (step_idx + 1) * batch_size]
+            batch_input_data = all_t_tensors[start: start + batch_size]
+            batch_output_data = all_outputs[
+                step_idx * batch_size: (step_idx + 1) * batch_size
+            ]
             grads, loss = apply_model(
                 state, prob_tensors.attention_input, batch_input_data, batch_output_data
             )
             state = update_model(state, grads)
-            # First Nan is at epoch 357, step 5
-            # if epoch == 356 and step_idx >= 4 and step_idx <= 5:
-            #     print("\n\n\n\n\n")
-            #     print("*" * 100)
-            #     print("-" * 100)
-            #     print("*" * 100)
-            #     print(f"epoch {epoch}, step {step_idx}, loss: {loss:.3e}")
-            #     # Print the trained weights:
-            #     print_params(state, data.vocab)
-            #     print("*" * 100)
-            #     # Print activations:
-            #     run_and_print_inference(state, prob_tensors, args)
+            if args.loss_threshold and loss < args.loss_threshold:
+                break
 
         if epoch % print_every == 0:
-            # print("\n\n\n\n\n")
-            # print("*" * 100)
-            # print("-" * 100)
-            # print("*" * 100)
-            print(f"epoch {epoch}, loss: {loss:.3e}")
-            # # Print the trained weights:
-            # print()
-            # print_params(state, data.vocab)
-            # print("*" * 100)
-            # # Print activations:
-            # run_and_print_inference(state, prob_tensors, args)
+            print(f"epoch {epoch}, loss: {loss:.20e}")
+            printed_weights = print_params(state, data.vocab, silence_print=True)
+            with open(f"{seed}_seed_{n_epochs}_num_epochs_{epoch}_epoch_output_weights.txt", "w") as f:
+                f.write(printed_weights)
+            inference_and_plot(
+                state=state,
+                prob_tensors=prob_tensors,
+                key=key,
+                args=args,
+                data=data,
+                seed=seed,
+                n_epochs=n_epochs,
+                epoch=epoch,
+                loss=loss,
+                plot_file_name=f"{seed}_seed_{n_epochs}_num_epochs_{epoch}_epoch_output_histograms.png",
+                silence_print=True,
+            )
+
+        if args.loss_threshold and loss < args.loss_threshold:
+            break
 
     # Print trained weights.
-    print_params(state, data.vocab)
+    printed_weights = print_params(state, data.vocab)
+    # save printed weights to a file
+    with open(f"{seed}_seed_{n_epochs}_num_epochs_output_weights.txt", "w") as f:
+        f.write(printed_weights)
 
     if not args.prompt_text:
         print("No prompt text given, exiting.")
         exit()
 
-    decoder_t = run_and_print_inference(state, prob_tensors, args)
-    print("decoder_t", decoder_t.shape)
+    inference_and_plot(
+        state=state,
+        prob_tensors=prob_tensors,
+        key=key,
+        args=args,
+        data=data,
+        seed=seed,
+        n_epochs=n_epochs,
+        epoch=epoch,
+        loss=loss,
+        plot_file_name=f"{seed}_seed_{n_epochs}_num_epochs_output_histograms.png",
+    )
 
-    temperature = 1
-    generated_sentences = []
-    for example_idx, example in enumerate(data.raw_inference_text.replace(" .", ".").split(".")):
-        if not example:
-            continue
-        print(f"Example {example_idx}: {example}")
-        single_decoder_t = decoder_t[example_idx]
-        for sample_idx in range(500):
-            key, subkey = jax.random.split(key)
-            samples = sample(subkey, single_decoder_t, temperature=temperature)
-            generated_sentence = " ".join([data.vocab[s] for s in samples])
-            print(generated_sentence)
-            generated_sentences.append(generated_sentence)
-        print("")
-    print(f"seed: {seed}\n")
-
-    # Generate histograms:
-    training_sentences = data.training_sentences
-    histogram_results(training_sentences, generated_sentences)
     return seed, loss, lr
 
 
@@ -356,4 +418,4 @@ if __name__ == "__main__":
             # Save seed and loss to a file
             # Append to the file if it already exists
             with open("seed_loss.txt", "a") as f:
-                f.write(f"seed: {seed}, loss: {loss:.3e}, learning rate: {lr}\n")
+                f.write(f"seed: {seed}, loss: {loss:.20e}, learning rate: {lr}\n")

@@ -7,10 +7,10 @@ IMPROBABLE = EPSILON
 
 
 def custom_normalize(tensor: jnp.ndarray, axis=0, default_constant=0.5) -> jnp.ndarray:
-    '''
+    """
     axis is the dimension on which to normalize
     default_constant is the value to use when the sum is zero
-    '''
+    """
     # Compute the sum along axis=axis and keepdims=True to maintain the dimensions for broadcasting
     sum_tensor = jnp.sum(tensor, axis=axis, keepdims=True)
 
@@ -26,8 +26,8 @@ def custom_normalize(tensor: jnp.ndarray, axis=0, default_constant=0.5) -> jnp.n
     return result
 
 
-z = np.array([[1,0],[0, 1]])
-y_encoder = np.array([[0.5]*2]*2)
+z = np.array([[1, 0], [0, 1]])
+y_encoder = np.array([[0.5] * 2] * 2)
 x = y_encoder * z
 x = custom_normalize(x, axis=0)
 print("X:", x)

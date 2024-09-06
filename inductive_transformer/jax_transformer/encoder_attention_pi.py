@@ -1,7 +1,10 @@
 from flax import linen as nn  # type: ignore
 import jax.numpy as jnp  # type: ignore
 from typing import Callable
-from inductive_transformer.jax_transformer.helper_functions import custom_normalize, EPSILON
+from inductive_transformer.jax_transformer.helper_functions import (
+    custom_normalize,
+    EPSILON,
+)
 
 
 class EncoderAttentionPi(nn.Module):
@@ -11,10 +14,11 @@ class EncoderAttentionPi(nn.Module):
 
     @nn.compact
     def __call__(self, v):
-
         assert v.shape == (self.layer_width, self.layer_width)
         # we expect v to be already normalized categorical
-        weights = self.param('weights', self.weight_init, (self.layer_width, self.layer_width))
+        weights = self.param(
+            "weights", self.weight_init, (self.layer_width, self.layer_width)
+        )
         prob_weights = nn.relu(weights) + EPSILON
 
         prob_weights = custom_normalize(prob_weights, axis=1)
@@ -26,7 +30,9 @@ class EncoderAttentionPi(nn.Module):
         y = prob_weights * v
 
         # make it an inner product by taking a sum along the choice dimension
-        y = jnp.sum(y, axis=0, keepdims=True)  # after summing it is size = (1, layer_width)
+        y = jnp.sum(
+            y, axis=0, keepdims=True
+        )  # after summing it is size = (1, layer_width)
         assert y.shape == (1, self.layer_width)
 
         # we had to remove this since otherwise, y_categorical would have 0.5's instead of 1's,

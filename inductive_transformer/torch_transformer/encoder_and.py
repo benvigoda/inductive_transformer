@@ -4,7 +4,6 @@ from inductive_transformer.torch_transformer.helper_functions import custom_norm
 
 
 class EncoderAnd(nn.Module):
-
     def __init__(self, hyperparams, active_layer: int):
         super(EncoderAnd, self).__init__()
         self.hyperparams = hyperparams

@@ -1,10 +1,13 @@
 from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
-from inductive_transformer.jax_transformer.helper_functions import custom_normalize, EPSILON
+from inductive_transformer.jax_transformer.helper_functions import (
+    custom_normalize,
+    EPSILON,
+)
 
 
-'''
+"""
 Let vocab_size = 4, num_positions = 3, and layer_width = 2
 
 The data is then a tensor that is size (num_positions=3, vocab size=4)
@@ -24,7 +27,7 @@ We will need an open closed universe
 
 ... maybe we can do this in a simpler way that will not require the open closed universe:
 in encoder_layer.py clone the data and send one clone straight up and one clone across
-'''
+"""
 
 
 class EncoderPositionPi(nn.Module):
@@ -38,13 +41,15 @@ class EncoderPositionPi(nn.Module):
         # we need to normalize rho
         # rho = custom_normalize(rho, dim=0)
 
-        weights = self.param('weights', self.weight_init, (self.num_positions, self.layer_width))
+        weights = self.param(
+            "weights", self.weight_init, (self.num_positions, self.layer_width)
+        )
         prob_weights = nn.relu(weights) + EPSILON
         # NOTE: we decided to normalize the weights (it shouldn't matter)
         prob_weights = custom_normalize(prob_weights, axis=0)
 
         # Add this?
-        rho = custom_normalize(rho, axis=0)
+        # rho = custom_normalize(rho, axis=0)
 
         # element-wise product of weight vector and token vector for each column in the layer
         x = prob_weights * rho

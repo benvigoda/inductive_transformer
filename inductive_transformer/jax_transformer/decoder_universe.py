@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 import jax.numpy as jnp  # type: ignore
 
-from inductive_transformer.jax_transformer.helper_functions import custom_normalize
-
 
 @dataclass
 class DecoderUniverse:
@@ -27,14 +25,13 @@ class DecoderUniverse:
         parent_a = v[0, 0] the straight down edge of the left-side attention unit
         parent_b v[0, 1] the left-going edge of the right-side attention unit
         and we want TAILS of both of these, like this:
-       
+
         z[0][0] = u[0][0][0] * u[0][0][1]
         z[1][0] = 1 - z[0][0]
         z[0][1] = u[0][1][0] * u[0][1][1]
         z[1][1] = 1 - z[0][1]
         """
 
-        
         # more general form of this:
         z_0 = jnp.prod(u[0], axis=-1)
         z_1 = 1 - z_0

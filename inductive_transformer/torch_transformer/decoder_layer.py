@@ -1,25 +1,46 @@
 from torch import nn  # type: ignore
 from inductive_transformer.torch_transformer.decoder_universe import DecoderUniverse
-from inductive_transformer.torch_transformer.decoder_bernoulli_categorical import DecoderBernoulliCategorical
-from inductive_transformer.torch_transformer.decoder_categorical_bernoulli import DecoderCategoricalBernoulli
+from inductive_transformer.torch_transformer.decoder_bernoulli_categorical import (
+    DecoderBernoulliCategorical,
+)
+from inductive_transformer.torch_transformer.decoder_categorical_bernoulli import (
+    DecoderCategoricalBernoulli,
+)
 from inductive_transformer.torch_transformer.decoder_token_pi import DecoderTokenPi
-from inductive_transformer.torch_transformer.decoder_position_pi import DecoderPositionPi
-from inductive_transformer.torch_transformer.decoder_attention_pi import DecoderAttentionPi
+from inductive_transformer.torch_transformer.decoder_position_pi import (
+    DecoderPositionPi,
+)
+from inductive_transformer.torch_transformer.decoder_attention_pi import (
+    DecoderAttentionPi,
+)
 from inductive_transformer.torch_transformer.decoder_and import DecoderAnd
 
 
 class DecoderLayer(nn.Module):
-
     def __init__(self, hyperparams, active_layer: int):
         super(DecoderLayer, self).__init__()
         self.active_layer = active_layer
-        self.decoder_universe = DecoderUniverse(hyperparams=hyperparams, active_layer=active_layer)
-        self.decoder_bernoulli_categorical = DecoderBernoulliCategorical(hyperparams=hyperparams, active_layer=active_layer)
-        self.decoder_token_pi = DecoderTokenPi(hyperparams=hyperparams, active_layer=active_layer)
-        self.decoder_attention_pi = DecoderAttentionPi(hyperparams=hyperparams, active_layer=active_layer)
-        self.decoder_position_pi = DecoderPositionPi(hyperparams=hyperparams, active_layer=active_layer)
-        self.decoder_categorical_bernoulli = DecoderCategoricalBernoulli(hyperparams=hyperparams, active_layer=active_layer)
-        self.decoder_and = DecoderAnd(hyperparams=hyperparams, active_layer=active_layer)
+        self.decoder_universe = DecoderUniverse(
+            hyperparams=hyperparams, active_layer=active_layer
+        )
+        self.decoder_bernoulli_categorical = DecoderBernoulliCategorical(
+            hyperparams=hyperparams, active_layer=active_layer
+        )
+        self.decoder_token_pi = DecoderTokenPi(
+            hyperparams=hyperparams, active_layer=active_layer
+        )
+        self.decoder_attention_pi = DecoderAttentionPi(
+            hyperparams=hyperparams, active_layer=active_layer
+        )
+        self.decoder_position_pi = DecoderPositionPi(
+            hyperparams=hyperparams, active_layer=active_layer
+        )
+        self.decoder_categorical_bernoulli = DecoderCategoricalBernoulli(
+            hyperparams=hyperparams, active_layer=active_layer
+        )
+        self.decoder_and = DecoderAnd(
+            hyperparams=hyperparams, active_layer=active_layer
+        )
 
     def forward(self, z_prime, x_encoder, y_encoder):
         # dim=0 indexes the state of the variable e.g. cat or dog, 0 or 1, etc.
