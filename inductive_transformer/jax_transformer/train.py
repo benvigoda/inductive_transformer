@@ -1,6 +1,7 @@
 from flax.training import train_state  # type: ignore
 import argparse
 import jax  # type: ignore
+import os
 import jax.numpy as jnp  # type: ignore
 import numpy as np  # type: ignore
 import optax  # type: ignore
@@ -186,7 +187,7 @@ def count_params(params):
     return sum(leaf.size for leaf in leaves)
 
 
-def inference_and_plot(state, prob_tensors, key, args, data, seed, n_epochs, epoch, loss, plot_file_name, silence_print=False):
+def inference_and_plot(state, prob_tensors, key, args, data, seed, n_epochs, epoch, loss, plot_file_name, silence_print=False, folder_name=None):
     decoder_t = run_and_print_inference(state, prob_tensors, args)
     text = ""
     text += f"decoder_t {decoder_t.shape}\n"
@@ -221,6 +222,7 @@ def inference_and_plot(state, prob_tensors, key, args, data, seed, n_epochs, epo
         catsanddogs=args.catsanddogs,
         subtitle=f"seed: {seed}, total epochs: {n_epochs}, epoch: {epoch}, loss: {loss:.10e}",
         plot_file_name=plot_file_name,
+        folder=folder_name,
     )
 
 
@@ -267,6 +269,9 @@ def main():
         seed = args.seed
     else:
         seed = np_rng.integers(0, 2**32 - 1)
+
+    num_epochs = args.num_epochs
+    noise_value = args.noise_value
 
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
@@ -317,7 +322,7 @@ def main():
         perturb_attention=args.perturb_attention,
         surgical_perturb=args.surgical_perturb,
         lock_all_weights=args.lock_all_weights,
-        noise_value=args.noise_value,
+        noise_value=noise_value,
         zero_out_right_weights=args.zero_out_right_weights,
         zero_out_left_weights=args.zero_out_left_weights,
         catsanddogs=args.catsanddogs,
@@ -336,7 +341,7 @@ def main():
 
     # Train the model.
     if args.training_text:
-        n_epochs = args.num_epochs
+        n_epochs = num_epochs
         batch_size = 10
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
         print_every = 10
@@ -344,6 +349,14 @@ def main():
         key, subkey = jax.random.split(key)
     else:
         n_epochs = 0
+
+    # Create a folder named {seed}_seed_{n_epochs}_num_epochs if it doesn't exist
+    file_prefix = f"{seed}_seed_{n_epochs}_num_epochs_{noise_value}_noise_value_"
+    folder_name = file_prefix
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
+
+    epoch = 0
     for epoch in range(n_epochs):
         # Shuffle the data.
         # shuffle_key = jax.random.fold_in(subkey, epoch)
@@ -366,7 +379,9 @@ def main():
         if epoch % print_every == 0:
             print(f"epoch {epoch}, loss: {loss:.20e}")
             printed_weights = print_params(state, data.vocab, silence_print=True)
-            with open(f"{seed}_seed_{n_epochs}_num_epochs_{epoch}_epoch_output_weights.txt", "w") as f:
+            file_name = file_prefix + f"{epoch}_epoch_output_weights.txt"
+            file_path = os.path.join(folder_name, file_name)
+            with open(file_path, "w") as f:
                 f.write(printed_weights)
             inference_and_plot(
                 state=state,
@@ -378,8 +393,9 @@ def main():
                 n_epochs=n_epochs,
                 epoch=epoch,
                 loss=loss,
-                plot_file_name=f"{seed}_seed_{n_epochs}_num_epochs_{epoch}_epoch_output_histograms.png",
+                plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
                 silence_print=True,
+                folder_name=folder_name,
             )
 
         if args.loss_threshold and loss < args.loss_threshold:
@@ -388,7 +404,7 @@ def main():
     # Print trained weights.
     printed_weights = print_params(state, data.vocab)
     # save printed weights to a file
-    with open(f"{seed}_seed_{n_epochs}_num_epochs_output_weights.txt", "w") as f:
+    with open(file_prefix + f"{epoch}_epoch_output_weights.txt", "w") as f:
         f.write(printed_weights)
 
     if not args.prompt_text:
@@ -405,7 +421,8 @@ def main():
         n_epochs=n_epochs,
         epoch=epoch,
         loss=loss,
-        plot_file_name=f"{seed}_seed_{n_epochs}_num_epochs_output_histograms.png",
+        plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
+        folder_name=folder_name,
     )
 
     return seed, loss, lr
