@@ -1,10 +1,228 @@
 from typing import List, Optional
-from dataclasses import dataclass
 from itertools import product
 
 
-@dataclass
-class Synonyms:
+class ANAVAN:
+    """Generates 6 word sentences of the form adjective noun adverb verb adjective noun."""
+
+    def __init__(self, left_zeroth, left_first, left_second, left_third, left_fourth, left_fifth, right_zeroth,
+                 right_first, right_second, right_third, right_fourth, right_fifth):
+        self.left_zeroth_words = left_zeroth
+        self.left_first_words = left_first
+        self.left_second_words = left_second
+        self.left_third_words = left_third
+        self.left_fourth_words = left_fourth
+        self.left_fifth_words = left_fifth
+        self.right_zeroth_words = right_zeroth
+        self.right_first_words = right_first
+        self.right_second_words = right_second
+        self.right_third_words = right_third
+        self.right_fourth_words = right_fourth
+        self.right_fifth_words = right_fifth
+
+        self.valid_pairs = self.get_valid_pairs()
+
+    def get_valid_pairs(self):
+        return {
+            (0, 1): {
+                (a, b)
+                for a in self.left_zeroth_words
+                for b in self.left_first_words
+            } | {
+                (a, b)
+                for a in self.right_zeroth_words
+                for b in self.right_first_words
+            },
+            (1, 3): {
+                (a, b)
+                for a in self.left_first_words
+                for b in self.left_third_words
+            } | {
+                (a, b)
+                for a in self.right_first_words
+                for b in self.right_third_words
+            },
+            (2, 3): {
+                (a, b)
+                for a in self.left_second_words
+                for b in self.left_third_words
+            } | {
+                (a, b)
+                for a in self.right_second_words
+                for b in self.right_third_words
+            },
+            (3, 5): {
+                (a, b)
+                for a in self.left_third_words
+                for b in self.left_fifth_words
+            } | {
+                (a, b)
+                for a in self.right_third_words
+                for b in self.right_fifth_words
+            },
+            (4, 5): {
+                (a, b)
+                for a in self.left_fourth_words
+                for b in self.left_fifth_words
+            } | {
+                (a, b)
+                for a in self.right_fourth_words
+                for b in self.right_fifth_words
+            },
+        }
+
+    def clear_right_words(self):
+        self.right_zeroth_words = []
+        self.right_first_words = []
+        self.right_second_words = []
+        self.right_third_words = []
+        self.right_fourth_words = []
+        self.right_fifth_words = []
+
+        self.valid_pairs = self.get_valid_pairs()
+
+    def clear_left_words(self):
+        self.left_zeroth_words = []
+        self.left_first_words = []
+        self.left_second_words = []
+        self.left_third_words = []
+        self.left_fourth_words = []
+        self.left_fifth_words = []
+
+        self.valid_pairs = self.get_valid_pairs()
+
+    def get_valid_left_ordered_words(self):
+        return [
+            self.left_zeroth_words,
+            self.left_first_words,
+            self.left_second_words,
+            self.left_third_words,
+            self.left_fourth_words,
+            self.left_fifth_words,
+        ]
+
+    def get_valid_right_ordered_words(self):
+        return [
+            self.right_zeroth_words,
+            self.right_first_words,
+            self.right_second_words,
+            self.right_third_words,
+            self.right_fourth_words,
+            self.right_fifth_words,
+        ]
+
+    def generate(
+        self,
+        num_sentences: Optional[int] = None,
+        side: str = 'both',
+        single_synonyms: Optional[List[int]] = None
+    ) -> List[str]:
+        sentences = []
+
+        if single_synonyms is None:
+            single_synonyms = []
+
+        def generate_side(words_lists: List[List[str]], single_positions: List[int]) -> List[str]:
+            # Generate all combinations for the given side
+            # Adjust lists for single synonyms
+            adjusted_lists = []
+            for idx, word_list in enumerate(words_lists):
+                if idx in single_positions:
+                    adjusted_lists.append([word_list[0]])  # Use only the first synonym
+                else:
+                    adjusted_lists.append(word_list)
+            return [' '.join(sentence) for sentence in product(*adjusted_lists)]
+
+        if side in ['left', 'both']:
+            left_lists = self.get_valid_left_ordered_words()
+            left_single_positions = [i for i in range(len(left_lists)) if i in single_synonyms]
+            left_sentences = generate_side(left_lists, left_single_positions)
+            sentences.extend(left_sentences)
+
+        if side in ['right', 'both']:
+            right_lists = self.get_valid_right_ordered_words()
+            right_single_positions = [i for i in range(len(right_lists)) if i in single_synonyms]
+            right_sentences = generate_side(right_lists, right_single_positions)
+            sentences.extend(right_sentences)
+
+        # Limit the number of sentences if necessary
+        if num_sentences is None:
+            return sentences
+        else:
+            num_sentences = min(num_sentences, len(sentences))
+            return sentences[:num_sentences]
+
+
+def make_cat_dog_anavan():
+    valid_left_zeroth_words = [
+        "small",
+        "little",
+        "tiny",
+        "micro",
+        "mini",
+        "pico",
+        "femto",
+        "diminimus",
+        # "itty",
+        # "teenyweeny",
+    ]
+    valid_right_zeroth_words = [
+        "extralarge",
+        "gargantuan",
+        "large",
+        "giant",
+        "huge",
+        "humongous",
+        "enormous",
+        "big",
+    ]
+    valid_left_first_words = [
+        "dogs",
+        "canines",
+    ]
+    valid_right_first_words = [
+        "cats",
+        "felines",
+    ]
+    valid_left_second_words = [
+        "often",
+        "usually",
+        "commonly",
+        "frequently",
+    ]
+    valid_right_second_words = [
+        "sometimes",
+        "occasionally",
+        "rarely",
+        "never",
+    ]
+    valid_left_third_words = [
+        "fear",
+        "avoid",
+    ]
+    valid_right_third_words = [
+        "chase",
+        "intimidate",
+        "eat",
+    ]
+
+    return ANAVAN(
+        left_zeroth=valid_left_zeroth_words,
+        left_first=valid_left_first_words,
+        left_second=valid_left_second_words,
+        left_third=valid_left_third_words,
+        left_fourth=valid_right_zeroth_words,
+        left_fifth=valid_right_first_words,
+        right_zeroth=valid_right_zeroth_words,
+        right_first=valid_right_first_words,
+        right_second=valid_right_second_words,
+        right_third=valid_right_third_words,
+        right_fourth=valid_left_zeroth_words,
+        right_fifth=valid_left_first_words,
+    )
+
+
+def make_cat_dog_worm_bird_anavan():
     valid_left_zeroth_words = [
         "small",
         "little",
@@ -83,277 +301,25 @@ class Synonyms:
         "avians",
     ]
 
-    def cats_and_dogs_overwrite(self):
-        # Use a different synonym set
-        self.valid_left_zeroth_words = [
-            "small",
-            "little",
-            "tiny",
-            "micro",
-            "mini",
-            "pico",
-            "femto",
-            "diminimus",
-            # "itty",
-            # "teenyweeny",
-        ]
-        self.valid_right_zeroth_words = [
-            "extralarge",
-            "gargantuan",
-            "large",
-            "giant",
-            "huge",
-            "humongous",
-            "enormous",
-            "big",
-        ]
-        self.valid_left_first_words = [
-            "dogs",
-            "canines",
-        ]
-        self.valid_right_first_words = [
-            "cats",
-            "felines",
-        ]
-        self.valid_left_second_words = [
-            "often",
-            "usually",
-            "commonly",
-            "frequently",
-        ]
-        self.valid_right_second_words = [
-            "sometimes",
-            "occasionally",
-            "rarely",
-            "never",
-        ]
-        self.valid_left_third_words = [
-            "fear",
-            "avoid",
-        ]
-        self.valid_right_third_words = [
-            "chase",
-            "intimidate",
-            "eat",
-        ]
-
-        self.valid_left_fourth_words = self.valid_right_zeroth_words
-        self.valid_right_fourth_words = self.valid_left_zeroth_words
-        self.valid_left_fifth_words = self.valid_right_first_words
-        self.valid_right_fifth_words = self.valid_left_first_words
-
-    def zero_right_words(self):
-        self.valid_right_zeroth_words = []
-        self.valid_right_first_words = []
-        self.valid_right_second_words = []
-        self.valid_right_third_words = []
-        self.valid_right_fourth_words = []
-        self.valid_right_fifth_words = []
-
-    def zero_left_words(self):
-        self.valid_left_zeroth_words = []
-        self.valid_left_first_words = []
-        self.valid_left_second_words = []
-        self.valid_left_third_words = []
-        self.valid_left_fourth_words = []
-        self.valid_left_fifth_words = []
-
-    def get_valid_left_ordered_words(self):
-        return [
-            self.valid_left_zeroth_words,
-            self.valid_left_first_words,
-            self.valid_left_second_words,
-            self.valid_left_third_words,
-            self.valid_left_fourth_words,
-            self.valid_left_fifth_words,
-        ]
-
-    def get_valid_right_ordered_words(self):
-        return [
-            self.valid_right_zeroth_words,
-            self.valid_right_first_words,
-            self.valid_right_second_words,
-            self.valid_right_third_words,
-            self.valid_right_fourth_words,
-            self.valid_right_fifth_words,
-        ]
-
-    def get_valid_pairs(self):
-        valid_pairs = {
-            (0, 1): {
-                (a, b)
-                for a in self.valid_left_zeroth_words
-                for b in self.valid_left_first_words
-            } | {
-                (a, b)
-                for a in self.valid_right_zeroth_words
-                for b in self.valid_right_first_words
-            },
-            (1, 3): {
-                (a, b)
-                for a in self.valid_left_first_words
-                for b in self.valid_left_third_words
-            } | {
-                (a, b)
-                for a in self.valid_right_first_words
-                for b in self.valid_right_third_words
-            },
-            (2, 3): {
-                (a, b)
-                for a in self.valid_left_second_words
-                for b in self.valid_left_third_words
-            } | {
-                (a, b)
-                for a in self.valid_right_second_words
-                for b in self.valid_right_third_words
-            },
-            (3, 5): {
-                (a, b)
-                for a in self.valid_left_third_words
-                for b in self.valid_left_fifth_words
-            } | {
-                (a, b)
-                for a in self.valid_right_third_words
-                for b in self.valid_right_fifth_words
-            },
-            (4, 5): {
-                (a, b)
-                for a in self.valid_left_fourth_words
-                for b in self.valid_left_fifth_words
-            } | {
-                (a, b)
-                for a in self.valid_right_fourth_words
-                for b in self.valid_right_fifth_words
-            },
-        }
-        return valid_pairs
-
-    # valid_pairs = {
-    #     (0, 1): {
-    #         ("small", "dogs"), ("small", "canines"),
-    #         ("little", "dogs"), ("little", "canines"),
-    #         ("tiny", "dogs"), ("tiny", "canines"),
-    #         ("micro", "dogs"), ("micro", "canines"),
-    #         ("mini", "dogs"), ("mini", "canines"),
-    #         ("pico", "dogs"), ("pico", "canines"),
-    #         ("femto", "dogs"), ("femto", "canines"),
-    #         ("diminimus", "dogs"), ("diminimus", "canines"),
-    #         ("itty", "dogs"), ("itty", "canines"),
-    #         ("teenyweeny", "dogs"), ("teenyweeny", "canines"),
-    #         ("extralarge", "cats"), ("extralarge", "felines"),
-    #         ("gargantuan", "cats"), ("gargantuan", "felines"),
-    #         ("large", "cats"), ("large", "felines"),
-    #         ("giant", "cats"), ("giant", "felines"),
-    #         ("huge", "cats"), ("huge", "felines"),
-    #         ("humongous", "cats"), ("humongous", "felines"),
-    #         ("enormous", "cats"), ("enormous", "felines"),
-    #         ("big", "cats"), ("big", "felines"),
-    #     },
-    #     (1, 3): {
-    #         ("dogs", "fear"), ("dogs", "avoid"),
-    #         ("canines", "fear"), ("canines", "avoid"),
-    #         ("cats", "chase"), ("cats", "intimidate"), ("cats", "eat"),
-    #         ("felines", "chase"), ("felines", "intimidate"), ("felines", "eat"),
-    #     },
-    #     (2, 3): {
-    #         ("often", "fear"), ("often", "avoid"),
-    #         ("usually", "fear"), ("usually", "avoid"),
-    #         ("commonly", "fear"), ("commonly", "avoid"),
-    #         ("frequently", "fear"), ("frequently", "avoid"),
-    #         ("sometimes", "chase"), ("sometimes", "intimidate"), ("sometimes", "eat"),
-    #         ("occasionally", "chase"), ("occasionally", "intimidate"), ("occasionally", "eat"),
-    #         ("rarely", "fear"), ("rarely", "avoid"),
-    #         ("never", "fear"), ("never", "avoid")
-    #     },
-    #     (3, 5): {
-    #         ("fear", "cats"), ("fear", "felines"),
-    #         ("avoid", "cats"), ("avoid", "felines"),
-    #         ("chase", "dogs"), ("chase", "canines"),
-    #         ("intimidate", "dogs"), ("intimidate", "canines"),
-    #         ("eat", "dogs"), ("eat", "canines"),
-    #     },
-    #     (4, 5): {
-    #         ("large", "cats"), ("large", "felines"),
-    #         ("giant", "cats"), ("giant", "felines"),
-    #         ("huge", "cats"), ("huge", "felines"),
-    #         ("humongous", "cats"), ("humongous", "felines"),
-    #         ("enormous", "cats"), ("enormous", "felines"),
-    #         ("big", "cats"), ("big", "felines")
-    #     }
-    # }
-
-    def generate(self, num_sentences: int, side: str = 'both', single_synonyms: Optional[List[int]] = None) -> List[str]:
-        sentences = []
-
-        if single_synonyms is None:
-            single_synonyms = []
-
-        def generate_side(words_lists: List[List[str]], single_positions: List[int]) -> List[str]:
-            # Generate all combinations for the given side
-            # Adjust lists for single synonyms
-            adjusted_lists = []
-            for idx, word_list in enumerate(words_lists):
-                if idx in single_positions:
-                    adjusted_lists.append([word_list[0]])  # Use only the first synonym
-                else:
-                    adjusted_lists.append(word_list)
-            return [' '.join(sentence) for sentence in product(*adjusted_lists)]
-
-        if side in ['left', 'both']:
-            left_lists = self.get_valid_left_ordered_words()
-            left_single_positions = [i for i in range(len(left_lists)) if i in single_synonyms]
-            left_sentences = generate_side(left_lists, left_single_positions)
-            sentences.extend(left_sentences)
-
-        if side in ['right', 'both']:
-            right_lists = self.get_valid_right_ordered_words()
-            right_single_positions = [i for i in range(len(right_lists)) if i in single_synonyms]
-            right_sentences = generate_side(right_lists, right_single_positions)
-            sentences.extend(right_sentences)
-
-        # Limit the number of sentences if necessary
-        return sentences[:num_sentences]
-
-    def generate_all_syns(self, side: str = 'both', single_synonyms: Optional[List[int]] = None) -> List[str]:
-        sentences = []
-
-        if single_synonyms is None:
-            single_synonyms = []
-
-        def generate_side(words_lists: List[List[str]], single_positions: List[int]) -> List[str]:
-            # Generate all combinations for the given side
-            # Adjust lists for single synonyms
-            adjusted_lists = []
-            for idx, word_list in enumerate(words_lists):
-                if idx in single_positions:
-                    adjusted_lists.append([word_list[0]])  # Use only the first synonym
-                else:
-                    adjusted_lists.append(word_list)
-
-            for i in range(max(len(sublist) for sublist in adjusted_lists)):
-                sentence = " ".join([s[i % len(s)] for s in adjusted_lists])
-                if sentence not in sentences:
-                    sentences.append(sentence)
-            return sentences
-
-        if side in ['left', 'both']:
-            left_lists = self.get_valid_left_ordered_words()
-            left_single_positions = [i for i in range(len(left_lists)) if i in single_synonyms]
-            left_sentences = generate_side(left_lists, left_single_positions)
-            sentences.extend(left_sentences)
-
-        if side in ['right', 'both']:
-            right_lists = self.get_valid_right_ordered_words()
-            right_single_positions = [i for i in range(len(right_lists)) if i in single_synonyms]
-            right_sentences = generate_side(right_lists, right_single_positions)
-            sentences.extend(right_sentences)
-
-        # Limit the number of sentences if necessary
-        return sentences
+    return ANAVAN(
+        left_zeroth=valid_left_zeroth_words,
+        left_first=valid_left_first_words,
+        left_second=valid_left_second_words,
+        left_third=valid_left_third_words,
+        left_fourth=valid_left_fourth_words,
+        left_fifth=valid_left_fifth_words,
+        right_zeroth=valid_right_zeroth_words,
+        right_first=valid_right_first_words,
+        right_second=valid_right_second_words,
+        right_third=valid_right_third_words,
+        right_fourth=valid_right_fourth_words,
+        right_fifth=valid_right_fifth_words,
+    )
 
 
 if __name__ == "__main__":
-    synonyms = Synonyms()
+    # synonyms = make_cat_dog_anavan()
+    synonyms = make_cat_dog_worm_bird_anavan()
     # sentences = synonyms.generate(500, side='both', single_synonyms=[0, 4])
     sentences = synonyms.generate(50000, side='both')
     # sentences = synonyms.generate_all_syns(side='both')
