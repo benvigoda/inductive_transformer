@@ -1,3 +1,4 @@
+import os
 import pandas as pd  # type: ignore
 import seaborn as sns  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
@@ -35,7 +36,7 @@ def validate_sentences(sentences_list, num_words=6, catsanddogs=False):
 
 
 # Function to plot side-by-side horizontal histograms with shared y-axis
-def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=None):
+def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=None, folder=None):
     # Set up the figure with two subplots, sharing the y-axis
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6), sharey=True)
 
@@ -62,13 +63,17 @@ def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=Non
 
     # Show the plot
     if plot_file_name:
-        plt.savefig(plot_file_name)
+        if folder:
+            file_path = os.path.join(folder, plot_file_name)
+            plt.savefig(file_path)
+        else:
+            plt.savefig(plot_file_name)
     else:
         plt.show()
 
 
 # Function to prepare data and plot results
-def histogram_results(training_sentences, generated_sentences, catsanddogs=False, subtitle=None, plot_file_name=None):
+def histogram_results(training_sentences, generated_sentences, catsanddogs=False, subtitle=None, plot_file_name=None, folder=None):
     num_words = len(training_sentences[0].split())
     training_counts = Counter(training_sentences)
     generated_counts = Counter(generated_sentences)
@@ -87,7 +92,7 @@ def histogram_results(training_sentences, generated_sentences, catsanddogs=False
     ]
 
     # Plot side-by-side histograms for both datasets
-    plot_side_by_side_histograms(training_data, generated_data, subtitle=subtitle, plot_file_name=plot_file_name)
+    plot_side_by_side_histograms(training_data, generated_data, subtitle=subtitle, plot_file_name=plot_file_name, folder=folder)
 
 
 def main():
