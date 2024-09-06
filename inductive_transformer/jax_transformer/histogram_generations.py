@@ -2,7 +2,7 @@ import pandas as pd  # type: ignore
 import seaborn as sns  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 from collections import Counter
-from synonyms import Synonyms  # type: ignore
+from inductive_transformer.datasets.synonyms import Synonyms  # type: ignore
 
 
 # The validation function
