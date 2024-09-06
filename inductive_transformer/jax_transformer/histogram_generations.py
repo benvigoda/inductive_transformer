@@ -2,14 +2,15 @@ import pandas as pd  # type: ignore
 import seaborn as sns  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 from collections import Counter
-from inductive_transformer.datasets.synonyms import Synonyms  # type: ignore
+from inductive_transformer.datasets.synonyms import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
 
 
 # The validation function
 def validate_sentences(sentences_list, num_words=6, catsanddogs=False):
-    synonyms = Synonyms()
     if catsanddogs:
-        synonyms.cats_and_dogs_overwrite()
+        synonyms = make_cat_dog_anavan()
+    else:
+        synonyms = make_cat_dog_worm_bird_anavan()
     valid_pairs = synonyms.get_valid_pairs()
 
     results = {}
