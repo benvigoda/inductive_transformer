@@ -2,7 +2,7 @@ import pandas as pd  # type: ignore
 import seaborn as sns  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 from collections import Counter
-from inductive_transformer.datasets.synonyms import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
+from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
 
 
 # The validation function

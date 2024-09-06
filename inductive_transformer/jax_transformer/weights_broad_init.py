@@ -2,7 +2,7 @@ import jax  # type: ignore
 import jax.numpy as jnp  # type: ignore
 import numpy as np  # type: ignore
 from inductive_transformer.jax_transformer.helper_functions import EPSILON, get_num_layers
-from inductive_transformer.datasets.synonyms import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
+from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
 
 strong = 1.0 - EPSILON  # Amplify the signal
 weak = EPSILON  # Dampen the signal
