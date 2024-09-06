@@ -39,6 +39,7 @@ def create_train_state(
     perturb_position=None,
     perturb_token=None,
     perturb_attention=None,
+    surgical_perturb=False,
     lock_all_weights=False,
     noise_value=0.01,
     zero_out_right_weights=False,
@@ -81,6 +82,7 @@ def create_train_state(
             perturb_position=perturb_position,
             perturb_token=perturb_token,
             perturb_attention=perturb_attention,
+            surgical_perturb=surgical_perturb,
             noise_value=noise_value,
             zero_out_right_weights=zero_out_right_weights,
             zero_out_left_weights=zero_out_left_weights,
@@ -200,6 +202,7 @@ def parse_args():
     parser.add_argument("--perturb_position", type=float, default=None)
     parser.add_argument("--perturb_token", type=float, default=None)
     parser.add_argument("--perturb_attention", type=float, default=None)
+    parser.add_argument("--surgical_perturb", action="store_true", default=False)
 
     parser.add_argument("--layer_width", type=int, default=2)
     parser.add_argument("--num_layers", type=int, default=2)
@@ -274,6 +277,7 @@ def main():
         perturb_position=args.perturb_position,
         perturb_token=args.perturb_token,
         perturb_attention=args.perturb_attention,
+        surgical_perturb=args.surgical_perturb,
         lock_all_weights=args.lock_all_weights,
         noise_value=args.noise_value,
         zero_out_right_weights=args.zero_out_right_weights,
