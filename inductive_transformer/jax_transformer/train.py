@@ -147,7 +147,7 @@ def update_model(state, grads):
     return state.apply_gradients(grads=grads)
 
 
-def run_and_print_inference(state, prob_tensors, args):
+def run_and_print_inference(state, prob_tensors, args, silence_print=False):
     # Load inference examples.
     inference_data = prob_tensors.make_inference_prompt_tensors()
     all_inference_data = jnp.stack(inference_data, axis=0)
@@ -165,19 +165,21 @@ def run_and_print_inference(state, prob_tensors, args):
     # all words epsilon
     # prompt_data = all_inference_data.at[:, :, 1, :, :].set(1e-6)
     prompt_data = all_inference_data
-    print("prompt data", prompt_data.shape)
-    print(prompt_data)
-    print("attention input")
-    print(prob_tensors.attention_input)
+    if not silence_print:
+        print("prompt data", prompt_data.shape)
+        print(prompt_data)
+        print("attention input")
+        print(prob_tensors.attention_input)
 
     # Run inference.
     decoder_z, decoder_t, encoder_activations, decoder_activations = state.apply_fn(
         state.params, prob_tensors.attention_input, prompt_data
     )
 
-    print_activations(
-        n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations
-    )
+    if not silence_print:
+        print_activations(
+            n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations
+        )
 
     return decoder_t
 
@@ -188,7 +190,7 @@ def count_params(params):
 
 
 def inference_and_plot(state, prob_tensors, key, args, data, seed, n_epochs, epoch, loss, plot_file_name, silence_print=False, folder_name=None):
-    decoder_t = run_and_print_inference(state, prob_tensors, args)
+    decoder_t = run_and_print_inference(state, prob_tensors, args, silence_print)
     text = ""
     text += f"decoder_t {decoder_t.shape}\n"
 
