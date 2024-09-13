@@ -147,7 +147,14 @@ def update_model(state, grads):
     return state.apply_gradients(grads=grads)
 
 
-def run_and_print_inference(state, prob_tensors, args, silence_print=False):
+def run_and_print_inference(
+    state,
+    prob_tensors,
+    args,
+    activations_file_name,
+    folder_name=None,
+    silence_print=False,
+):
     # Load inference examples.
     inference_data = prob_tensors.make_inference_prompt_tensors()
     all_inference_data = jnp.stack(inference_data, axis=0)
@@ -176,10 +183,14 @@ def run_and_print_inference(state, prob_tensors, args, silence_print=False):
         state.params, prob_tensors.attention_input, prompt_data
     )
 
-    if not silence_print:
-        print_activations(
-            n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations
-        )
+    
+    activation_text = print_activations(
+        n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations, silence_print
+    )
+
+    file_path = os.path.join(folder_name, activations_file_name)
+    with open(file_path, "w") as f:
+        f.write(activation_text)
 
     return decoder_t
 
@@ -189,8 +200,29 @@ def count_params(params):
     return sum(leaf.size for leaf in leaves)
 
 
-def inference_and_plot(state, prob_tensors, key, args, data, seed, n_epochs, epoch, loss, plot_file_name, silence_print=False, folder_name=None):
-    decoder_t = run_and_print_inference(state, prob_tensors, args, silence_print)
+def inference_and_plot(
+    state,
+    prob_tensors,
+    key,
+    args,
+    data,
+    seed,
+    n_epochs,
+    epoch,
+    loss,
+    plot_file_name,
+    activations_file_name,
+    silence_print=False,
+    folder_name=None
+):
+    decoder_t = run_and_print_inference(
+        state=state,
+        prob_tensors=prob_tensors,
+        args=args,
+        activations_file_name=activations_file_name,
+        folder_name=folder_name,
+        silence_print=silence_print,
+    )
     text = ""
     text += f"decoder_t {decoder_t.shape}\n"
 
@@ -347,7 +379,7 @@ def main():
         batch_size = 10
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
         print_every = 10
-        print(f"{n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
+        print(f"Training plan: {n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
         key, subkey = jax.random.split(key)
     else:
         n_epochs = 0
@@ -365,20 +397,8 @@ def main():
         # all_t_tensors = jax.random.permutation(shuffle_key, all_t_tensors)
         # all_outputs = jax.random.permutation(shuffle_key, all_outputs)
 
-        for step_idx in range(0, n_steps_per_epoch):
-            start = step_idx * batch_size
-            batch_input_data = all_t_tensors[start: start + batch_size]
-            batch_output_data = all_outputs[
-                step_idx * batch_size: (step_idx + 1) * batch_size
-            ]
-            grads, loss = apply_model(
-                state, prob_tensors.attention_input, batch_input_data, batch_output_data
-            )
-            state = update_model(state, grads)
-            if args.loss_threshold and loss < args.loss_threshold:
-                break
-
-        if epoch % print_every == 0:
+        if epoch % print_every == 0 or epoch == n_epochs - 1:
+            print("\nTop:", "↓"*100)
             print(f"epoch {epoch}, loss: {loss:.20e}")
             printed_weights = print_params(state, data.vocab, silence_print=True)
             file_name = file_prefix + f"{epoch}_epoch_output_weights.txt"
@@ -396,36 +416,58 @@ def main():
                 epoch=epoch,
                 loss=loss,
                 plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
-                silence_print=True,
+                activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
+                silence_print=False,
                 folder_name=folder_name,
             )
+            print("Bottom", "↑" * 100)
 
         if args.loss_threshold and loss < args.loss_threshold:
             break
 
-    # Print trained weights.
-    printed_weights = print_params(state, data.vocab)
-    # save printed weights to a file
-    with open(file_prefix + f"{epoch}_epoch_output_weights.txt", "w") as f:
-        f.write(printed_weights)
+        for step_idx in range(0, n_steps_per_epoch):
+            start = step_idx * batch_size
+            batch_input_data = all_t_tensors[start: start + batch_size]
+            batch_output_data = all_outputs[
+                step_idx * batch_size: (step_idx + 1) * batch_size
+            ]
+            grads, loss = apply_model(
+                state, prob_tensors.attention_input, batch_input_data, batch_output_data
+            )
+            state = update_model(state, grads)
+            if args.loss_threshold and loss < args.loss_threshold:
+                break
 
-    if not args.prompt_text:
-        print("No prompt text given, exiting.")
-        exit()
+    if n_epochs == 0:
+        print("\nTop:", "↓"*100)
+        print("No training was done.")
+        print(f"epoch {epoch}, loss: {loss:.20e}")
+        # Print trained weights.
+        printed_weights = print_params(state, data.vocab)
+        # save printed weights to a file
+        file_name = file_prefix + f"{epoch}_epoch_output_weights.txt"
+        file_path = os.path.join(folder_name, file_name)
+        with open(file_name, "w") as f:
+            f.write(printed_weights)
 
-    inference_and_plot(
-        state=state,
-        prob_tensors=prob_tensors,
-        key=key,
-        args=args,
-        data=data,
-        seed=seed,
-        n_epochs=n_epochs,
-        epoch=epoch,
-        loss=loss,
-        plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
-        folder_name=folder_name,
-    )
+        if not args.prompt_text:
+            print("No prompt text given, exiting.")
+            exit()
+
+        inference_and_plot(
+            state=state,
+            prob_tensors=prob_tensors,
+            key=key,
+            args=args,
+            data=data,
+            seed=seed,
+            n_epochs=n_epochs,
+            epoch=epoch,
+            loss=loss,
+            plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
+            activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
+            folder_name=folder_name,
+        )
 
     return seed, loss, lr
 
