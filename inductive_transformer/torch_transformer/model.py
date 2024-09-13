@@ -9,6 +9,7 @@ class Model(nn.Module):
     dim=0 is always states of the variable e.g. 0,1 or cat, dog
     dim=1 is layer_width
     """
+
     def __init__(self, hyperparams):
         super(Model, self).__init__()
         self.hyperparams = hyperparams
@@ -31,7 +32,12 @@ class Model(nn.Module):
 
     # two layer model
     def forward(self, z_input, t):
-        assert t.shape == (self.num_layers, self.num_positions, self.vocab_size, self.layer_width)
+        assert t.shape == (
+            self.num_layers,
+            self.num_positions,
+            self.vocab_size,
+            self.layer_width,
+        )
         assert z_input.shape == (2, self.layer_width)
         if t[1].numel() == 0:
             z1_encode = z_input
@@ -49,16 +55,32 @@ class Model(nn.Module):
         x_encoder_1 = self.encoder_layer_1.encoder_and.x
         y_encoder_1 = self.encoder_layer_1.encoder_and.y
 
-        z2_decode = z2_encode  # take the output of the encoder and feed it to the decoder
+        z2_decode = (
+            z2_encode  # take the output of the encoder and feed it to the decoder
+        )
 
-        t_decode_layer_1, z1_decode = self.decoder_layer_1(z2_decode, x_encoder_1, y_encoder_1)
-        t_decode_layer_0, z0_decode = self.decoder_layer_0(z1_decode, x_encoder_0, y_encoder_0)
+        t_decode_layer_1, z1_decode = self.decoder_layer_1(
+            z2_decode, x_encoder_1, y_encoder_1
+        )
+        t_decode_layer_0, z0_decode = self.decoder_layer_0(
+            z1_decode, x_encoder_0, y_encoder_0
+        )
 
-        assert t_decode_layer_0.shape == (self.num_positions, self.vocab_size, self.layer_width)
-        assert t_decode_layer_1.shape == (self.num_positions, self.vocab_size, self.layer_width)
+        assert t_decode_layer_0.shape == (
+            self.num_positions,
+            self.vocab_size,
+            self.layer_width,
+        )
+        assert t_decode_layer_1.shape == (
+            self.num_positions,
+            self.vocab_size,
+            self.layer_width,
+        )
 
         self.encoder_output = (z1_encode, z2_encode)
-        self.decoder_pre_output_details = torch.stack([t_decode_layer_0, t_decode_layer_1], dim=0)
+        self.decoder_pre_output_details = torch.stack(
+            [t_decode_layer_0, t_decode_layer_1], dim=0
+        )
         # this sum performs the open-to-closed universe for the decoder
         # FIXME: could move this to its own file and generalize for num_layers > 2
         self.decoder_output = t_decode_layer_0 + t_decode_layer_1
@@ -68,7 +90,7 @@ class Model(nn.Module):
         assert self.decoder_output.shape == (self.num_positions, self.vocab_size)
         return self.decoder_output
 
-    '''
+    """
     one layer model
     def forward(self, z0):
 
@@ -80,4 +102,4 @@ class Model(nn.Module):
 
         self.encoder_output = (z1_encode)
         self.decoder_output = (t_decode_layer_0, z0_decode)
-    '''
+    """

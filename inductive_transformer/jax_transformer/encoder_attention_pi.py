@@ -1,7 +1,10 @@
 from flax import linen as nn  # type: ignore
 import jax.numpy as jnp  # type: ignore
 from typing import Callable
-from inductive_transformer.jax_transformer.helper_functions import custom_normalize
+from inductive_transformer.jax_transformer.helper_functions import (
+    custom_normalize,
+    EPSILON,
+)
 
 
 class EncoderAttentionPi(nn.Module):
@@ -11,21 +14,29 @@ class EncoderAttentionPi(nn.Module):
 
     @nn.compact
     def __call__(self, v):
-
         assert v.shape == (self.layer_width, self.layer_width)
         # we expect v to be already normalized categorical
-        weights = self.param('weights', self.weight_init, (self.layer_width, self.layer_width))
-        prob_weights = nn.relu(weights) + 1e-9
+        weights = self.param(
+            "weights", self.weight_init, (self.layer_width, self.layer_width)
+        )
+        prob_weights = nn.relu(weights) + EPSILON
 
         prob_weights = custom_normalize(prob_weights, axis=1)
+
+        # in the future we may want to normalize v here for good measure
+        v = custom_normalize(v, axis=1)
 
         # element-wise product of weight vector and token vector for each column in the layer
         y = prob_weights * v
 
         # make it an inner product by taking a sum along the choice dimension
-        y = jnp.sum(y, axis=0, keepdims=True)  # after summing it is size = (1, layer_width)
+        y = jnp.sum(
+            y, axis=0, keepdims=True
+        )  # after summing it is size = (1, layer_width)
         assert y.shape == (1, self.layer_width)
 
-        y = custom_normalize(y, axis=1)
+        # we had to remove this since otherwise, y_categorical would have 0.5's instead of 1's,
+        # when it is certain on both values of the layer_width index:
+        # y = custom_normalize(y, axis=1)
 
         return y  # y is categorical

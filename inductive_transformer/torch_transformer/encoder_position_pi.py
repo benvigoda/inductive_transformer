@@ -3,7 +3,7 @@ from torch import nn  # type: ignore
 from inductive_transformer.torch_transformer.helper_functions import custom_normalize
 
 
-'''
+"""
 Let vocab_size = 4, num_positions = 3, and layer_width = 2
 
 The data is then a tensor that is size (num_positions=3, vocab size=4)
@@ -23,11 +23,10 @@ We will need an open closed universe
 
 ... maybe we can do this in a simpler way that will not require the open closed universe:
 in encoder_layer.py clone the data and send one clone straight up and one clone across
-'''
+"""
 
 
 class EncoderPositionPi(nn.Module):
-
     def __init__(self, hyperparams, active_layer: int):
         super(EncoderPositionPi, self).__init__()
         self.hyperparams = hyperparams
@@ -40,13 +39,17 @@ class EncoderPositionPi(nn.Module):
             if hyperparams.init_perturb_weights:
                 random_noise = torch.randn(self.num_positions, self.layer_width) * 0.1
                 self.weights = nn.Parameter(
-                    torch.zeros(self.num_positions, self.layer_width) + initial_weights + random_noise,
-                    requires_grad=True
+                    torch.zeros(self.num_positions, self.layer_width)
+                    + initial_weights
+                    + random_noise,
+                    requires_grad=True,
                 )
             else:
                 self.weights = initial_weights
         else:
-            self.weights = nn.Parameter(torch.ones(self.num_positions, self.layer_width), requires_grad=True)
+            self.weights = nn.Parameter(
+                torch.ones(self.num_positions, self.layer_width), requires_grad=True
+            )
             nn.init.normal_(self.weights, mean=1, std=0.1)
         self.relu = nn.ReLU()
 
@@ -67,7 +70,9 @@ class EncoderPositionPi(nn.Module):
         x = prob_weights * rho
 
         # make it an inner product by taking a sum along the token dimension
-        x = torch.sum(x, dim=0, keepdim=True)  # after summing it is size = (1, layer_width)
+        x = torch.sum(
+            x, dim=0, keepdim=True
+        )  # after summing it is size = (1, layer_width)
         x = custom_normalize(x, dim=1)
         self.x = x
         return x  # x is categorical

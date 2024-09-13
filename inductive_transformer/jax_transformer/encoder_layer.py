@@ -1,14 +1,19 @@
-
 from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
 
 from inductive_transformer.jax_transformer.encoder_universe import EncoderUniverse
-from inductive_transformer.jax_transformer.encoder_bernoulli_categorical import EncoderBernoulliCategorical
+from inductive_transformer.jax_transformer.encoder_bernoulli_categorical import (
+    EncoderBernoulliCategorical,
+)
 from inductive_transformer.jax_transformer.encoder_token_pi import EncoderTokenPi
 from inductive_transformer.jax_transformer.encoder_position_pi import EncoderPositionPi
-from inductive_transformer.jax_transformer.encoder_attention_pi import EncoderAttentionPi
-from inductive_transformer.jax_transformer.encoder_categorical_bernoulli import EncoderCategoricalBernoulli
+from inductive_transformer.jax_transformer.encoder_attention_pi import (
+    EncoderAttentionPi,
+)
+from inductive_transformer.jax_transformer.encoder_categorical_bernoulli import (
+    EncoderCategoricalBernoulli,
+)
 from inductive_transformer.jax_transformer.encoder_and import EncoderAnd
 
 
@@ -40,16 +45,20 @@ class EncoderLayer(nn.Module):
         self.encoder_attention_pi = EncoderAttentionPi(
             vocab_size=self.vocab_size,
             layer_width=self.layer_width,
-            weight_init=self.weight_init
+            weight_init=self.weight_init,
         )
         self.encoder_categorical_bernoulli = EncoderCategoricalBernoulli(
             layer_width=self.layer_width
         )
         self.encoder_and = EncoderAnd()
 
-    def __call__(self, z, t_categorical):
+    def __call__(self, z, t_categorical, masked):
         assert z.shape == (2, self.layer_width)
-        assert t_categorical.shape == (self.num_positions, self.vocab_size, self.layer_width)
+        assert t_categorical.shape == (
+            self.num_positions,
+            self.vocab_size,
+            self.layer_width,
+        )
 
         # axis=0 indexes the state of the variable e.g. cat or dog, 0 or 1, etc.
         # axis=1 indexes the layer width
@@ -65,6 +74,9 @@ class EncoderLayer(nn.Module):
         # Encoder Attention $\pi$
         y_categorical = self.encoder_attention_pi(v)
         assert y_categorical.shape == (1, self.layer_width)
+
+        y_bernoulli = self.encoder_categorical_bernoulli(y_categorical)
+        assert y_bernoulli.shape == (2, self.layer_width)
 
         # Hook 3 pi_t's to their parent pi_rho, everywhere this occurs.
         # The encoder open-closed universe without backwards info from the decoder simply clones the input data for a given token and position
@@ -82,22 +94,44 @@ class EncoderLayer(nn.Module):
         assert x_categorical.shape == (1, self.layer_width)
 
         # Encoder Categorical-Bernoulli
-        y_bernoulli = self.encoder_categorical_bernoulli(y_categorical)
         x_bernoulli = self.encoder_categorical_bernoulli(x_categorical)
-        assert y_bernoulli.shape == (2, self.layer_width)
         assert x_bernoulli.shape == (2, self.layer_width)
 
         # Encoder $\land$
         z_prime = self.encoder_and(x_bernoulli, y_bernoulli)
         assert z_prime.shape == (2, self.layer_width)
 
+        """
+        OLD WAY of thinking
+            # if we are in an encoder layer where text_parsing tells us there is no input text from the prompt
+            # and the input token is <padding> then set the output of the encoder layer to all True
+
+            # If layer_t_categorical[num_layers-i-1,:,0] == padding_embedding,
+            #   set z[0, :] = 0
+            #   set z[1, :] = 1
+            # Talking about the output z of the encoder, so really z_prime
+            masked_z = jnp.stack(
+                [
+                    jnp.zeros(shape=(self.layer_width,)),
+                    jnp.ones(shape=(self.layer_width,)),
+                ],
+                axis=0,
+            )
+        """
+        # When padding we do not know which word should be activated, so we set all to 0.5
+        masked_z = jnp.ones(shape=(2, self.layer_width)) * 0.5
+        assert masked_z.shape == (2, self.layer_width)
+
+        z_prime = jnp.where(masked, masked_z, z_prime)
+
         activations = {
+            "z": z,
             "u": u,
             "v": v,
             "y_categorical": y_categorical,
+            "y_bernoulli": y_bernoulli,
             "rho_categorical": rho_categorical,
             "x_categorical": x_categorical,
-            "y_bernoulli": y_bernoulli,
             "x_bernoulli": x_bernoulli,
             "z_prime": z_prime,
         }

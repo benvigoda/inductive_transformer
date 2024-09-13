@@ -3,11 +3,17 @@ from typing import Callable
 import jax.numpy as jnp  # type: ignore
 
 from inductive_transformer.jax_transformer.decoder_universe import DecoderUniverse
-from inductive_transformer.jax_transformer.decoder_bernoulli_categorical import DecoderBernoulliCategorical
-from inductive_transformer.jax_transformer.decoder_categorical_bernoulli import DecoderCategoricalBernoulli
+from inductive_transformer.jax_transformer.decoder_bernoulli_categorical import (
+    DecoderBernoulliCategorical,
+)
+from inductive_transformer.jax_transformer.decoder_categorical_bernoulli import (
+    DecoderCategoricalBernoulli,
+)
 from inductive_transformer.jax_transformer.decoder_token_pi import DecoderTokenPi
 from inductive_transformer.jax_transformer.decoder_position_pi import DecoderPositionPi
-from inductive_transformer.jax_transformer.decoder_attention_pi import DecoderAttentionPi
+from inductive_transformer.jax_transformer.decoder_attention_pi import (
+    DecoderAttentionPi,
+)
 from inductive_transformer.jax_transformer.decoder_and import DecoderAnd
 
 
