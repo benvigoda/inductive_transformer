@@ -17,7 +17,7 @@ def set_position_pi_weights(
     prefix,
     layer_width,
     perturb_weights=False,
-    lock_weights=True,
+    lock_weights=False,
     noise_value=0.01,
     surgical_perturb=False,
 ):
@@ -33,27 +33,29 @@ def set_position_pi_weights(
             jnp.full(layer_width, strong)
         )  # Match num_layer to the opposite position in the weights
 
-        if perturb_weights:
-            if not surgical_perturb:
-                # Add a small amount of noise to the weights
-                new_weights = new_weights + jax.random.normal(
-                    jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weights.shape
-                ) * noise_value
-            else:
-                new_weights = new_weights.at[[0][0]].set(new_weights[0][0] - jax.random.normal(jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1))) * noise_value)
-                # import pdb; pdb.set_trace()
+        # if perturb_weights_position:
+        #     if not surgical_perturb:
+        #         # Add a small amount of noise to the weights
+        #         new_weights = new_weights + jax.random.normal(
+        #             jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weights.shape
+        #         ) * noise_value
+        #     else:
+        #         new_weights = new_weights.at[[0][0]].set(new_weights[0][0] - jax.random.normal(jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1))) * noise_value)
+        #         # import pdb; pdb.set_trace()
 
         params["params"][layer_key][position_pi]["weights"] = new_weights
         # Note: We have constrained the model such that num_positions needs to be equal
         # to num_layers for this setup to work right now.
         # In the future we'll have to remove that constraint
 
-        if lock_weights:
-            mask["params"][layer_key][position_pi]["weights"] = jnp.zeros_like(
-                old_weights, dtype=mask_type
-            )
+        # if lock_weights:
+        #     mask["params"][layer_key][position_pi]["weights"] = jnp.zeros_like(
+        #         old_weights, dtype=mask_type
+        #     )
     else:
         raise ValueError(f"Layer {layer_key} not found in params.")
+
+
 
 
 def init_weights(
@@ -234,23 +236,23 @@ def init_weights(
             )
             # print(updated_params["params"][f"decoders_{num_lay}"]["decoder_token_pi"]["weights"])
             # Fix set_weights so the gradient does not update the weights
-            if lock_all_weights:
-                set_weights["params"][f"encoders_{num_lay}"]["encoder_token_pi"][
-                    "weights"
-                ] = jnp.zeros_like(
-                    updated_params["params"][f"encoders_{num_lay}"]["encoder_token_pi"][
-                        "weights"
-                    ],
-                    dtype=mask_type,
-                )
-                set_weights["params"][f"decoders_{num_lay}"]["decoder_token_pi"][
-                    "weights"
-                ] = jnp.zeros_like(
-                    updated_params["params"][f"decoders_{num_lay}"]["decoder_token_pi"][
-                        "weights"
-                    ],
-                    dtype=mask_type,
-                )
+            # if lock_all_weights:
+            #     set_weights["params"][f"encoders_{num_lay}"]["encoder_token_pi"][
+            #         "weights"
+            #     ] = jnp.zeros_like(
+            #         updated_params["params"][f"encoders_{num_lay}"]["encoder_token_pi"][
+            #             "weights"
+            #         ],
+            #         dtype=mask_type,
+            #     )
+            #     set_weights["params"][f"decoders_{num_lay}"]["decoder_token_pi"][
+            #         "weights"
+            #     ] = jnp.zeros_like(
+            #         updated_params["params"][f"decoders_{num_lay}"]["decoder_token_pi"][
+            #             "weights"
+            #         ],
+            #         dtype=mask_type,
+            #     )
 
     """Set attention weights."""
     set_flat_weights = False
@@ -276,6 +278,18 @@ def init_weights(
                 new_weight = new_weight.at[1, 1].set(strong)
                 new_weight = new_weight.at[0, 0].set(strong)
 
+
+            # if perturb_weights_attention:
+            # if perturb_weights:
+            #     if not surgical_perturb:
+            #         # Add a small amount of noise to the weights
+            #         new_weights = new_weights + jax.random.normal(
+            #             jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weights.shape
+            #         ) * noise_value
+            #     else:
+            #         new_weights = new_weights.at[[0][0]].set(new_weights[0][0] - jax.random.normal(jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1))) * noise_value)
+            #         # import pdb; pdb.set_trace()
+
             if perturb_weights or perturb_attention:
                 if not surgical_perturb:
                     # Add a small amount of noise to the weights
@@ -285,15 +299,16 @@ def init_weights(
             updated_params["params"][f"{encoders_decoders}_{layer}"][
                 f"{encoder_decoder}_attention_pi"
             ]["weights"] = new_weight
+            
             # Fix set_weights so the gradient does not update the weights
-            if lock_all_weights:
-                set_weights["params"][f"{encoders_decoders}_{layer}"][
-                    f"{encoder_decoder}_attention_pi"
-                ]["weights"] = jnp.zeros_like(
-                    updated_params["params"][f"{encoders_decoders}_{layer}"][
-                        f"{encoder_decoder}_attention_pi"
-                    ]["weights"],
-                    dtype=mask_type,
-                )
+            # if lock_all_weights:
+            #     set_weights["params"][f"{encoders_decoders}_{layer}"][
+            #         f"{encoder_decoder}_attention_pi"
+            #     ]["weights"] = jnp.zeros_like(
+            #         updated_params["params"][f"{encoders_decoders}_{layer}"][
+            #             f"{encoder_decoder}_attention_pi"
+            #         ]["weights"],
+            #         dtype=mask_type,
+            #     )
 
     return updated_params, set_weights
