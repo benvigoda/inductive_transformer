@@ -4,7 +4,6 @@ from inductive_transformer.torch_transformer.helper_functions import custom_norm
 
 
 class DecoderAttentionPi(nn.Module):
-
     def __init__(self, hyperparams, active_layer: int):
         super(DecoderAttentionPi, self).__init__()
         self.hyperparams = hyperparams
@@ -15,18 +14,24 @@ class DecoderAttentionPi(nn.Module):
             if hyperparams.init_perturb_weights:
                 random_noise = torch.randn(self.layer_width, self.layer_width) * 0.1
                 self.weights = nn.Parameter(
-                    torch.zeros(self.layer_width, self.layer_width) + initial_weights + random_noise,
-                    requires_grad=True
+                    torch.zeros(self.layer_width, self.layer_width)
+                    + initial_weights
+                    + random_noise,
+                    requires_grad=True,
                 )
             else:
                 self.weights = initial_weights
         else:
             # self.weights[below_lw][above_lw], where below in the decoder is towards the output, and above is from the encoder
             if self.active_layer == 0:
-                self.weights = nn.Parameter(torch.ones(self.layer_width, self.layer_width), requires_grad=True)
+                self.weights = nn.Parameter(
+                    torch.ones(self.layer_width, self.layer_width), requires_grad=True
+                )
                 nn.init.normal_(self.weights, mean=1, std=0.1)
             else:
-                self.weights = nn.Parameter(torch.eye(self.layer_width), requires_grad=True)
+                self.weights = nn.Parameter(
+                    torch.eye(self.layer_width), requires_grad=True
+                )
                 self.weights.data += torch.randn_like(self.weights) * 0.1
         self.relu = nn.ReLU()
 

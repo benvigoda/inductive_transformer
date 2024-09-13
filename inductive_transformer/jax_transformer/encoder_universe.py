@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import jax.numpy as jnp  # type: ignore
+
 # from helper_functions import custom_normalize
 
 
@@ -171,6 +172,8 @@ class EncoderUniverse:
         # u = nn.functional.normalize(u, p=1, dim=0)
         u = custom_normalize(u, dim=0)
         """
+
         u = jnp.stack([z] * self.layer_width, axis=-1)
+        # this is just stacking so if z is normalized (it is) then we do not need to normalize here
 
         return u

@@ -4,7 +4,6 @@ from inductive_transformer.torch_transformer.helper_functions import custom_norm
 
 
 class DecoderTokenPi(nn.Module):
-
     def __init__(self, hyperparams, active_layer: int):
         super(DecoderTokenPi, self).__init__()
         self.hyperparams = hyperparams
@@ -15,15 +14,23 @@ class DecoderTokenPi(nn.Module):
         if hyperparams.decoder_token_pi_weights is not None:
             initial_weights = hyperparams.decoder_token_pi_weights[active_layer]
             if hyperparams.init_perturb_weights:
-                random_noise = torch.randn(self.num_positions, self.vocab_size, self.layer_width) * 0.1
+                random_noise = (
+                    torch.randn(self.num_positions, self.vocab_size, self.layer_width)
+                    * 0.1
+                )
                 self.weights = nn.Parameter(
-                    torch.zeros(self.num_positions, self.vocab_size, self.layer_width) + initial_weights + random_noise,
-                    requires_grad=True
+                    torch.zeros(self.num_positions, self.vocab_size, self.layer_width)
+                    + initial_weights
+                    + random_noise,
+                    requires_grad=True,
                 )
             else:
                 self.weights = initial_weights
         else:
-            self.weights = nn.Parameter(torch.ones(self.num_positions, self.vocab_size, self.layer_width), requires_grad=True)
+            self.weights = nn.Parameter(
+                torch.ones(self.num_positions, self.vocab_size, self.layer_width),
+                requires_grad=True,
+            )
             nn.init.normal_(self.weights, mean=1, std=0.1)
         self.relu = nn.ReLU()
 

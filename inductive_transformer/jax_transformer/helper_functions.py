@@ -1,11 +1,24 @@
 import jax.numpy as jnp  # type: ignore
 
+EPSILON = 1e-20
+IMPROBABLE = 1e-9
+PROBABLE = 1 - IMPROBABLE
+
+
+def get_num_layers(params: dict) -> int:
+    num_layers = 0
+    while True:
+        if f"encoders_{num_layers}" not in params["params"]:
+            break
+        num_layers += 1
+    return num_layers
+
 
 def custom_normalize(tensor: jnp.ndarray, axis=0, default_constant=0.5) -> jnp.ndarray:
-    '''
+    """
     axis is the dimension on which to normalize
     default_constant is the value to use when the sum is zero
-    '''
+    """
     # Compute the sum along axis=axis and keepdims=True to maintain the dimensions for broadcasting
     sum_tensor = jnp.sum(tensor, axis=axis, keepdims=True)
 

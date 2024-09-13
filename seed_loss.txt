@@ -1,0 +1,10 @@
+seed: 989806582, loss: 2.958e-18, learning rate: 0.001
+seed: 982527622, loss: 4.822e-20, learning rate: 0.001
+seed: 1668922763, loss: 9.088e-20, learning rate: 0.001
+seed: 1573219325, loss: 5.295e-19, learning rate: 0.001
+seed: 3702236108, loss: 5.311e-19, learning rate: 0.001
+seed: 1467060679, loss: 5.311e-19, learning rate: 0.001
+seed: 1261618937, loss: 1.348e-18, learning rate: 0.001
+seed: 615379914, loss: 1.348e-18, learning rate: 0.001
+seed: 3216847972, loss: 1.348e-18, learning rate: 0.001
+seed: 4114033094, loss: 1.348e-18, learning rate: 0.001

@@ -8,6 +8,7 @@ import statistics
 import torch  # type: ignore
 from torch import nn  # type: ignore
 import torch.nn.functional as F  # type: ignore
+
 # from torch.optim.lr_scheduler import ReduceLROnPlateau, CyclicLR  # type: ignore
 from inductive_transformer.torch_transformer import printing
 from inductive_transformer.torch_transformer.text_parsing import InputData, ProbTensors
@@ -31,7 +32,9 @@ class L2Loss:
         return loss
 
 
-def is_local_minimum(losses: typing.List[float], reached_local_minimum: bool = False) -> bool:
+def is_local_minimum(
+    losses: typing.List[float], reached_local_minimum: bool = False
+) -> bool:
     if len(losses) > 1 and losses[-1] > losses[-2] and not reached_local_minimum:
         return True
     else:
@@ -41,47 +44,66 @@ def is_local_minimum(losses: typing.List[float], reached_local_minimum: bool = F
 def plot_convergence(losses: typing.List[float]):
     # Keeping the import here so we don't have to install matplotlib if we don't need it
     import matplotlib.pyplot as plt  # type: ignore
+
     font = {"weight": "normal", "size": 22}
     plt.figure(dpi=80, figsize=(25, 13))
     plt.plot(list(range(len(losses))), losses)
-    plt.title('loss vs. step', fontdict=font)
-    plt.xlabel('step', fontdict=font)
-    plt.ylabel('loss', rotation=90, fontdict=font)
-    plt.savefig('loss_vs_step.png')
+    plt.title("loss vs. step", fontdict=font)
+    plt.xlabel("step", fontdict=font)
+    plt.ylabel("loss", rotation=90, fontdict=font)
+    plt.savefig("loss_vs_step.png")
 
 
 def get_model_weights(model):
-    encoder_attention_pi_weights = torch.stack([
-        normalize_weights(model.encoder_layer_0.encoder_attention_pi.weights),
-        normalize_weights(model.encoder_layer_1.encoder_attention_pi.weights),
-    ], dim=0)
-    encoder_position_pi_weights = torch.stack([
-        normalize_weights(model.encoder_layer_0.encoder_position_pi.weights),
-        normalize_weights(model.encoder_layer_1.encoder_position_pi.weights),
-    ], dim=0)
-    encoder_token_pi_weights = torch.stack([
-        normalize_weights(model.encoder_layer_0.encoder_token_pi.weights),
-        normalize_weights(model.encoder_layer_1.encoder_token_pi.weights),
-    ], dim=0)
-    decoder_attention_pi_weights = torch.stack([
-        normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights),
-        normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights),
-    ], dim=0)
-    decoder_position_pi_weights = torch.stack([
-        normalize_weights(model.decoder_layer_0.decoder_position_pi.weights),
-        normalize_weights(model.decoder_layer_1.decoder_position_pi.weights),
-    ], dim=0)
-    decoder_token_pi_weights = torch.stack([
-        normalize_weights(model.decoder_layer_0.decoder_token_pi.weights),
-        normalize_weights(model.decoder_layer_1.decoder_token_pi.weights),
-    ], dim=0)
+    encoder_attention_pi_weights = torch.stack(
+        [
+            normalize_weights(model.encoder_layer_0.encoder_attention_pi.weights),
+            normalize_weights(model.encoder_layer_1.encoder_attention_pi.weights),
+        ],
+        dim=0,
+    )
+    encoder_position_pi_weights = torch.stack(
+        [
+            normalize_weights(model.encoder_layer_0.encoder_position_pi.weights),
+            normalize_weights(model.encoder_layer_1.encoder_position_pi.weights),
+        ],
+        dim=0,
+    )
+    encoder_token_pi_weights = torch.stack(
+        [
+            normalize_weights(model.encoder_layer_0.encoder_token_pi.weights),
+            normalize_weights(model.encoder_layer_1.encoder_token_pi.weights),
+        ],
+        dim=0,
+    )
+    decoder_attention_pi_weights = torch.stack(
+        [
+            normalize_weights(model.decoder_layer_0.decoder_attention_pi.weights),
+            normalize_weights(model.decoder_layer_1.decoder_attention_pi.weights),
+        ],
+        dim=0,
+    )
+    decoder_position_pi_weights = torch.stack(
+        [
+            normalize_weights(model.decoder_layer_0.decoder_position_pi.weights),
+            normalize_weights(model.decoder_layer_1.decoder_position_pi.weights),
+        ],
+        dim=0,
+    )
+    decoder_token_pi_weights = torch.stack(
+        [
+            normalize_weights(model.decoder_layer_0.decoder_token_pi.weights),
+            normalize_weights(model.decoder_layer_1.decoder_token_pi.weights),
+        ],
+        dim=0,
+    )
     model_weights = {
-        'encoder_attention_pi_weights': encoder_attention_pi_weights,
-        'encoder_position_pi_weights': encoder_position_pi_weights,
-        'encoder_token_pi_weights': encoder_token_pi_weights,
-        'decoder_attention_pi_weights': decoder_attention_pi_weights,
-        'decoder_position_pi_weights': decoder_position_pi_weights,
-        'decoder_token_pi_weights': decoder_token_pi_weights,
+        "encoder_attention_pi_weights": encoder_attention_pi_weights,
+        "encoder_position_pi_weights": encoder_position_pi_weights,
+        "encoder_token_pi_weights": encoder_token_pi_weights,
+        "decoder_attention_pi_weights": decoder_attention_pi_weights,
+        "decoder_position_pi_weights": decoder_position_pi_weights,
+        "decoder_token_pi_weights": decoder_token_pi_weights,
     }
     return model_weights
 
@@ -126,8 +148,8 @@ def train_model(
     training_output = [t[1] for t in train_data]
 
     # Get the initial loss by running the model on the first batch
-    token_prob_tensors = training_input[0: batch_size]
-    truths = torch.stack(training_output[0: batch_size], 0)
+    token_prob_tensors = training_input[0:batch_size]
+    truths = torch.stack(training_output[0:batch_size], 0)
     preds_list = []
     output_print_list = []
     for text_window in token_prob_tensors:
@@ -137,9 +159,23 @@ def train_model(
 
     preds = torch.stack(preds_list, 0)
     output_print_tensors = torch.stack(output_print_list, 0)
-    assert output_print_tensors.shape == (batch_size, model.num_layers, model.hyperparams.num_positions, model.hyperparams.vocab_size, model.hyperparams.layer_width)
-    assert preds.shape == (batch_size, model.hyperparams.num_positions, model.hyperparams.vocab_size)
-    assert truths.shape == (batch_size, model.hyperparams.num_positions, model.hyperparams.vocab_size)
+    assert output_print_tensors.shape == (
+        batch_size,
+        model.num_layers,
+        model.hyperparams.num_positions,
+        model.hyperparams.vocab_size,
+        model.hyperparams.layer_width,
+    )
+    assert preds.shape == (
+        batch_size,
+        model.hyperparams.num_positions,
+        model.hyperparams.vocab_size,
+    )
+    assert truths.shape == (
+        batch_size,
+        model.hyperparams.num_positions,
+        model.hyperparams.vocab_size,
+    )
     assert truths.shape == preds.shape
     initial_loss = criterion(preds, truths)
     print("Initial loss:", initial_loss)
@@ -152,9 +188,19 @@ def train_model(
     for epoch in range(epochs):
         for i in range(n_batches):
             # Feed each batch into the model
-            token_prob_tensors = torch.stack(training_input[i * batch_size: (i + 1) * batch_size], 0)
-            truths = torch.stack(training_output[i * batch_size: (i + 1) * batch_size], 0)
-            preds = torch.stack([model(attention_input, text_window) for text_window in token_prob_tensors], 0)
+            token_prob_tensors = torch.stack(
+                training_input[i * batch_size : (i + 1) * batch_size], 0
+            )
+            truths = torch.stack(
+                training_output[i * batch_size : (i + 1) * batch_size], 0
+            )
+            preds = torch.stack(
+                [
+                    model(attention_input, text_window)
+                    for text_window in token_prob_tensors
+                ],
+                0,
+            )
             # Compute and save the loss for that batch
             loss = criterion(preds, truths)
             losses_for_print.append(loss.detach().item())
@@ -297,28 +343,52 @@ def train_model(
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Model arguments")
-    parser.add_argument("training_text", type=pathlib.Path)  # A text file of sentences to train on
-    parser.add_argument("inference_text", type=pathlib.Path)  # A text file of sentences to run inference on
+    parser.add_argument(
+        "training_text", type=pathlib.Path
+    )  # A text file of sentences to train on
+    parser.add_argument(
+        "inference_text", type=pathlib.Path
+    )  # A text file of sentences to run inference on
     parser.add_argument(
         "--train", help="Whether to train model or not", action="store_true"
     )
     parser.add_argument(
-        "--weight_test", help="Whether to use test weights", action="store_true",
+        "--weight_test",
+        help="Whether to use test weights",
+        action="store_true",
     )
     parser.add_argument(
-        "--perturbation_test", help="Whether to use only some weights for perturbation", action="store_true",
+        "--perturbation_test",
+        help="Whether to use only some weights for perturbation",
+        action="store_true",
     )
     parser.add_argument(
-        "--init_perturb_weights", help="Whether to use test weights as starting points rather than setting them permanently", action="store_true",
+        "--init_perturb_weights",
+        help="Whether to use test weights as starting points rather than setting them permanently",
+        action="store_true",
     )
     parser.add_argument("--layer_width", type=int, default=4)
     parser.add_argument("--num_data_points", type=int, default=100)
     parser.add_argument("--num_layers", type=int, default=3)
     parser.add_argument("--num_train", type=int, default=1)  # Number of times to train
-    parser.add_argument("--silence_google_sheet", help="Whether to output to google sheet", action="store_true")
-    parser.add_argument("--use_gpu", help="Whether to run on a GPU if available", action="store_true")
-    parser.add_argument("--silence_matplot", help="Whether to output matplotlib plots", action="store_true")
-    parser.add_argument("--inference_match_training_data", help="Whether to match training data when running inference (instead of using the inference text)", action="store_true")
+    parser.add_argument(
+        "--silence_google_sheet",
+        help="Whether to output to google sheet",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--use_gpu", help="Whether to run on a GPU if available", action="store_true"
+    )
+    parser.add_argument(
+        "--silence_matplot",
+        help="Whether to output matplotlib plots",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--inference_match_training_data",
+        help="Whether to match training data when running inference (instead of using the inference text)",
+        action="store_true",
+    )
     return parser.parse_args()
 
 
@@ -330,11 +400,15 @@ def main():
     data = InputData(args.training_text, args.inference_text)
     prob_tensors = ProbTensors(data=data, layer_width=args.layer_width)
     prob_tensors.to(device)
-    training_data = prob_tensors.format_training_data(num_layers=args.num_layers, device=device)
+    training_data = prob_tensors.format_training_data(
+        num_layers=args.num_layers, device=device
+    )
     if args.inference_match_training_data:  # Toggle to match training data or not
         prompt_tensors = [input_training for input_training, _ in training_data]
     else:
-        prompt_tensors = prob_tensors.make_inference_prompt_tensors(num_layers=args.num_layers)
+        prompt_tensors = prob_tensors.make_inference_prompt_tensors(
+            num_layers=args.num_layers
+        )
     batch_size = 2
     num_epochs = math.ceil(args.num_data_points / batch_size)
     print(f"Number of epochs: {num_epochs}")
@@ -377,12 +451,20 @@ def main():
                 output_matplot=not args.silence_matplot,
             )
             model_weights = get_model_weights(model=model)
-            encoder_attention_pi_weights.append(model_weights['encoder_attention_pi_weights'])
-            encoder_position_pi_weights.append(model_weights['encoder_position_pi_weights'])
-            encoder_token_pi_weights.append(model_weights['encoder_token_pi_weights'])
-            decoder_attention_pi_weights.append(model_weights['decoder_attention_pi_weights'])
-            decoder_position_pi_weights.append(model_weights['decoder_position_pi_weights'])
-            decoder_token_pi_weights.append(model_weights['decoder_token_pi_weights'])
+            encoder_attention_pi_weights.append(
+                model_weights["encoder_attention_pi_weights"]
+            )
+            encoder_position_pi_weights.append(
+                model_weights["encoder_position_pi_weights"]
+            )
+            encoder_token_pi_weights.append(model_weights["encoder_token_pi_weights"])
+            decoder_attention_pi_weights.append(
+                model_weights["decoder_attention_pi_weights"]
+            )
+            decoder_position_pi_weights.append(
+                model_weights["decoder_position_pi_weights"]
+            )
+            decoder_token_pi_weights.append(model_weights["decoder_token_pi_weights"])
         # Stack-up the lists to make tensors we can run stats on
         encoder_attention_pi_weights = torch.stack(encoder_attention_pi_weights, dim=0)
         encoder_position_pi_weights = torch.stack(encoder_position_pi_weights, dim=0)
