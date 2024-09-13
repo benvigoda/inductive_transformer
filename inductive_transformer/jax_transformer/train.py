@@ -127,7 +127,10 @@ def apply_model(state, z_in, t_in, truths):
             params, z_in, t_in
         )
         assert t_out.shape == truths.shape
-        loss = jnp.mean(jnp.square(t_out - truths))
+        # loss = jnp.mean(jnp.square(t_out - truths))
+        # Use cross entropy loss
+        import optax
+        loss = optax.softmax_cross_entropy(jnp.log(t_out), truths).mean()
         # jax.debug.print("t_out\n{}", t_out)
         # jax.debug.print("truths\n{}", truths)
         # jax.debug.print("loss {}\n", loss)
@@ -183,13 +186,13 @@ def run_and_print_inference(
         state.params, prob_tensors.attention_input, prompt_data
     )
 
-    
     activation_text = print_activations(
         n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations, silence_print
     )
 
     file_path = os.path.join(folder_name, activations_file_name)
     with open(file_path, "w") as f:
+        print("saving activations to", file_path)
         f.write(activation_text)
 
     return decoder_t
@@ -398,12 +401,13 @@ def main():
         # all_outputs = jax.random.permutation(shuffle_key, all_outputs)
 
         if epoch % print_every == 0 or epoch == n_epochs - 1:
-            print("\nTop:", "↓"*100)
+            print("\nTop:", "↓" * 100)
             print(f"epoch {epoch}, loss: {loss:.20e}")
             printed_weights = print_params(state, data.vocab, silence_print=True)
             file_name = file_prefix + f"{epoch}_epoch_output_weights.txt"
             file_path = os.path.join(folder_name, file_name)
             with open(file_path, "w") as f:
+                print("saving weights to", file_path)
                 f.write(printed_weights)
             inference_and_plot(
                 state=state,
@@ -439,7 +443,7 @@ def main():
                 break
 
     if n_epochs == 0:
-        print("\nTop:", "↓"*100)
+        print("\nTop:", "↓" * 100)
         print("No training was done.")
         print(f"epoch {epoch}, loss: {loss:.20e}")
         # Print trained weights.
@@ -447,7 +451,8 @@ def main():
         # save printed weights to a file
         file_name = file_prefix + f"{epoch}_epoch_output_weights.txt"
         file_path = os.path.join(folder_name, file_name)
-        with open(file_name, "w") as f:
+        with open(file_path, "w") as f:
+            print("saving weights to", file_path)
             f.write(printed_weights)
 
         if not args.prompt_text:
