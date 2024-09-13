@@ -52,8 +52,8 @@ class InputData:
             print("INPUT DATA")
             print(f"vocab_size: {self.vocab_size}")
             print(f"vocab: {self.vocab}")
-            print(f"training sentences: {self.training_windows}")
-            print(f"inference sentences: {self.inference_windows}")
+            print(f"training sentences ({self.training_windows.shape}): {self.training_windows}")
+            print(f"inference sentences ({self.inference_windows.shape}): {self.inference_windows}")
             print(f"tokenizer_dict: {self.tokenizer_dict}")
 
     @property

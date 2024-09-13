@@ -46,3 +46,6 @@ credentials.json
 __pycache__
 .venv*
 *.egg-info
+
+# weights
+*_output_weights.txt
