@@ -1,13 +1,14 @@
 from flax.training import train_state  # type: ignore
+from jax.tree_util import tree_flatten  # type: ignore
 import argparse
 import jax  # type: ignore
 import jax.numpy as jnp  # type: ignore
 import numpy as np  # type: ignore
 import optax  # type: ignore
 import pathlib
-from jax.tree_util import tree_flatten  # type: ignore
 
 
+from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
 from inductive_transformer.jax_transformer.model import BatchedInductiveTransformer
 from inductive_transformer.jax_transformer.text_parsing import InputData, ProbTensors
 from inductive_transformer.jax_transformer.weights_broad_init import init_weights
@@ -186,7 +187,7 @@ def count_params(params):
     return sum(leaf.size for leaf in leaves)
 
 
-def inference_and_plot(state, prob_tensors, key, args, data, seed, n_epochs, epoch, loss, plot_file_name, silence_print=False):
+def inference_and_plot(state, prob_tensors, grammar, key, args, data, seed, n_epochs, epoch, loss, plot_file_name, silence_print=False):
     decoder_t = run_and_print_inference(state, prob_tensors, args)
     text = ""
     text += f"decoder_t {decoder_t.shape}\n"
@@ -218,7 +219,7 @@ def inference_and_plot(state, prob_tensors, key, args, data, seed, n_epochs, epo
     histogram_results(
         training_sentences,
         generated_sentences,
-        catsanddogs=args.catsanddogs,
+        grammar,
         subtitle=f"seed: {seed}, total epochs: {n_epochs}, epoch: {epoch}, loss: {loss:.10e}",
         plot_file_name=plot_file_name,
     )
@@ -279,6 +280,18 @@ def main():
 
     # Load training data.
     data = InputData(args.training_text, args.prompt_text, print_vals=False)
+
+    # Construct the grammar.
+    if args.catsanddogs:
+        grammar = make_cat_dog_anavan()
+    else:
+        grammar = make_cat_dog_worm_bird_anavan()
+
+    # Verify that the training sentences are valid.
+    for sentence in data.training_sentences:
+        assert grammar.is_valid(sentence), f"training data contains an invalid sentence: {sentence}"
+
+    # Construct the probability tensors.
     prob_tensors = ProbTensors(
         data=data, layer_width=args.layer_width, print_flag=False
     )
@@ -371,6 +384,7 @@ def main():
             inference_and_plot(
                 state=state,
                 prob_tensors=prob_tensors,
+                grammar=grammar,
                 key=key,
                 args=args,
                 data=data,
@@ -398,6 +412,7 @@ def main():
     inference_and_plot(
         state=state,
         prob_tensors=prob_tensors,
+        grammar=grammar,
         key=key,
         args=args,
         data=data,

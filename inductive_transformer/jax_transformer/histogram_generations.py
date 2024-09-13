@@ -2,35 +2,16 @@ import pandas as pd  # type: ignore
 import seaborn as sns  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 from collections import Counter
-from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
 
 
 # The validation function
-def validate_sentences(sentences_list, num_words=6, catsanddogs=False):
-    if catsanddogs:
-        synonyms = make_cat_dog_anavan()
-    else:
-        synonyms = make_cat_dog_worm_bird_anavan()
-    valid_pairs = synonyms.get_valid_pairs()
-
+def validate_sentences(sentences_list, grammar):
     results = {}
     for sentence in sentences_list:
-        words = sentence.lower().split()
-        results[sentence] = "valid"
-
-        if len(words) != num_words:
+        if grammar.is_valid(sentence):
+            results[sentence] = "valid"
+        else:
             results[sentence] = "invalid"
-            continue
-
-        relevant_pairs = {
-            key: value
-            for key, value in valid_pairs.items()
-            if all(k < num_words for k in key)
-        }
-        for key, value in relevant_pairs.items():
-            if (words[key[0]], words[key[1]]) not in value:
-                results[sentence] = "invalid"
-                break
 
     return results
 
@@ -69,7 +50,7 @@ def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=Non
 
 
 # Function to prepare data and plot results
-def histogram_results(training_sentences, generated_sentences, catsanddogs=False, subtitle=None, plot_file_name=None):
+def histogram_results(training_sentences, generated_sentences, grammar, subtitle=None, plot_file_name=None):
     num_words = len(training_sentences[0].split())
     training_counts = Counter(training_sentences)
     generated_counts = Counter(generated_sentences)
@@ -80,7 +61,7 @@ def histogram_results(training_sentences, generated_sentences, catsanddogs=False
         list(generated_counts.items()), columns=["Sentence", "Count"]
     )
     valid_generated = validate_sentences(
-        training_sentences + generated_sentences, num_words=num_words, catsanddogs=catsanddogs
+        training_sentences + generated_sentences, grammar
     )
     generated_data["Status"] = [
         "valid" if valid_generated[sentence] == "valid" else "invalid"
