@@ -68,7 +68,7 @@ def print_params(state, vocab, silence_print=False):
 
 
 def print_activations(
-    n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations
+    n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations, silence_print=False
 ):
     text = ""
     np.set_printoptions(threshold=np.inf)
@@ -126,5 +126,6 @@ def print_activations(
                 text += f"{layer_activation[key][idx]}\n"
                 text += "\n"
         text += "--------------------------\n"
-    print(text)
+    if not silence_print:
+        print(text)
     return text
