@@ -2,7 +2,7 @@ import jax  # type: ignore
 import jax.numpy as jnp  # type: ignore
 import numpy as np  # type: ignore
 from inductive_transformer.jax_transformer.helper_functions import EPSILON, get_num_layers
-from synonyms import Synonyms  # type: ignore
+from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
 
 strong = 1.0 - EPSILON  # Amplify the signal
 weak = EPSILON  # Dampen the signal
@@ -72,9 +72,10 @@ def init_weights(
     noise_value=0.01,
     catsanddogs=False,
 ):
-    synonyms = Synonyms()
     if catsanddogs:
-        synonyms.cats_and_dogs_overwrite()
+        synonyms = make_cat_dog_anavan()
+    else:
+        synonyms = make_cat_dog_worm_bird_anavan()
     if zero_out_right_weights:
         synonyms.zero_right_words()
     if zero_out_left_weights:
