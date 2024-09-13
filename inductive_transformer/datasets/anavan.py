@@ -152,6 +152,24 @@ class ANAVAN:
             num_sentences = min(num_sentences, len(sentences))
             return sentences[:num_sentences]
 
+    def is_valid(self, sentence):
+        num_words = 6
+        words = sentence.lower().split()
+
+        if len(words) != num_words:
+            return False
+
+        relevant_pairs = {
+            key: value
+            for key, value in self.valid_pairs.items()
+            if all(k < num_words for k in key)
+        }
+        for key, value in relevant_pairs.items():
+            if (words[key[0]], words[key[1]]) not in value:
+                return False
+
+        return True
+
 
 def make_cat_dog_anavan():
     valid_left_zeroth_words = [
