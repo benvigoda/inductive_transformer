@@ -50,13 +50,14 @@ def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=Non
             plt.savefig(file_path)
         else:
             plt.savefig(plot_file_name)
+        plt.close()
     else:
         plt.show()
 
 
 # Function to prepare data and plot results
 def histogram_results(training_sentences, generated_sentences, grammar, catsanddogs=False, subtitle=None, plot_file_name=None, folder=None):
-    num_words = len(training_sentences[0].split())
+    # Count the occurrences of each sentence in both datasets
     training_counts = Counter(training_sentences)
     generated_counts = Counter(generated_sentences)
     training_data = pd.DataFrame(

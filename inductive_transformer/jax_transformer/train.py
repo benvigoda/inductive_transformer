@@ -7,6 +7,7 @@ import jax.numpy as jnp  # type: ignore
 import numpy as np  # type: ignore
 import optax  # type: ignore
 import pathlib
+import datetime
 
 
 from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
@@ -133,7 +134,7 @@ def apply_model(state, z_in, t_in, truths):
         import optax
         from flax import linen as nn
         t_out_for_loss = jnp.log(nn.relu(t_out))
-        loss = optax.softmax_cross_entropy(t_out_for_loss, truths).mean()
+        loss = optax.safe_softmax_cross_entropy(t_out_for_loss, truths).mean()
         # jax.debug.print("t_out\n{}", t_out)
         # jax.debug.print("truths\n{}", truths)
         # jax.debug.print("loss {}\n", loss)
@@ -404,7 +405,8 @@ def main():
         n_epochs = 0
 
     # Create a folder named {seed}_seed_{n_epochs}_num_epochs if it doesn't exist
-    file_prefix = f"{seed}_seed_{n_epochs}_num_epochs_{noise_value}_noise_value_"
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    file_prefix = f"{seed}_seed_{n_epochs}_num_epochs_{noise_value}_noise_value_{current_time}_"
     folder_name = file_prefix
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
