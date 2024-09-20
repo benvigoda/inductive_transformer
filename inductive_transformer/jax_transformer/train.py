@@ -440,7 +440,7 @@ def main():
                 loss=loss,
                 plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
                 activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
-                silence_print=False,
+                silence_print=True,
                 folder_name=folder_name,
             )
             print("Bottom", "↑" * 100)
@@ -492,6 +492,7 @@ def main():
             plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
             activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
             folder_name=folder_name,
+            silence_print=True,
         )
 
     return seed, loss, lr
