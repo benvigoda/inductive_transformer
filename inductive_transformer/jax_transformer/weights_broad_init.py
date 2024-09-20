@@ -33,14 +33,14 @@ def set_position_pi_weights(
             jnp.full(layer_width, strong)
         )  # Match num_layer to the opposite position in the weights
 
-        # if perturb_weights_position:
-        #     if not surgical_perturb:
-        #         # Add a small amount of noise to the weights
-        #         new_weights = new_weights + jax.random.normal(
-        #             jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weights.shape
-        #         ) * noise_value
-        #     else:
-        #         new_weights = new_weights.at[[0][0]].set(new_weights[0][0] - jax.random.normal(jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1))) * noise_value)
+        if perturb_weights:
+            if not surgical_perturb:
+                # Add a small amount of noise to the weights
+                new_weights = new_weights + jax.random.normal(
+                    jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weights.shape
+                ) * noise_value
+            else:
+                new_weights = new_weights.at[[0][0]].set(new_weights[0][0] - noise_value)
         #         # import pdb; pdb.set_trace()
 
         params["params"][layer_key][position_pi]["weights"] = new_weights
@@ -99,7 +99,7 @@ def init_weights(
             params=updated_params,
             mask=set_weights,
             perturb_weights=perturb_weights or bool(perturb_position),
-            lock_weights=lock_all_weights,
+            lock_weights=False,
             prefix="decoder",
             layer_width=layer_width,
             noise_value=noise_value if perturb_weights else perturb_position,
@@ -110,7 +110,7 @@ def init_weights(
             params=updated_params,
             mask=set_weights,
             perturb_weights=perturb_weights or bool(perturb_position),
-            lock_weights=lock_all_weights,
+            lock_weights=False,
             prefix="encoder",
             layer_width=layer_width,
             noise_value=noise_value if perturb_weights else perturb_position,

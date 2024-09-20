@@ -398,7 +398,7 @@ def main():
         n_epochs = num_epochs
         batch_size = 10
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
-        print_every = 10
+        print_every = 1
         print(f"Training plan: {n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
         key, subkey = jax.random.split(key)
     else:
