@@ -427,22 +427,22 @@ def main():
             with open(file_path, "w") as f:
                 print("saving weights to", file_path)
                 f.write(printed_weights)
-            inference_and_plot(
-                state=state,
-                prob_tensors=prob_tensors,
-                grammar=grammar,
-                key=key,
-                args=args,
-                data=data,
-                seed=seed,
-                n_epochs=n_epochs,
-                epoch=epoch,
-                loss=loss,
-                plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
-                activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
-                silence_print=True,
-                folder_name=folder_name,
-            )
+            # inference_and_plot(
+            #     state=state,
+            #     prob_tensors=prob_tensors,
+            #     grammar=grammar,
+            #     key=key,
+            #     args=args,
+            #     data=data,
+            #     seed=seed,
+            #     n_epochs=n_epochs,
+            #     epoch=epoch,
+            #     loss=loss,
+            #     plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
+            #     activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
+            #     silence_print=True,
+            #     folder_name=folder_name,
+            # )
             print("Bottom", "↑" * 100)
 
         if args.loss_threshold and loss < args.loss_threshold:
@@ -457,9 +457,36 @@ def main():
             grads, loss = apply_model(
                 state, prob_tensors.attention_input, batch_input_data, batch_output_data
             )
+            print(f"epoch {epoch}, step {step_idx}, loss: {loss:.20e}")
             state = update_model(state, grads)
             if args.loss_threshold and loss < args.loss_threshold:
                 break
+            if epoch == 10 and 180 < step_idx < 185:
+                print("\nTop:", "↓" * 100)
+                print(f"epoch {epoch}, loss: {loss:.20e}")
+                printed_weights = print_params(state, data.vocab, silence_print=True)
+                file_name = file_prefix + f"{epoch}_epoch_{step_idx}_step_output_weights.txt"
+                file_path = os.path.join(folder_name, file_name)
+                with open(file_path, "w") as f:
+                    print("saving weights to", file_path)
+                    f.write(printed_weights)
+                inference_and_plot(
+                    state=state,
+                    prob_tensors=prob_tensors,
+                    grammar=grammar,
+                    key=key,
+                    args=args,
+                    data=data,
+                    seed=seed,
+                    n_epochs=n_epochs,
+                    epoch=epoch,
+                    loss=loss,
+                    plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
+                    activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
+                    silence_print=True,
+                    folder_name=folder_name,
+                )
+                print("Bottom", "↑" * 100)
 
     if n_epochs == 0:
         print("\nTop:", "↓" * 100)
