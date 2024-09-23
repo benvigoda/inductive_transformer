@@ -97,18 +97,18 @@ def create_train_state(
     if noise_seed is None:
         # Pick a random number between 1e-8 and 1e-1
         # lr = 10 ** np.random.uniform(-8, -1)
-        lr = 1e-3
+        lr = 1e-4
         tx = optax.chain(
             optax.adam(learning_rate=lr),
         )
-        # b1 means the exponential decay rate for the first moment estimates
-        # b2 means the exponential decay rate for the second moment estimates
-        # A lower b1 will make the optimizer more aggressive, a higher b1 will make it less aggressive
-        # A lower b2 will make the optimizer more aggressive, a higher b2 will make it less aggressive
     else:
         tx = optax.chain(
             optax.add_noise(eta=1.0e-2, gamma=0.999, seed=noise_seed),
         )
+
+    tx = optax.chain(
+      optax.adam(learning_rate=optax.exponential_decay(init_value=1e-3, transition_steps=1000, decay_rate=0.9)),
+    )
     state = TrainState.create(
         apply_fn=model.apply,
         params=params,
@@ -119,7 +119,13 @@ def create_train_state(
     print(f"Number of parameters: {num_params}")
     return state, model, lr
 
+# (num_positions, vocab_size)
 
+# t_out.shape = (48 or 10, 6, 54)
+# t_out.shape = (num_training_examples initially but batch_size when training, num_layers=num positions, vocab_size)
+# t_out.shape = truths.shape
+# num_training_examples is used when computing the initial loss
+# batch_size = 10, is used during the training loop
 @jax.jit
 def apply_model(state, z_in, t_in, truths):
     """Computes gradients and loss for a single instance (not yet batched)."""
@@ -133,8 +139,9 @@ def apply_model(state, z_in, t_in, truths):
         # Use cross entropy loss
         import optax
         from flax import linen as nn
-        t_out_for_loss = jnp.log(nn.relu(t_out))
+        t_out_for_loss = jnp.log(nn.relu(t_out) + 1e-20)
         loss = optax.safe_softmax_cross_entropy(t_out_for_loss, truths).mean()
+        # loss = optax.convex_kl_divergence(t_out_for_loss, truths).mean()
         # jax.debug.print("t_out\n{}", t_out)
         # jax.debug.print("truths\n{}", truths)
         # jax.debug.print("loss {}\n", loss)
@@ -389,8 +396,8 @@ def main():
     print(f"initial loss: {loss:.20e}")
 
     # temp: duplicate our training data
-    all_t_tensors = jnp.concatenate([all_t_tensors] * 100, axis=0)
-    all_outputs = jnp.concatenate([all_outputs] * 100, axis=0)
+    all_t_tensors = jnp.concatenate([all_t_tensors] * 100, axis=0) # one-hot inputs
+    all_outputs = jnp.concatenate([all_outputs] * 100, axis=0) #probability output predictions
     print(f"num training examples (padded): {all_t_tensors.shape[0]}")
 
     # Train the model.
@@ -406,7 +413,7 @@ def main():
 
     # Create a folder named {seed}_seed_{n_epochs}_num_epochs if it doesn't exist
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    file_prefix = f"{seed}_seed_{n_epochs}_num_epochs_{noise_value}_noise_value_{current_time}_"
+    file_prefix = f"{current_time}_seed_{seed}_num_epochs_{n_epochs}_noise_value_{noise_value}_"
     folder_name = file_prefix
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)

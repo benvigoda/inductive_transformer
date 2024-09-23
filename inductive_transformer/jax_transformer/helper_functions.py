@@ -1,4 +1,5 @@
 import jax.numpy as jnp  # type: ignore
+import jax  # type: ignore
 
 EPSILON = 1e-20
 IMPROBABLE = 1e-9
@@ -22,13 +23,24 @@ def custom_normalize(tensor: jnp.ndarray, axis=0, default_constant=0.5) -> jnp.n
     # Compute the sum along axis=axis and keepdims=True to maintain the dimensions for broadcasting
     sum_tensor = jnp.sum(tensor, axis=axis, keepdims=True)
 
+    # Get the shape of the tensor
+    shape = tensor.shape
+    # Get the length on axis
+    length = shape[axis]
+
     # Create a mask where the sum is zero
     mask = sum_tensor == 0
+    # And another mask where the sum is infinite
+    inf_mask = jnp.isinf(sum_tensor)
+
+    # jax print debugger:
+    # jax.debug.print('inf_mask: {}', inf_mask)
+
 
     # Replace zero sums with ones to avoid division by zero and then divide
     result = tensor / jnp.where(mask, jnp.ones_like(sum_tensor), sum_tensor)
 
-    # Where the sum was zero, replace with the constant C
-    result = jnp.where(mask, jnp.full_like(result, fill_value=default_constant), result)
+    # Where the sum was zero, replace with the constant 1/length where length is the length of the axis
+    result = jnp.where(mask, jnp.full_like(result, fill_value=1/length), result)
 
     return result
