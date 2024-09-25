@@ -18,34 +18,42 @@ def validate_sentences(sentences_list, grammar):
 
 
 # Function to plot side-by-side horizontal histograms with shared y-axis
-def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=None, folder=None):
+def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=None, folder=None, bar_width=0.5):
     # Set up the figure with two subplots, sharing the y-axis
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6), sharey=True)
 
     # Plot training data on the first subplot
-    sns.barplot(x="Count", y="Sentence", data=data1, color="blue", ax=ax1)
+    sns.barplot(x="Count", y="Sentence", data=data1, color="blue", ax=ax1, width=bar_width)
     ax1.set_title("Training Data")
     ax1.set_xlabel("Count")
     ax1.set_ylabel("Sentences")
     palette = {"valid": "green", "invalid": "red"}
     # Plot generated data on the second subplot
     sns.barplot(
-        x="Count", y="Sentence", data=data2, hue="Status", palette=palette, ax=ax2
+        x="Count", y="Sentence", data=data2, hue="Status", palette=palette, ax=ax2, width=bar_width
     )
     ax2.set_title("Generated Data")
     ax2.set_xlabel("Count")
     ax2.set_ylabel("")  # No y-label for the right plot
 
     # Adjust subplot parameters to give more space and align them nicely
-    plt.subplots_adjust(wspace=0.2)  # Increase space between the plots
-
+    plt.subplots_adjust(
+        left=0.18,  # Adds more space to the left
+        right=0.98,  # Adds more space to the right
+        wspace=0.05,  # Increase space between the plots
+    )
     plt.setp(ax1.get_yticklabels(), fontsize=5)
     # Actually, only show every 10th y-tick label
-    for i, label in enumerate(ax1.yaxis.get_ticklabels()):
-        if i % 50 != 0:
-            label.set_visible(False)
-        else:
-            label.set_visible(True)
+    # for i, label in enumerate(ax1.yaxis.get_ticklabels()):
+    #     if i % 50 != 0:
+    #         label.set_visible(False)
+    #     else:
+    #         label.set_visible(True)
+    # Make sure the y-ticks are evenly spaced
+    from matplotlib.ticker import MaxNLocator
+    # ax1.yaxis.set_major_locator(plt.MaxNLocator(100))
+    ax1.yaxis.set_major_locator(MaxNLocator(nbins=50, prune='both'))
+    ax2.yaxis.set_major_locator(MaxNLocator(nbins=50, prune='both'))
 
     if subtitle:
         plt.suptitle(subtitle, fontsize=16)
