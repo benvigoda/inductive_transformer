@@ -40,7 +40,9 @@ def set_position_pi_weights(
                     jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weights.shape
                 ) * noise_value
             else:
-                new_weights = new_weights.at[[0][0]].set(new_weights[0][0] + noise_value)
+                new_weights = new_weights + jax.random.normal(
+                    jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weights.shape
+                ) * noise_value
 
         params["params"][layer_key][position_pi]["weights"] = new_weights
         # Note: We have constrained the model such that num_positions needs to be equal
@@ -53,8 +55,6 @@ def set_position_pi_weights(
             )
     else:
         raise ValueError(f"Layer {layer_key} not found in params.")
-
-
 
 
 def init_weights(
@@ -287,19 +287,23 @@ def init_weights(
             #     else:
             #         new_weights = new_weights.at[[0][0]].set(new_weights[0][0] - jax.random.normal(jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1))) * noise_value)
 
-
             if perturb_weights or perturb_attention:
                 if not surgical_perturb:
                     # Add a small amount of noise to the weights
                     new_weight = new_weight + jax.random.normal(
                         jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weight.shape
                     ) * (noise_value if perturb_weights else perturb_attention)
+                elif "encoder" in encoder_decoder:
+                    new_weight = new_weight + jax.random.normal(
+                        jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weight.shape
+                    ) * (noise_value if perturb_weights else perturb_attention)
+
             updated_params["params"][f"{encoders_decoders}_{layer}"][
                 f"{encoder_decoder}_attention_pi"
             ]["weights"] = new_weight
-            
+
             # Fix set_weights so the gradient does not update the weights
-            if lock_all_weights:
+            if lock_all_weights and "encoder" in encoder_decoder:
                 set_weights["params"][f"{encoders_decoders}_{layer}"][
                     f"{encoder_decoder}_attention_pi"
                 ]["weights"] = jnp.zeros_like(

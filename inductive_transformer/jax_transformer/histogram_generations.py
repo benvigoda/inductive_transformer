@@ -40,6 +40,13 @@ def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=Non
     plt.subplots_adjust(wspace=0.2)  # Increase space between the plots
 
     plt.setp(ax1.get_yticklabels(), fontsize=5)
+    # Actually, only show every 10th y-tick label
+    for i, label in enumerate(ax1.yaxis.get_ticklabels()):
+        if i % 50 != 0:
+            label.set_visible(False)
+        else:
+            label.set_visible(True)
+
     if subtitle:
         plt.suptitle(subtitle, fontsize=16)
 

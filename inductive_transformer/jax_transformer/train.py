@@ -396,8 +396,8 @@ def main():
     print(f"initial loss: {loss:.20e}")
 
     # temp: duplicate our training data
-    all_t_tensors = jnp.concatenate([all_t_tensors] * 100, axis=0) # one-hot inputs
-    all_outputs = jnp.concatenate([all_outputs] * 100, axis=0) #probability output predictions
+    all_t_tensors = jnp.concatenate([all_t_tensors] * 100, axis=0)  # one-hot inputs
+    all_outputs = jnp.concatenate([all_outputs] * 100, axis=0)  # probability output predictions
     print(f"num training examples (padded): {all_t_tensors.shape[0]}")
 
     # Train the model.
@@ -405,7 +405,7 @@ def main():
         n_epochs = num_epochs
         batch_size = 10
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
-        print_every = 10
+        print_every = 1
         print(f"Training plan: {n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
         key, subkey = jax.random.split(key)
     else:
@@ -500,7 +500,7 @@ def main():
             activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
             folder_name=folder_name,
         )
-
+    print(f"Saved results to {folder_name}")
     return seed, loss, lr
 
 
