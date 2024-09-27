@@ -48,6 +48,7 @@ def create_train_state(
     zero_out_right_weights=False,
     zero_out_left_weights=False,
     catsanddogs=False,
+    seed=0,
 ):
     """Creates initial `TrainState`."""
     bernoulli_width = 2
@@ -90,6 +91,7 @@ def create_train_state(
             zero_out_right_weights=zero_out_right_weights,
             zero_out_left_weights=zero_out_left_weights,
             catsanddogs=catsanddogs,
+            seed=seed,
         )
         grad_mask = weight_mask
 
@@ -387,6 +389,7 @@ def main():
         zero_out_right_weights=args.zero_out_right_weights,
         zero_out_left_weights=args.zero_out_left_weights,
         catsanddogs=args.catsanddogs,
+        seed=seed,
     )
 
     # Check the initial loss.
@@ -425,33 +428,6 @@ def main():
         # all_t_tensors = jax.random.permutation(shuffle_key, all_t_tensors)
         # all_outputs = jax.random.permutation(shuffle_key, all_outputs)
 
-        if epoch % print_every == 0 or epoch == n_epochs - 1:
-            print("\nTop:", "↓" * 100)
-            print(f"epoch {epoch}, loss: {loss:.20e}")
-            printed_weights = print_params(state, data.vocab, silence_print=True)
-            file_name = file_prefix + f"{epoch}_epoch_output_weights.txt"
-            file_path = os.path.join(folder_name, file_name)
-            with open(file_path, "w") as f:
-                print("saving weights to", file_path)
-                f.write(printed_weights)
-            inference_and_plot(
-                state=state,
-                prob_tensors=prob_tensors,
-                grammar=grammar,
-                key=key,
-                args=args,
-                data=data,
-                seed=seed,
-                n_epochs=n_epochs,
-                epoch=epoch,
-                loss=loss,
-                plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
-                activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
-                silence_print=False,
-                folder_name=folder_name,
-            )
-            print("Bottom", "↑" * 100)
-
         if args.loss_threshold and loss < args.loss_threshold:
             break
 
@@ -465,6 +441,35 @@ def main():
                 state, prob_tensors.attention_input, batch_input_data, batch_output_data
             )
             state = update_model(state, grads)
+
+            # if epoch % print_every == 0 or epoch == n_epochs - 1 and step_idx == 0:
+            if (epoch % print_every == 0 or epoch == n_epochs - 1) and step_idx % 20 == 0:
+                print("\nTop:", "↓" * 100)
+                print(f"epoch {epoch}, loss: {loss:.20e}")
+                printed_weights = print_params(state, data.vocab, silence_print=True)
+                file_name = file_prefix + f"{step_idx}_step_{epoch}_epoch_output_weights.txt"
+                file_path = os.path.join(folder_name, file_name)
+                with open(file_path, "w") as f:
+                    print("saving weights to", file_path)
+                    f.write(printed_weights)
+                inference_and_plot(
+                    state=state,
+                    prob_tensors=prob_tensors,
+                    grammar=grammar,
+                    key=key,
+                    args=args,
+                    data=data,
+                    seed=seed,
+                    n_epochs=n_epochs,
+                    epoch=epoch,
+                    loss=loss,
+                    plot_file_name=file_prefix + f"{step_idx}_step_{epoch}_epoch_output_histograms.png",
+                    activations_file_name=file_prefix + f"{step_idx}_step_{epoch}_epoch_output_activations.txt",
+                    silence_print=False,
+                    folder_name=folder_name,
+                )
+                print("Bottom", "↑" * 100)
+
             if args.loss_threshold and loss < args.loss_threshold:
                 break
 

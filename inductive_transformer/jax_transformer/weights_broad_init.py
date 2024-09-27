@@ -20,6 +20,7 @@ def set_position_pi_weights(
     lock_weights=False,
     noise_value=0.01,
     surgical_perturb=False,
+    seed=0,
 ):
     layer_key = f"{prefix}s_{layer}"
     position_pi = f"{prefix}_position_pi"
@@ -37,11 +38,11 @@ def set_position_pi_weights(
             if not surgical_perturb:
                 # Add a small amount of noise to the weights
                 new_weights = new_weights + jax.random.normal(
-                    jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weights.shape
+                    jax.random.PRNGKey(seed), new_weights.shape
                 ) * noise_value
             else:
                 new_weights = new_weights + jax.random.normal(
-                    jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weights.shape
+                    jax.random.PRNGKey(seed), new_weights.shape
                 ) * noise_value
 
         params["params"][layer_key][position_pi]["weights"] = new_weights
@@ -70,6 +71,7 @@ def init_weights(
     zero_out_left_weights=False,
     noise_value=0.01,
     catsanddogs=False,
+    seed=0,
 ):
     if catsanddogs:
         synonyms = make_cat_dog_anavan()
@@ -103,6 +105,7 @@ def init_weights(
             layer_width=layer_width,
             noise_value=noise_value if perturb_weights else perturb_position,
             surgical_perturb=surgical_perturb,
+            seed=seed,
         )
         set_position_pi_weights(
             layer=layer,
@@ -114,6 +117,7 @@ def init_weights(
             layer_width=layer_width,
             noise_value=noise_value if perturb_weights else perturb_position,
             surgical_perturb=surgical_perturb,
+            seed=seed,
         )
 
     def set_token_weights(
@@ -147,7 +151,7 @@ def init_weights(
             if not surgical_perturb:
                 # Add a small amount of noise to the weights
                 new_weight_encoder = new_weight_encoder + jax.random.normal(
-                    jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weight_encoder.shape
+                    jax.random.PRNGKey(seed), new_weight_encoder.shape
                 ) * (noise_value if perturb_weights else perturb_token)
         updated_params["params"][f"encoders_{num_layer}"]["encoder_token_pi"][
             "weights"
@@ -170,7 +174,7 @@ def init_weights(
             if not surgical_perturb:
                 # Add a small amount of noise to the weights
                 new_weight_decoder = new_weight_decoder + jax.random.normal(
-                    jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weight_decoder.shape
+                    jax.random.PRNGKey(seed), new_weight_decoder.shape
                 ) * (noise_value if perturb_weights else perturb_token)
         updated_params["params"][f"decoders_{num_layer}"]["decoder_token_pi"][
             "weights"
@@ -195,7 +199,7 @@ def init_weights(
                 if not surgical_perturb:
                     # Add a small amount of noise to the weights
                     new_weight_encoder = new_weight_encoder + jax.random.normal(
-                        jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weight_encoder.shape
+                        jax.random.PRNGKey(seed), new_weight_encoder.shape
                     ) * (noise_value if perturb_weights else perturb_token)
             updated_params["params"][f"encoders_{num_layer}"]["encoder_token_pi"][
                 "weights"
@@ -212,7 +216,7 @@ def init_weights(
                 if not surgical_perturb:
                     # Add a small amount of noise to the weights
                     new_weight_decoder = new_weight_decoder + jax.random.normal(
-                        jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weight_decoder.shape
+                        jax.random.PRNGKey(seed), new_weight_decoder.shape
                     ) * (noise_value if perturb_weights else perturb_token)
             updated_params["params"][f"decoders_{num_layer}"]["decoder_token_pi"][
                 "weights"
@@ -282,20 +286,20 @@ def init_weights(
             #     if not surgical_perturb:
             #         # Add a small amount of noise to the weights
             #         new_weights = new_weights + jax.random.normal(
-            #             jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weights.shape
+            #             jax.random.PRNGKey(seed), new_weights.shape
             #         ) * noise_value
             #     else:
-            #         new_weights = new_weights.at[[0][0]].set(new_weights[0][0] - jax.random.normal(jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1))) * noise_value)
+            #         new_weights = new_weights.at[[0][0]].set(new_weights[0][0] - jax.random.normal(jax.random.PRNGKey(seed) * noise_value)
 
             if perturb_weights or perturb_attention:
                 if not surgical_perturb:
                     # Add a small amount of noise to the weights
                     new_weight = new_weight + jax.random.normal(
-                        jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weight.shape
+                        jax.random.PRNGKey(seed), new_weight.shape
                     ) * (noise_value if perturb_weights else perturb_attention)
                 elif "encoder" in encoder_decoder:
                     new_weight = new_weight + jax.random.normal(
-                        jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weight.shape
+                        jax.random.PRNGKey(seed), new_weight.shape
                     ) * (noise_value if perturb_weights else perturb_attention)
 
             updated_params["params"][f"{encoders_decoders}_{layer}"][
@@ -303,7 +307,7 @@ def init_weights(
             ]["weights"] = new_weight
 
             # Fix set_weights so the gradient does not update the weights
-            if lock_all_weights and "encoder" in encoder_decoder:
+            if lock_all_weights and "decoder" in encoder_decoder:
                 set_weights["params"][f"{encoders_decoders}_{layer}"][
                     f"{encoder_decoder}_attention_pi"
                 ]["weights"] = jnp.zeros_like(

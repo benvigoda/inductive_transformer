@@ -43,20 +43,14 @@ def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=Non
         wspace=0.05,  # Increase space between the plots
     )
     plt.setp(ax1.get_yticklabels(), fontsize=5)
-    # Actually, only show every 10th y-tick label
-    # for i, label in enumerate(ax1.yaxis.get_ticklabels()):
-    #     if i % 50 != 0:
-    #         label.set_visible(False)
-    #     else:
-    #         label.set_visible(True)
     # Make sure the y-ticks are evenly spaced
     from matplotlib.ticker import MaxNLocator
     # ax1.yaxis.set_major_locator(plt.MaxNLocator(100))
     ax1.yaxis.set_major_locator(MaxNLocator(nbins=50, prune='both'))
     ax2.yaxis.set_major_locator(MaxNLocator(nbins=50, prune='both'))
 
-    if subtitle:
-        plt.suptitle(subtitle, fontsize=16)
+    # if subtitle:
+    #     plt.suptitle(subtitle, fontsize=16)
 
     # Show the plot
     if plot_file_name:
@@ -68,6 +62,67 @@ def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=Non
         plt.close()
     else:
         plt.show()
+
+    # Make a zoomed-in plot with only the first 100 sentences
+    # Still show both histograms, but only the first 100 sentences
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6), sharey=True)
+    sns.barplot(x="Count", y="Sentence", data=data1.head(100), color="blue", ax=ax1, width=bar_width)
+    ax1.set_title("Training Data")
+    ax1.set_xlabel("Count")
+    ax1.set_ylabel("Sentences")
+    sns.barplot(
+        x="Count", y="Sentence", data=data2.head(100), hue="Status", palette=palette, ax=ax2, width=bar_width
+    )
+    ax2.set_title("Generated Data")
+    ax2.set_xlabel("Count")
+    ax2.set_ylabel("")  # No y-label for the right plot
+    plt.subplots_adjust(left=0.18, right=0.98, wspace=0.05)
+    plt.setp(ax1.get_yticklabels(), fontsize=5)
+    # Actually, only show every 10th y-tick label
+    for i, label in enumerate(ax1.yaxis.get_ticklabels()):
+        if i % 4 != 0:
+            label.set_visible(False)
+        else:
+            label.set_visible(True)
+    # Make sure the y-ticks are evenly spaced
+    # ax1.yaxis.set_major_locator(MaxNLocator(nbins=5, prune='both'))
+    # ax2.yaxis.set_major_locator(MaxNLocator(nbins=5, prune='both'))
+    # Save the plot
+    if plot_file_name:
+        if folder:
+            file_path = os.path.join(folder, plot_file_name[:-4] + "_zoom.png")
+            plt.savefig(file_path)
+        else:
+            plt.savefig(plot_file_name[:-4] + "_zoom.png")
+        plt.close()
+
+    # Make a another plot with the same original data, but only show the second histogram
+    # This is useful for saving the second histogram separately
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sns.barplot(
+        x="Count", y="Sentence", data=data2, hue="Status", palette=palette, ax=ax, width=bar_width
+    )
+    ax.set_title("Generated Data")
+    ax.set_xlabel("Count")
+    ax.set_ylabel("")  # No y-label for the right plot
+    plt.subplots_adjust(left=0.4, right=0.98, wspace=0.05)
+    plt.setp(ax.get_yticklabels(), fontsize=5)
+    # Actually, only show every 10th y-tick label
+    # for i, label in enumerate(ax.yaxis.get_ticklabels()):
+    #     if i % 5 != 0:
+    #         label.set_visible(False)
+    #     else:
+    #         label.set_visible(True)
+    # Make sure the y-ticks are evenly spaced
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=50, prune='both'))
+    # Save the plot
+    if plot_file_name:
+        if folder:
+            file_path = os.path.join(folder, plot_file_name[:-4] + "_second.png")
+            plt.savefig(file_path)
+        else:
+            plt.savefig(plot_file_name[:-4] + "_second.png")
+        plt.close()
 
 
 # Function to prepare data and plot results
