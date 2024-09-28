@@ -273,7 +273,6 @@ class TransformerClassifier(nn.Module):
         x = self.preprocessor(x)
         x = self.encoder(x, mask=mask, training=training)
         x = self.output_net(x)
-        x = nn.log_softmax(x, axis=-1)
         return x
 
 
@@ -324,7 +323,7 @@ if __name__ == "__main__":
 
     print("input\n", in_data.shape, "\n", in_data)
     print("output log probs\n", output.shape, "\n", output)
-    probs = jnp.exp(output)
+    probs = nn.softmax(output)
     print("output probs\n", output.shape, "\n", probs)
     prob_sums = probs.sum(axis=-1)
     print("output prob sums\n", prob_sums.shape, "\n", prob_sums)
