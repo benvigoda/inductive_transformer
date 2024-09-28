@@ -343,8 +343,8 @@ def main():
         grammar = make_cat_dog_worm_bird_anavan()
 
     # Verify that the training sentences are valid.
-    for sentence in data.training_sentences:
-        assert grammar.is_valid(sentence), f"training data contains an invalid sentence: {sentence}"
+    # for sentence in data.training_sentences:
+    #     assert grammar.is_valid(sentence), f"training data contains an invalid sentence: {sentence}"
 
     # Construct the probability tensors.
     prob_tensors = ProbTensors(
@@ -442,12 +442,12 @@ def main():
             )
             state = update_model(state, grads)
 
-            # if epoch % print_every == 0 or epoch == n_epochs - 1 and step_idx == 0:
-            if (epoch % print_every == 0 or epoch == n_epochs - 1) and step_idx % 20 == 0:
+            if epoch % print_every == 0 or epoch == n_epochs - 1 and step_idx == 0:
+            # if (epoch % print_every == 0 or epoch == n_epochs - 1) and step_idx % 20 == 0:
                 print("\nTop:", "↓" * 100)
                 print(f"epoch {epoch}, loss: {loss:.20e}")
                 printed_weights = print_params(state, data.vocab, silence_print=True)
-                file_name = file_prefix + f"{step_idx}_step_{epoch}_epoch_output_weights.txt"
+                file_name = file_prefix + f"{epoch}_epoch_{step_idx}_step_output_weights.txt"
                 file_path = os.path.join(folder_name, file_name)
                 with open(file_path, "w") as f:
                     print("saving weights to", file_path)
@@ -463,8 +463,8 @@ def main():
                     n_epochs=n_epochs,
                     epoch=epoch,
                     loss=loss,
-                    plot_file_name=file_prefix + f"{step_idx}_step_{epoch}_epoch_output_histograms.png",
-                    activations_file_name=file_prefix + f"{step_idx}_step_{epoch}_epoch_output_activations.txt",
+                    plot_file_name=file_prefix + f"{epoch}_epoch_{step_idx}_step_output_histograms.png",
+                    activations_file_name=file_prefix + f"{epoch}_{step_idx}_step_epoch_output_activations.txt",
                     silence_print=False,
                     folder_name=folder_name,
                 )

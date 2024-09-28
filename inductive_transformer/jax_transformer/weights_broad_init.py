@@ -297,17 +297,17 @@ def init_weights(
                     new_weight = new_weight + jax.random.normal(
                         jax.random.PRNGKey(seed), new_weight.shape
                     ) * (noise_value if perturb_weights else perturb_attention)
-                elif "encoder" in encoder_decoder:
-                    new_weight = new_weight + jax.random.normal(
-                        jax.random.PRNGKey(seed), new_weight.shape
-                    ) * (noise_value if perturb_weights else perturb_attention)
+                # elif "encoder" in encoder_decoder:
+                #     new_weight = new_weight + jax.random.normal(
+                #         jax.random.PRNGKey(seed), new_weight.shape
+                #     ) * (noise_value if perturb_weights else perturb_attention)
 
             updated_params["params"][f"{encoders_decoders}_{layer}"][
                 f"{encoder_decoder}_attention_pi"
             ]["weights"] = new_weight
 
             # Fix set_weights so the gradient does not update the weights
-            if lock_all_weights and "decoder" in encoder_decoder:
+            if lock_all_weights: # and "decoder" in encoder_decoder:
                 set_weights["params"][f"{encoders_decoders}_{layer}"][
                     f"{encoder_decoder}_attention_pi"
                 ]["weights"] = jnp.zeros_like(
