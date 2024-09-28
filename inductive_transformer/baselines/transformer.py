@@ -6,6 +6,10 @@ import numpy as np
 
 
 def scaled_dot_product(q, k, v, mask=None):
+    """The mask should have shape (n_elements, n_elements). The first axis is the query axis, and
+    the second the key axis. So mask[i, j] should be 0 if the i-th element should not attend to the
+    j-th element."""
+
     n_elements = q.shape[-2]  # the number of elements for which we have queries/keys
     k_dim = q.shape[-1]  # the dimension of the query and key vectors
     v_dim = v.shape[-1]  # the dimension of the value vectors
@@ -44,6 +48,7 @@ class MultiHeadAttention(nn.Module):
 
     @nn.compact
     def __call__(self, x, mask=None):
+        # Usually both in_dim and out_dim are the embedding dimension.
         n_elements, in_dim = x.shape[-2:]
 
         # Register parameters.
@@ -73,7 +78,9 @@ class MultiHeadAttention(nn.Module):
         assert summed_values.shape[-3:] == (self.n_heads, n_elements, self.v_dim)
         assert attentions.shape[-3:] == (self.n_heads, n_elements, n_elements)
 
-        # Combine the outputs of the heads into a single output vector.
+        # Combine the outputs of the heads into a single output vector. Usually this is described as
+        # concatenating the outputs of the heads and applying a linear transformation in the form of
+        # a matrix. The version below is algebraically equivalent.
         outputs = jnp.einsum("ijk,...jlk->...li", o_weights, summed_values)
         assert outputs.shape[-2:] == (n_elements, self.out_dim)
 
@@ -215,7 +222,9 @@ class Preprocessor(nn.Module):
     dropout_rate: float
 
     def setup(self):
-        self.embedding = nn.Embed(num_embeddings=self.n_classes, features=self.embedding_dim)
+        self.embedding = nn.Embed(
+            num_embeddings=self.n_classes, features=self.embedding_dim
+        )
         self.positional_encoding = PositionalEncoding(
             max_sequence_length=self.sequence_length,
             embedding_dim=self.embedding_dim,
