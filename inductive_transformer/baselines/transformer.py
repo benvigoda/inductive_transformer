@@ -208,10 +208,31 @@ class PositionalEncoding(nn.Module):
         return x + self.pe[: x.shape[-2], :]
 
 
+class Preprocessor(nn.Module):
+    sequence_length: int
+    n_classes: int
+    embedding_dim: int
+    dropout_rate: float
+
+    def setup(self):
+        self.embedding = nn.Embed(num_embeddings=self.n_classes, features=self.embedding_dim)
+        self.positional_encoding = PositionalEncoding(
+            max_sequence_length=self.sequence_length,
+            embedding_dim=self.embedding_dim,
+        )
+        self.dropout = nn.Dropout(rate=self.dropout_rate)
+
+    def __call__(self, x, deterministic=True):
+        x = self.embedding(x)
+        x = self.positional_encoding(x)
+        x = self.dropout(x, deterministic=deterministic)
+        return x
+
+
 class TransformerClassifier(nn.Module):
     sequence_length: int
-    embedding_dim: int
     n_classes: int
+    embedding_dim: int
     feedforward_dim: int
     n_blocks: int
     n_heads: int
@@ -221,12 +242,13 @@ class TransformerClassifier(nn.Module):
     weight_init: Callable = nn.initializers.xavier_uniform()
 
     def setup(self):
-        self.input_layer = nn.Dense(self.embedding_dim)
-        self.positional_encoding = PositionalEncoding(
-            max_sequence_length=self.sequence_length,
+        self.preprocessor = Preprocessor(
+            sequence_length=self.sequence_length,
+            n_classes=self.n_classes,
             embedding_dim=self.embedding_dim,
+            dropout_rate=self.dropout_rate,
         )
-        self.transforer_encoder = TransformerEncoder(
+        self.encdoer = TransformerEncoder(
             n_blocks=self.n_blocks,
             embedding_dim=self.embedding_dim,
             feedforward_dim=self.feedforward_dim,
@@ -236,24 +258,13 @@ class TransformerClassifier(nn.Module):
             dropout_rate=self.dropout_rate,
             weight_init=self.weight_init,
         )
-        self.output_net = [
-            nn.Dense(self.embedding_dim),
-            nn.LayerNorm(),
-            nn.Dropout(self.dropout_rate),
-            nn.relu,
-            nn.Dense(self.n_classes),
-        ]
+        self.output_net = nn.Dense(self.n_classes)
 
     def __call__(self, x, mask=None, training=False):
-        x = self.input_layer(x)
-        x = self.positional_encoding(x)
-        x = self.transforer_encoder(x, mask=mask, training=training)
-        for layer in self.output_net:
-            x = (
-                layer(x)
-                if not isinstance(layer, nn.Dropout)
-                else layer(x, deterministic=not training)
-            )
+        x = self.preprocessor(x)
+        x = self.encdoer(x, mask=mask, training=training)
+        x = self.output_net(x)
+        x = nn.log_softmax(x, axis=-1)
         return x
 
 
@@ -262,26 +273,28 @@ if __name__ == "__main__":
 
     batch_size = 2
     sequence_length = 10
+    n_classes = 5
     embedding_dim = 128
+    feedforward_dim = 4 * embedding_dim
     n_heads = 1
     k_dim = embedding_dim // n_heads
     v_dim = embedding_dim // n_heads
-    n_classes = 5
     n_blocks = 1
+    dropout_rate = 0.1
 
     main_key, key = jax.random.split(main_key)
-    in_data = jax.random.normal(key, (batch_size, sequence_length, embedding_dim))
+    in_data = jax.random.randint(key, (batch_size, sequence_length), 0, n_classes)
 
     transformer_classifier = TransformerClassifier(
         sequence_length=sequence_length,
         embedding_dim=embedding_dim,
         n_classes=n_classes,
-        feedforward_dim=4 * embedding_dim,
+        feedforward_dim=feedforward_dim,
         n_blocks=n_blocks,
         n_heads=n_heads,
         k_dim=k_dim,
         v_dim=v_dim,
-        dropout_rate=0.1,
+        dropout_rate=dropout_rate,
     )
 
     main_key, key = jax.random.split(main_key)
