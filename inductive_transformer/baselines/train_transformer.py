@@ -7,7 +7,7 @@ import optax
 
 from grammars import BigCatSmallDog
 from tokens import load_dataset, make_dataset_from_sentences
-from models import FullyConnectedAutoregressive
+from transformer import TransformerClassifier
 from histograms import (
     SampleStatus,
     sample_status_names,
@@ -16,21 +16,22 @@ from histograms import (
 )
 
 
-# This file trains a fully connected network to output a probability distribution over tokens for
-# the next position in a sentence. During training, we randomly choose a position, and replace all
-# tokens in the input sentence at that position and later with a BLANK token. The output is trained
-# to be the distribution over output tokens for that position conditioned on all prior input tokens.
-# During inference, this network can be operated in an autoregressive manner to sample from the
-# joint distribution over all tokens in a sentence.
+# This file trains a transformer to output a probability distributions over tokens for each position
+# in a sentence. For training and inference, we use an attention mask to ensure that the
+# distribution at each position only depends on tokens before that position. During training, we use
+# a cross entropy loss at each position, so the model is incentivized to generate the distribution
+# over tokens conditional on all prior tokens. During inference, this network can be operated in an
+# autoregressive manner by sampling only from the distribution for the next token, feeding in the
+# result, and repeating.
 
 
 def make_train_state(key, model, dataset, learning_rate):
-    x = jnp.zeros((1, dataset.sentence_length, dataset.vocab_size))
+    x = jnp.zeros((1, dataset.sentence_length), dtype=jnp.int32)
     key, subkey = jax.random.split(key)
     params = model.init(subkey, x)
     optimizer = optax.adam(learning_rate)
     print(model.tabulate(key, x, compute_flops=True, compute_vjp_flops=True))
-    return model, train_state.TrainState.create(
+    return train_state.TrainState.create(
         apply_fn=model.apply, params=params, tx=optimizer
     )
 
@@ -145,36 +146,51 @@ def main():
     training_sentences_set = set(" ".join(words) for words in training_sentences)
 
     # Build the dataset.
-    data = make_dataset_from_sentences(training_sentences)
+    data = make_dataset_from_sentences(training_sentences, include_blank_token=False)
     print(
         f"Training on {data.n_sentences} sentences of length {data.sentence_length} "
         "with a vocabulary size of {data.vocab_size}."
     )
     print("")
 
-    print("Initializing model...")
+    # Fix hyperparameters.
+    sequence_length = data.sentence_length
+    n_classes = data.vocab_size
+    embedding_dim = 64
+    feedforward_dim = 4 * embedding_dim
+    n_blocks = 4
+    n_heads = 2
+    k_dim = embedding_dim // n_heads
+    v_dim = embedding_dim // n_heads
+    dropout_rate = 0.1
+
+    batch_size = 8
+    n_steps = 1000
     learning_rate = 1e-5
-    sentence_words = data.sentence_length * data.vocab_size
-    layers = [
-        # 2 * sentence_words,
-        # 3 * data.vocab_size,
-        5 * data.vocab_size,
-        5 * data.vocab_size,
-        5 * data.vocab_size,
-    ]
+
+    print("Initializing model...")
     key, subkey = jax.random.split(key)
-    model, train_state = make_train_state(
+    model = TransformerClassifier(
+        sequence_length=sequence_length,
+        n_classes=n_classes,
+        embedding_dim=embedding_dim,
+        feedforward_dim=feedforward_dim,
+        n_blocks=n_blocks,
+        n_heads=n_heads,
+        k_dim=k_dim,
+        v_dim=v_dim,
+        dropout_rate=dropout_rate,
+    )
+    train_state = make_train_state(
         subkey,
-        FullyConnectedAutoregressive(layers=layers),
+        model,
         data,
         learning_rate,
     )
-    key, subkey = jax.random.split(key)
     print("")
+    exit(0)
 
     print("Training...")
-    batch_size = 256
-    n_steps = 1000
     key, subkey = jax.random.split(key)
     state = train(subkey, data, train_state, batch_size, n_steps)
     print("")

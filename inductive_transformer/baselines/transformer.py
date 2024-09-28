@@ -257,7 +257,7 @@ class TransformerClassifier(nn.Module):
             embedding_dim=self.embedding_dim,
             dropout_rate=self.dropout_rate,
         )
-        self.encdoer = TransformerEncoder(
+        self.encoder = TransformerEncoder(
             n_blocks=self.n_blocks,
             embedding_dim=self.embedding_dim,
             feedforward_dim=self.feedforward_dim,
@@ -271,7 +271,7 @@ class TransformerClassifier(nn.Module):
 
     def __call__(self, x, mask=None, training=False):
         x = self.preprocessor(x)
-        x = self.encdoer(x, mask=mask, training=training)
+        x = self.encoder(x, mask=mask, training=training)
         x = self.output_net(x)
         x = nn.log_softmax(x, axis=-1)
         return x

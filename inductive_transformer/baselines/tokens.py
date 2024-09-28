@@ -8,6 +8,7 @@ class Dataset(NamedTuple):
     word_to_id: dict[str, int]
     id_to_word: dict[int, str]
     data: jax.Array  # axes are sentence, word position (in sentence)
+    includes_blank_token: bool = True
 
     @property
     def n_sentences(self):
@@ -23,7 +24,10 @@ class Dataset(NamedTuple):
 
     @property
     def blank_token(self):
-        return self.vocab_size - 1
+        if self.includes_blank_token:
+            return self.vocab_size - 1
+        else:
+            raise ValueError("No blank token in dataset.")
 
     def ids_to_strings(self, ids):
         ids = np.asarray(ids).tolist()
@@ -46,7 +50,7 @@ def load_dataset(filepath):
     return make_dataset_from_sentences(words)
 
 
-def make_dataset_from_sentences(words):
+def make_dataset_from_sentences(words, include_blank_token=True):
     # Words should be a list of lists of strings (or more generally an iterable of iterables of
     # strings).
     n_sentences = len(words)
@@ -62,7 +66,8 @@ def make_dataset_from_sentences(words):
         for word in sentence:
             if word not in word_to_id:
                 word_to_id[word] = len(word_to_id)
-    word_to_id["BLANK"] = len(word_to_id)
+    if include_blank_token:
+        word_to_id["BLANK"] = len(word_to_id)
     id_to_word = {v: k for k, v in word_to_id.items()}
 
     # print("Vocabulary")
@@ -76,4 +81,4 @@ def make_dataset_from_sentences(words):
     word_ids = jnp.array(word_ids)
     assert word_ids.shape == (n_sentences, sentence_length)
 
-    return Dataset(word_to_id, id_to_word, word_ids)
+    return Dataset(word_to_id, id_to_word, word_ids, include_blank_token)

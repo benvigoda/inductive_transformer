@@ -1,6 +1,5 @@
 from flax.training import train_state
 from functools import partial
-import click
 import jax
 import jax.numpy as jnp
 import numpy as np
