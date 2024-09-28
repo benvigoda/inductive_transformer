@@ -80,7 +80,37 @@ class MultiHeadAttention(nn.Module):
         return outputs, attentions
 
 
-class EncoderBlock(nn.Module):
+class FeedForward(nn.Module):
+    embedding_dim: int
+    feedforward_dim: int
+    dropout_rate: float
+
+    def setup(self):
+        self.dense_1 = nn.Dense(self.feedforward_dim)
+        self.dropout = nn.Dropout(self.dropout_rate)
+        self.relu = nn.relu
+        self.dense_2 = nn.Dense(self.embedding_dim)
+
+    def __call__(self, x, deterministic=True):
+        x = self.dense_1(x)
+        x = self.dropout(x, deterministic=deterministic)
+        x = self.relu(x)
+        x = self.dense_2(x)
+        return x
+
+
+class AddAndNorm(nn.Module):
+    dropout_rate: float
+
+    def setup(self):
+        self.dropout = nn.Dropout(self.dropout_rate)
+        self.norm = nn.LayerNorm()
+
+    def __call__(self, x, y, deterministic=True):
+        return self.norm(x + self.dropout(y, deterministic=deterministic))
+
+
+class EncoderLayer(nn.Module):
     embedding_dim: int
     feedforward_dim: int
     n_heads: int
@@ -91,39 +121,31 @@ class EncoderBlock(nn.Module):
 
     def setup(self):
         # attention block
-        self.self_attention = MultiHeadAttention(
+        self.attention = MultiHeadAttention(
             out_dim=self.embedding_dim,
             n_heads=self.n_heads,
             k_dim=self.k_dim,
             v_dim=self.v_dim,
             weight_init=self.weight_init,
         )
-        self.dropout_1 = nn.Dropout(self.dropout_rate)
-        self.norm_1 = nn.LayerNorm()
+        self.add_and_norm_1 = AddAndNorm(dropout_rate=self.dropout_rate)
 
         # feedforward block
-        self.dense_1 = nn.Dense(self.feedforward_dim)
-        self.dropout_2 = nn.Dropout(self.dropout_rate)
-        self.relu = nn.relu
-        self.dense_2 = nn.Dense(self.embedding_dim)
-        self.dropout_3 = nn.Dropout(self.dropout_rate)
-        self.norm_2 = nn.LayerNorm()
+        self.feedforward = FeedForward(
+            embedding_dim=self.embedding_dim,
+            feedforward_dim=self.feedforward_dim,
+            dropout_rate=self.dropout_rate,
+        )
+        self.add_and_norm_2 = AddAndNorm(dropout_rate=self.dropout_rate)
 
-    def __call__(self, x, mask=None, training=False):
+    def __call__(self, x, mask=None, deterministic=True):
         # attention block
-        attention_out, _ = self.self_attention(x, mask=mask)
-        attention_out = self.dropout_1(attention_out, deterministic=not training)
-        x = x + attention_out
-        x = self.norm_1(x)
+        y, _ = self.attention(x, mask=mask)
+        x = self.add_and_norm_1(x, y, deterministic=deterministic)
 
         # feedforward block
-        feedforward_out = self.dense_1(x)
-        feedforward_out = self.dropout_2(feedforward_out, deterministic=not training)
-        feedforward_out = self.relu(feedforward_out)
-        feedforward_out = self.dense_2(feedforward_out)
-        feedforward_out = self.dropout_3(feedforward_out, deterministic=not training)
-        x = x + feedforward_out
-        x = self.norm_2(x)
+        y = self.feedforward(x, deterministic=deterministic)
+        x = self.add_and_norm_2(x, y, deterministic=deterministic)
         return x
 
 
@@ -138,8 +160,8 @@ class TransformerEncoder(nn.Module):
     weight_init: Callable = nn.initializers.xavier_uniform()
 
     def setup(self):
-        self.blocks = [
-            EncoderBlock(
+        self.layers = [
+            EncoderLayer(
                 embedding_dim=self.embedding_dim,
                 feedforward_dim=self.feedforward_dim,
                 n_heads=self.n_heads,
@@ -152,8 +174,8 @@ class TransformerEncoder(nn.Module):
         ]
 
     def __call__(self, x, mask=None, training=False):
-        for block in self.blocks:
-            x = block(x, mask=mask, training=training)
+        for block in self.layers:
+            x = block(x, mask=mask, deterministic=not training)
         return x
 
 
