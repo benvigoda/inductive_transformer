@@ -190,11 +190,11 @@ class PositionalEncoding(nn.Module):
             :, np.newaxis
         ]
         # The denominators are 10000^(i / embedding_dim) for even i, and 10000^((i - 1) /
-        # embedding_dim) for odd i. We compute exp(log(1/10000^(i / embedding_dim))).
-        tmp = -np.log(10000) / self.embedding_dim
-        inverse_denominator = np.exp(
-            tmp * np.arange(0, self.embedding_dim, 2, dtype=np.float32)
-        )
+        # embedding_dim) for odd i. We work in log space: log(1/10000^(i / embedding_dim)) =
+        # -log(10000) * i / embedding_dim.
+        i = np.arange(0, self.embedding_dim, 2, dtype=np.float32)
+        log_inverse_denominator = -np.log(10000) * i / self.embedding_dim
+        inverse_denominator = np.exp(log_inverse_denominator)
         phase = numerator * inverse_denominator
 
         pe = np.zeros((self.max_sequence_length, self.embedding_dim))
