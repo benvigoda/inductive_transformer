@@ -277,6 +277,11 @@ class TransformerClassifier(nn.Module):
         return x
 
 
+def make_causal_attention_mask(sequence_length):
+    shape = (sequence_length, sequence_length)
+    return jnp.triu(jnp.ones(shape, dtype=jnp.uint8), k=1).transpose()
+
+
 if __name__ == "__main__":
     main_key = jax.random.PRNGKey(42)
 
@@ -290,6 +295,9 @@ if __name__ == "__main__":
     v_dim = embedding_dim // n_heads
     n_blocks = 1
     dropout_rate = 0.1
+
+    mask = make_causal_attention_mask(sequence_length)
+    print("mask\n", mask.shape, "\n", mask)
 
     main_key, key = jax.random.split(main_key)
     in_data = jax.random.randint(key, (batch_size, sequence_length), 0, n_classes)
@@ -311,8 +319,12 @@ if __name__ == "__main__":
 
     main_key, key = jax.random.split(main_key)
     output = transformer_classifier.apply(
-        params, in_data, training=True, rngs={"dropout": key}
+        params, in_data, mask=mask, training=True, rngs={"dropout": key}
     )
 
     print("input\n", in_data.shape, "\n", in_data)
-    print("output\n", output.shape, "\n", output)
+    print("output log probs\n", output.shape, "\n", output)
+    probs = jnp.exp(output)
+    print("output probs\n", output.shape, "\n", probs)
+    prob_sums = probs.sum(axis=-1)
+    print("output prob sums\n", prob_sums.shape, "\n", prob_sums)
