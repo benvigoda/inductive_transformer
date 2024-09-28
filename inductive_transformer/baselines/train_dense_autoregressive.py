@@ -174,7 +174,7 @@ def main():
 
     print("Training...")
     batch_size = 256
-    n_steps = 1000
+    n_steps = 10000
     key, subkey = jax.random.split(key)
     state = train(subkey, data, train_state, batch_size, n_steps)
     print("")

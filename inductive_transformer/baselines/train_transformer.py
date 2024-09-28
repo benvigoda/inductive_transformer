@@ -45,77 +45,55 @@ def sample_sentences(key, data, batch_size):
     return result
 
 
-def truncate_sentences(key, data, vocab_size):
-    # Replace all tokens with BLANK starting at a randomly chosen position.
-    # Data should be of shape (..., batch_size, sentence_length).
-    sentence_length = data.shape[-1]
-    blank_token = vocab_size - 1
-    positions = jax.random.randint(key, data.shape[:-1], 0, sentence_length)
-    mask = jnp.arange(sentence_length) >= positions[..., None]
-    blanked_data = jnp.where(mask, blank_token, data)
-    return blanked_data, positions
-
-
 def word_ids_to_one_hot(data, vocab_size):
     return jax.nn.one_hot(data, vocab_size)
 
 
-def generate_batch(key, data, vocab_size, batch_size):
+def generate_batch(key, data, batch_size):
     sentence_length = data.shape[1]
     key, subkey = jax.random.split(key)
     data = sample_sentences(subkey, data, batch_size)
     assert data.shape == (batch_size, sentence_length)
-    masked_data, inference_positions = truncate_sentences(key, data, vocab_size)
-    assert masked_data.shape == (batch_size, sentence_length)
-    return masked_data, data, inference_positions
+    return data
 
 
-def train_step(state, batch_x, batch_y):
-    """Train for a single step."""
-    assert batch_x.ndim == 3
-    batch_size, sentence_length, vocab_size = batch_x.shape
-    assert batch_y.shape == (batch_size,)
+@partial(jax.jit, static_argnums=(4, 5))
+def train_step(key, dropout_key, data, state, vocab_size, batch_size):
+    # Sample a batch of sentences.
+    sentence_length = data.shape[-1]
+    step_key = jax.random.fold_in(key, state.step)
+    step_dropout_key = jax.random.fold_in(dropout_key, state.step)
+    batch_x = generate_batch(step_key, data, batch_size)
+    assert batch_x.shape == (batch_size, sentence_length)
 
+    # Define the loss function.
     def loss_fn(params):
-        logits = state.apply_fn(params, batch_x)
-        assert logits.shape == (batch_size, vocab_size)
-        loss = optax.softmax_cross_entropy_with_integer_labels(
-            logits=logits, labels=batch_y
-        ).mean()
-        return loss
+        logits = state.apply_fn(
+            params, batch_x, training=True, rngs={"dropout": step_dropout_key}
+        )
+        assert logits.shape == (batch_size, sentence_length, vocab_size)
+        x_entropies = optax.softmax_cross_entropy_with_integer_labels(
+            logits=logits, labels=batch_x
+        )
+        assert x_entropies.shape == (batch_size, sentence_length)
+        return x_entropies.mean()
 
+    # Compute gradients and apply updates.
     grad_fn = jax.value_and_grad(loss_fn)
     loss, grads = grad_fn(state.params)
     state = state.apply_gradients(grads=grads)
     return state, loss
 
 
-@partial(jax.jit, static_argnums=(3, 4))
-def full_train_step(key, data, state, vocab_size, batch_size):
-    sentence_length = data.shape[-1]
-    step_key = jax.random.fold_in(key, state.step)
-    batch_x, batch_ground_truth, inference_positions = generate_batch(
-        step_key, data, vocab_size, batch_size
-    )
-    assert batch_x.shape == (batch_size, sentence_length)
-    assert batch_ground_truth.shape == batch_x.shape
-    assert inference_positions.shape == (batch_size,)
-
-    batch_x = word_ids_to_one_hot(batch_x, vocab_size)
-    assert batch_x.shape == (batch_size, sentence_length, vocab_size)
-    batch_y = batch_ground_truth[np.arange(batch_size), inference_positions]
-    assert batch_y.shape == (batch_size,)
-
-    return train_step(state, batch_x, batch_y)
-
-
-def train(key, dataset, state, batch_size, n_steps):
+def train(key, dropout_key, dataset, state, batch_size, n_steps):
     for step in range(n_steps):
-        state, loss = full_train_step(
-            key, dataset.data, state, dataset.vocab_size, batch_size
+        state, loss = train_step(
+            key, dropout_key, dataset.data, state, dataset.vocab_size, batch_size
         )
         if step % 1000 == 0:
             print(f"Step {step}, loss: {loss}")
+
+    print(f"Step {step}, loss: {loss}")
     return state
 
 
@@ -165,7 +143,7 @@ def main():
     dropout_rate = 0.1
 
     batch_size = 8
-    n_steps = 1000
+    n_steps = 10000
     learning_rate = 1e-5
 
     print("Initializing model...")
@@ -188,12 +166,12 @@ def main():
         learning_rate,
     )
     print("")
-    exit(0)
 
     print("Training...")
-    key, subkey = jax.random.split(key)
-    state = train(subkey, data, train_state, batch_size, n_steps)
+    key, batch_key, dropout_key = jax.random.split(key, 3)
+    state = train(batch_key, dropout_key, data, train_state, batch_size, n_steps)
     print("")
+    exit(0)
 
     print("Sampling...")
     n_samples = 1000
