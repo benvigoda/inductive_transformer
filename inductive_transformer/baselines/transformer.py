@@ -49,7 +49,7 @@ class MultiHeadAttention(nn.Module):
     @nn.compact
     def __call__(self, x, mask=None):
         # Usually both in_dim and out_dim are the embedding dimension.
-        n_elements, in_dim = x.shape[-2:]
+        sequence_length, in_dim = x.shape[-2:]
 
         # Register parameters.
         q_weights = self.param(
@@ -69,20 +69,20 @@ class MultiHeadAttention(nn.Module):
         queries = jnp.einsum("ijk,...lk->...ilj", q_weights, x)
         keys = jnp.einsum("ijk,...lk->...ilj", k_weights, x)
         values = jnp.einsum("ijk,...lk->...ilj", v_weights, x)
-        assert queries.shape[-3:] == (self.n_heads, n_elements, self.k_dim)
-        assert keys.shape[-3:] == (self.n_heads, n_elements, self.k_dim)
-        assert values.shape[-3:] == (self.n_heads, n_elements, self.v_dim)
+        assert queries.shape[-3:] == (self.n_heads, sequence_length, self.k_dim)
+        assert keys.shape[-3:] == (self.n_heads, sequence_length, self.k_dim)
+        assert values.shape[-3:] == (self.n_heads, sequence_length, self.v_dim)
 
         # Evaluate the attention function for each head.
         summed_values, attentions = scaled_dot_product(queries, keys, values, mask)
-        assert summed_values.shape[-3:] == (self.n_heads, n_elements, self.v_dim)
-        assert attentions.shape[-3:] == (self.n_heads, n_elements, n_elements)
+        assert summed_values.shape[-3:] == (self.n_heads, sequence_length, self.v_dim)
+        assert attentions.shape[-3:] == (self.n_heads, sequence_length, sequence_length)
 
         # Combine the outputs of the heads into a single output vector. Usually this is described as
         # concatenating the outputs of the heads and applying a linear transformation in the form of
         # a matrix. The version below is algebraically equivalent.
         outputs = jnp.einsum("ijk,...jlk->...li", o_weights, summed_values)
-        assert outputs.shape[-2:] == (n_elements, self.out_dim)
+        assert outputs.shape[-2:] == (sequence_length, self.out_dim)
 
         return outputs, attentions
 
