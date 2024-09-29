@@ -80,7 +80,8 @@ def train_step(key, dropout_key, data, state, vocab_size, batch_size, start_toke
             params,
             batch_x,
             mask=mask,
-            training=True,
+            # training=True,
+            training=False,
             rngs={"dropout": step_dropout_key},
         )
         assert logits.shape == (batch_size, sentence_length, vocab_size)
@@ -155,15 +156,15 @@ def main():
     # word).
     sequence_length = data.sentence_length + 1
     n_classes = data.vocab_size
-    embedding_dim = 64
+    embedding_dim = 32
     feedforward_dim = 4 * embedding_dim
-    n_blocks = 2
-    n_heads = 4
-    k_dim = embedding_dim // n_heads
-    v_dim = embedding_dim // n_heads
+    n_blocks = 1
+    n_heads = 2
+    k_dim = 8
+    v_dim = 8
     dropout_rate = 0.1
 
-    batch_size = 16
+    batch_size = 128
     n_steps = 10000
     learning_rate = 1e-5
 
@@ -199,15 +200,13 @@ def main():
     print("Sampling...")
     n_samples = 1000
     key, subkey = jax.random.split(key)
-    prompts = generate_batch(subkey, data.data, n_samples, start_token)
-    assert prompts.shape == (n_samples, data.sentence_length + 1)
     mask = make_causal_attention_mask(sequence_length)
-
-    generated_tokens = jnp.full((n_samples, data.sentence_length), 0, dtype=jnp.int32)
+    generated_tokens = jnp.full(
+        (n_samples, data.sentence_length + 1), start_token, dtype=jnp.int32
+    )
 
     for position in range(data.sentence_length):
-        # Run the prompts through the model.
-        logits = model.apply(state.params, prompts, mask=mask, training=False)
+        logits = model.apply(state.params, generated_tokens, mask=mask, training=False)
         assert logits.shape == (n_samples, sequence_length, n_classes)
 
         # This samples according to the categorical distribution given by logits.
@@ -218,9 +217,9 @@ def main():
         # This chooses the most likely word.
         # next_tokens = jnp.argmax(jax.nn.softmax(logits[:, position, :]), axis=-1)
 
-        generated_tokens = generated_tokens.at[:, position].set(next_tokens)
+        generated_tokens = generated_tokens.at[:, position + 1].set(next_tokens)
 
-    generated_sentences = data.ids_to_strings(generated_tokens)
+    generated_sentences = data.ids_to_strings(generated_tokens[:, 1:])
 
     def classify_sentence(sentence: str) -> SampleStatus:
         if sentence in training_sentences_set:
@@ -238,7 +237,7 @@ def main():
 
     print("Generating histograms...")
     histogram_data = generate_histogram_data(generated_sentences, classify_sentence)
-    plot_histogram(histogram_data, "histogram.png", size=(8.0, 12.0))
+    plot_histogram(histogram_data, "histogram_t.png", size=(8.0, 12.0))
 
 
 if __name__ == "__main__":

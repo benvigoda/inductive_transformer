@@ -211,7 +211,7 @@ def main():
 
     print("Generating histograms...")
     histogram_data = generate_histogram_data(generated_words, classify_sentence)
-    plot_histogram(histogram_data, "histogram.png")
+    plot_histogram(histogram_data, "histogram_ds2s.png")
 
 
 if __name__ == "__main__":
