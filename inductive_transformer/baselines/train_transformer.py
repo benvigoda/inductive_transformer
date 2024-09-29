@@ -49,26 +49,26 @@ def word_ids_to_one_hot(data, vocab_size):
     return jax.nn.one_hot(data, vocab_size)
 
 
-def generate_batch(key, data, batch_size, padding_token):
+def generate_batch(key, data, batch_size, start_token):
     sentence_length = data.shape[1]
     key, subkey = jax.random.split(key)
     data = sample_sentences(subkey, data, batch_size)
     assert data.shape == (batch_size, sentence_length)
     # We want our network to guess the first word as well. The easiest way to achieve this is to
-    # make every sentence start with the padding token.
-    start_tokens = jnp.full(batch_size, padding_token).reshape(-1, 1)
+    # prepend every sentence with a start token.
+    start_tokens = jnp.full(batch_size, start_token).reshape(-1, 1)
     data = jnp.concatenate([start_tokens, data], axis=-1)
     assert data.shape == (batch_size, sentence_length + 1)
     return data
 
 
 @partial(jax.jit, static_argnums=(4, 5, 6))
-def train_step(key, dropout_key, data, state, vocab_size, batch_size, padding_token):
+def train_step(key, dropout_key, data, state, vocab_size, batch_size, start_token):
     # Sample a batch of sentences.
     sentence_length = data.shape[-1] + 1
     step_key = jax.random.fold_in(key, state.step)
     step_dropout_key = jax.random.fold_in(dropout_key, state.step)
-    batch_x = generate_batch(step_key, data, batch_size, padding_token)
+    batch_x = generate_batch(step_key, data, batch_size, start_token)
     assert batch_x.shape == (batch_size, sentence_length)
 
     # Hopefully JAX/XLA recognizes that this is a constant.
@@ -97,7 +97,7 @@ def train_step(key, dropout_key, data, state, vocab_size, batch_size, padding_to
     return state, loss
 
 
-def train(key, dropout_key, dataset, state, batch_size, n_steps, padding_token):
+def train(key, dropout_key, dataset, state, batch_size, n_steps, start_token):
     for step in range(n_steps):
         state, loss = train_step(
             key,
@@ -106,7 +106,7 @@ def train(key, dropout_key, dataset, state, batch_size, n_steps, padding_token):
             state,
             dataset.vocab_size,
             batch_size,
-            padding_token,
+            start_token,
         )
         if step % 1000 == 0:
             print(f"Step {step}, loss: {loss}")
@@ -157,13 +157,13 @@ def main():
     n_classes = data.vocab_size
     embedding_dim = 64
     feedforward_dim = 4 * embedding_dim
-    n_blocks = 4
-    n_heads = 2
+    n_blocks = 2
+    n_heads = 4
     k_dim = embedding_dim // n_heads
     v_dim = embedding_dim // n_heads
     dropout_rate = 0.1
 
-    batch_size = 8
+    batch_size = 16
     n_steps = 10000
     learning_rate = 1e-5
 
@@ -190,44 +190,36 @@ def main():
 
     print("Training...")
     key, batch_key, dropout_key = jax.random.split(key, 3)
-    padding_token = data.blank_token
+    start_token = data.blank_token
     state = train(
-        batch_key, dropout_key, data, train_state, batch_size, n_steps, padding_token
+        batch_key, dropout_key, data, train_state, batch_size, n_steps, start_token
     )
     print("")
-    exit(0)
 
     print("Sampling...")
     n_samples = 1000
     key, subkey = jax.random.split(key)
-    prompts = generate_batch(subkey, data, n_samples)
-    print(prompts)
-    assert prompts.shape == (n_samples, data.sentence_length)
-    responses = model.apply(state.params, prompts, training=False)
+    prompts = generate_batch(subkey, data.data, n_samples, start_token)
+    assert prompts.shape == (n_samples, data.sentence_length + 1)
+    mask = make_causal_attention_mask(sequence_length)
 
-    sample_positions = jnp.zeros((n_samples,), dtype=jnp.int32)
+    generated_tokens = jnp.full((n_samples, data.sentence_length), 0, dtype=jnp.int32)
+
     for position in range(data.sentence_length):
-        logits = model.apply(
-            state.params, word_ids_to_one_hot(generated_tokens, data.vocab_size)
-        )
+        # Run the prompts through the model.
+        logits = model.apply(state.params, prompts, mask=mask, training=False)
+        assert logits.shape == (n_samples, sequence_length, n_classes)
 
         # This samples according to the categorical distribution given by logits.
         key, subkey = jax.random.split(key)
-        next_tokens = jax.random.categorical(subkey, logits)
+        next_tokens = jax.random.categorical(subkey, logits[:, position, :])
+        assert next_tokens.shape == (n_samples,)
 
         # This chooses the most likely word.
-        # next_tokens = jnp.argmax(jax.nn.softmax(logits), axis=-1)
+        # next_tokens = jnp.argmax(jax.nn.softmax(logits[:, position, :]), axis=-1)
 
-        generated_tokens = generated_tokens.at[
-            jnp.arange(n_samples), sample_positions
-        ].set(next_tokens, mode="drop")
-        sample_positions = jnp.where(
-            sample_positions < data.sentence_length,
-            sample_positions + 1,
-            sample_positions,
-        )
+        generated_tokens = generated_tokens.at[:, position].set(next_tokens)
 
-    assert generated_tokens.shape == (n_samples, data.sentence_length)
     generated_sentences = data.ids_to_strings(generated_tokens)
 
     def classify_sentence(sentence: str) -> SampleStatus:
