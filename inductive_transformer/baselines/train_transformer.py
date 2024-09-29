@@ -156,16 +156,16 @@ def main():
     # word).
     sequence_length = data.sentence_length + 1
     n_classes = data.vocab_size
-    embedding_dim = 32
+    embedding_dim = 16
     feedforward_dim = 4 * embedding_dim
     n_blocks = 1
     n_heads = 2
-    k_dim = 8
-    v_dim = 8
+    k_dim = 4
+    v_dim = 4
     dropout_rate = 0.1
 
     batch_size = 128
-    n_steps = 10000
+    n_steps = 30000
     learning_rate = 1e-5
 
     print("Initializing model...")
