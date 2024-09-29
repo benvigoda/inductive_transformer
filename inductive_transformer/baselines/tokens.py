@@ -34,7 +34,7 @@ class Dataset(NamedTuple):
         return [" ".join([self.id_to_word[id] for id in sentence]) for sentence in ids]
 
 
-def load_dataset(filepath):
+def load_dataset(filepath) -> Dataset:
     # Load the file into memory.
     with open(filepath, "r") as f:
         data = f.read()
@@ -50,7 +50,7 @@ def load_dataset(filepath):
     return make_dataset_from_sentences(words)
 
 
-def make_dataset_from_sentences(words, include_blank_token=True):
+def make_dataset_from_sentences(words, include_blank_token=True) -> Dataset:
     # Words should be a list of lists of strings (or more generally an iterable of iterables of
     # strings).
     n_sentences = len(words)

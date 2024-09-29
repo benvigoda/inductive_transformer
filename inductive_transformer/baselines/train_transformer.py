@@ -1,12 +1,17 @@
 from flax.training import train_state
 from functools import partial
+import click
 import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
 
 from inductive_transformer.datasets.big_cat_small_dog import BigCatSmallDog
-from inductive_transformer.baselines.tokens import make_dataset_from_sentences
+from inductive_transformer.datasets.anavan import make_cat_dog_worm_bird_anavan
+from inductive_transformer.baselines.tokens import (
+    load_dataset,
+    make_dataset_from_sentences,
+)
 from inductive_transformer.baselines.transformer import (
     TransformerClassifier,
     make_causal_attention_mask,
@@ -119,14 +124,33 @@ def train(key, dropout_key, dataset, state, batch_size, n_steps, start_token):
     return state
 
 
-# @click.command()
-# @click.option("--dataset", "-d", type=click.Path(exists=True), required=True)
-def main():
+@click.command()
+@click.option("--training_sentences", "-t", type=click.Path(exists=True), required=True)
+def main(training_sentences):
     np_rng = np.random.default_rng()
     seed = np_rng.integers(0, 2**32 - 1)
     print(f"seed: {seed}\n")
     key = jax.random.PRNGKey(seed)
 
+    # Text file pipeline
+    print(f"Loading training data from {training_sentences}...")
+    data = load_dataset(training_sentences)
+    print(f"Loaded {data.n_sentences} sentences.")
+    print(f"Vocabulary size: {data.vocab_size}")
+    print(f"Sentence length: {data.sentence_length}")
+
+    # Verify that the training sentences are valid.
+    grammar = make_cat_dog_worm_bird_anavan()
+    sentence_strings = data.ids_to_strings(data.data)
+    training_sentences_set = set(sentence_strings)
+    for sentence in sentence_strings:
+        print(sentence)
+        assert grammar.is_valid(
+            sentence
+        ), f"training data contains an invalid sentence: {sentence}"
+
+    # Generative pipeline
+    """
     print("Generating data...")
     grammar = BigCatSmallDog()
     # This is a list of lists of words (strings).
@@ -135,7 +159,8 @@ def main():
     all_valid_sentences_set = set(" ".join(words) for words in all_valid_sentences)
     print(f"Generated {n_total_sentences} sentences.")
 
-    # Extract a subset of sentences to train on.
+    Extract a subset of sentences to train on.
+    Note: this is useful if we generate all possible valid sentences and choose a subset.
     n_training_sentences = int(0.75 * n_total_sentences)
     sentence_indices = jnp.arange(n_total_sentences)
     key, subkey = jax.random.split(key)
@@ -152,6 +177,7 @@ def main():
         f"with a vocabulary size of {data.vocab_size}."
     )
     print("")
+    """
 
     # Fix hyperparameters.
     # The sentence length is one longer than the length of the sentences in the dataset because we
@@ -159,15 +185,15 @@ def main():
     # word).
     sequence_length = data.sentence_length + 1
     n_classes = data.vocab_size
-    embedding_dim = 8
+    embedding_dim = 16
     feedforward_dim = 4 * embedding_dim
-    n_blocks = 1
+    n_blocks = 2
     n_heads = 2
     k_dim = 4
     v_dim = 4
     dropout_rate = 0.1
 
-    batch_size = 128
+    batch_size = 64
     n_steps = 50000
     learning_rate = 1e-5
 
@@ -224,12 +250,23 @@ def main():
 
     generated_sentences = data.ids_to_strings(generated_tokens[:, 1:])
 
+    # Text file pipeline
+    def classify_sentence(sentence: str) -> SampleStatus:
+        if sentence in training_sentences_set:
+            return SampleStatus.IN_SAMPLE
+        if grammar.is_valid(sentence):
+            return SampleStatus.OUT_OF_SAMPLE
+        return SampleStatus.INVALID
+
+    # Generative pipeline
+    """
     def classify_sentence(sentence: str) -> SampleStatus:
         if sentence in training_sentences_set:
             return SampleStatus.IN_SAMPLE
         if sentence in all_valid_sentences_set:
             return SampleStatus.OUT_OF_SAMPLE
         return SampleStatus.INVALID
+    """
 
     n_printed_samples = 50
     limit = min(n_printed_samples, n_samples)
