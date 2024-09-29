@@ -1,5 +1,7 @@
-from typing import List, Optional
 from itertools import product
+from typing import List, Optional
+import click
+import numpy as np
 
 
 class ANAVAN:
@@ -20,57 +22,6 @@ class ANAVAN:
         self.right_fourth_words = right_fourth
         self.right_fifth_words = right_fifth
 
-        self.valid_pairs = self.get_valid_pairs()
-
-    def get_valid_pairs(self):
-        return {
-            (0, 1): {
-                (a, b)
-                for a in self.left_zeroth_words
-                for b in self.left_first_words
-            } | {
-                (a, b)
-                for a in self.right_zeroth_words
-                for b in self.right_first_words
-            },
-            (1, 3): {
-                (a, b)
-                for a in self.left_first_words
-                for b in self.left_third_words
-            } | {
-                (a, b)
-                for a in self.right_first_words
-                for b in self.right_third_words
-            },
-            (2, 3): {
-                (a, b)
-                for a in self.left_second_words
-                for b in self.left_third_words
-            } | {
-                (a, b)
-                for a in self.right_second_words
-                for b in self.right_third_words
-            },
-            (3, 5): {
-                (a, b)
-                for a in self.left_third_words
-                for b in self.left_fifth_words
-            } | {
-                (a, b)
-                for a in self.right_third_words
-                for b in self.right_fifth_words
-            },
-            (4, 5): {
-                (a, b)
-                for a in self.left_fourth_words
-                for b in self.left_fifth_words
-            } | {
-                (a, b)
-                for a in self.right_fourth_words
-                for b in self.right_fifth_words
-            },
-        }
-
     def clear_right_words(self):
         self.right_zeroth_words = []
         self.right_first_words = []
@@ -79,8 +30,6 @@ class ANAVAN:
         self.right_fourth_words = []
         self.right_fifth_words = []
 
-        self.valid_pairs = self.get_valid_pairs()
-
     def clear_left_words(self):
         self.left_zeroth_words = []
         self.left_first_words = []
@@ -88,8 +37,6 @@ class ANAVAN:
         self.left_third_words = []
         self.left_fourth_words = []
         self.left_fifth_words = []
-
-        self.valid_pairs = self.get_valid_pairs()
 
     def get_valid_left_ordered_words(self):
         return [
@@ -159,16 +106,32 @@ class ANAVAN:
         if len(words) != num_words:
             return False
 
-        relevant_pairs = {
-            key: value
-            for key, value in self.valid_pairs.items()
-            if all(k < num_words for k in key)
-        }
-        for key, value in relevant_pairs.items():
-            if (words[key[0]], words[key[1]]) not in value:
+        if words[0] in self.left_zeroth_words:
+            if words[1] not in self.left_first_words:
                 return False
-
-        return True
+            if words[2] not in self.left_second_words:
+                return False
+            if words[3] not in self.left_third_words:
+                return False
+            if words[4] not in self.left_fourth_words:
+                return False
+            if words[5] not in self.left_fifth_words:
+                return False
+            return True
+        elif words[0] in self.right_zeroth_words:
+            if words[1] not in self.right_first_words:
+                return False
+            if words[2] not in self.right_second_words:
+                return False
+            if words[3] not in self.right_third_words:
+                return False
+            if words[4] not in self.right_fourth_words:
+                return False
+            if words[5] not in self.right_fifth_words:
+                return False
+            return True
+        else:
+            return False
 
 
 def make_cat_dog_anavan():
@@ -335,13 +298,32 @@ def make_cat_dog_worm_bird_anavan():
     )
 
 
+@click.command()
+@click.option("--out_file", "-o", type=click.Path(), default=None)
+@click.option("--num_sentences", "-n", type=int, default=10)
+@click.option("--seed", "-s", type=int, default=1889567120394717)
+def main(out_file, num_sentences, seed):
+    grammar = make_cat_dog_worm_bird_anavan()
+    sentences = grammar.generate()
+    print(f"Generated {len(sentences)} valid sentences.")
+
+    print(f"Shuffling sentences with seed {seed}")
+    rng = np.random.default_rng(seed)
+    indices = np.arange(len(sentences))
+    rng.shuffle(indices)
+
+    num_sentences = min(num_sentences, len(sentences))
+    indices = indices[:num_sentences]
+    sentences = [sentences[idx] for idx in indices]
+
+    if out_file is None:
+        out_file = f"anavan_{num_sentences}.txt"
+
+    print(f"Writing {num_sentences} sentences to {out_file}")
+    with open(out_file, "w") as f:
+        for sentence in sentences:
+            f.write(sentence + '\n')
+
+
 if __name__ == "__main__":
-    # synonyms = make_cat_dog_anavan()
-    synonyms = make_cat_dog_worm_bird_anavan()
-    # sentences = synonyms.generate(500, side='both', single_synonyms=[0, 4])
-    sentences = synonyms.generate(50000, side='both')
-    # sentences = synonyms.generate_all_syns(side='both')
-    for sentence in sentences:
-        print(sentence.capitalize(), end='. ')
-    print()
-    print(len(sentences))
+    main()
