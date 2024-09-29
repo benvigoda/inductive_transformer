@@ -201,8 +201,8 @@ def main(training_sentences, use_start_token):
     dropout_rate = 0.1
 
     batch_size = 64
-    n_steps = 50000
-    learning_rate = 1e-5
+    n_steps = 20000
+    learning_rate = 1e-4
 
     print("Initializing model...")
     key, subkey = jax.random.split(key)
