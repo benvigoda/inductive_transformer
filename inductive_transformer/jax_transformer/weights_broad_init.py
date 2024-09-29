@@ -2,7 +2,7 @@ import jax  # type: ignore
 import jax.numpy as jnp  # type: ignore
 import numpy as np  # type: ignore
 from inductive_transformer.jax_transformer.helper_functions import EPSILON, get_num_layers
-from synonyms import Synonyms  # type: ignore
+from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
 
 strong = 1.0 - EPSILON  # Amplify the signal
 weak = EPSILON  # Dampen the signal
@@ -17,7 +17,7 @@ def set_position_pi_weights(
     prefix,
     layer_width,
     perturb_weights=False,
-    lock_weights=True,
+    lock_weights=False,
     noise_value=0.01,
     surgical_perturb=False,
 ):
@@ -40,8 +40,7 @@ def set_position_pi_weights(
                     jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weights.shape
                 ) * noise_value
             else:
-                new_weights = new_weights.at[[0][0]].set(new_weights[0][0] - jax.random.normal(jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1))) * noise_value)
-                # import pdb; pdb.set_trace()
+                new_weights = new_weights.at[[0][0]].set(new_weights[0][0] + noise_value)
 
         params["params"][layer_key][position_pi]["weights"] = new_weights
         # Note: We have constrained the model such that num_positions needs to be equal
@@ -54,6 +53,8 @@ def set_position_pi_weights(
             )
     else:
         raise ValueError(f"Layer {layer_key} not found in params.")
+
+
 
 
 def init_weights(
@@ -70,9 +71,10 @@ def init_weights(
     noise_value=0.01,
     catsanddogs=False,
 ):
-    synonyms = Synonyms()
     if catsanddogs:
-        synonyms.cats_and_dogs_overwrite()
+        synonyms = make_cat_dog_anavan()
+    else:
+        synonyms = make_cat_dog_worm_bird_anavan()
     if zero_out_right_weights:
         synonyms.zero_right_words()
     if zero_out_left_weights:
@@ -96,7 +98,7 @@ def init_weights(
             params=updated_params,
             mask=set_weights,
             perturb_weights=perturb_weights or bool(perturb_position),
-            lock_weights=lock_all_weights,
+            lock_weights=False,
             prefix="decoder",
             layer_width=layer_width,
             noise_value=noise_value if perturb_weights else perturb_position,
@@ -107,7 +109,7 @@ def init_weights(
             params=updated_params,
             mask=set_weights,
             perturb_weights=perturb_weights or bool(perturb_position),
-            lock_weights=lock_all_weights,
+            lock_weights=False,
             prefix="encoder",
             layer_width=layer_width,
             noise_value=noise_value if perturb_weights else perturb_position,
@@ -232,7 +234,7 @@ def init_weights(
                 noise_value=noise_value if perturb_weights else perturb_token,
                 surgical_perturb=surgical_perturb,
             )
-            # print(updated_params["params"][f"decoders_{num_lay}"]["decoder_token_pi"]["weights"])
+
             # Fix set_weights so the gradient does not update the weights
             if lock_all_weights:
                 set_weights["params"][f"encoders_{num_lay}"]["encoder_token_pi"][
@@ -276,6 +278,16 @@ def init_weights(
                 new_weight = new_weight.at[1, 1].set(strong)
                 new_weight = new_weight.at[0, 0].set(strong)
 
+            # if perturb_weights or perturb_attention:
+            #     if not surgical_perturb:
+            #         # Add a small amount of noise to the weights
+            #         new_weights = new_weights + jax.random.normal(
+            #             jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weights.shape
+            #         ) * noise_value
+            #     else:
+            #         new_weights = new_weights.at[[0][0]].set(new_weights[0][0] - jax.random.normal(jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1))) * noise_value)
+
+
             if perturb_weights or perturb_attention:
                 if not surgical_perturb:
                     # Add a small amount of noise to the weights
@@ -285,6 +297,7 @@ def init_weights(
             updated_params["params"][f"{encoders_decoders}_{layer}"][
                 f"{encoder_decoder}_attention_pi"
             ]["weights"] = new_weight
+            
             # Fix set_weights so the gradient does not update the weights
             if lock_all_weights:
                 set_weights["params"][f"{encoders_decoders}_{layer}"][

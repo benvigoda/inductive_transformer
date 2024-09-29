@@ -1,41 +1,24 @@
+import os
 import pandas as pd  # type: ignore
 import seaborn as sns  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 from collections import Counter
-from synonyms import Synonyms  # type: ignore
 
 
 # The validation function
-def validate_sentences(sentences_list, num_words=6, catsanddogs=False):
-    synonyms = Synonyms()
-    if catsanddogs:
-        synonyms.cats_and_dogs_overwrite()
-    valid_pairs = synonyms.get_valid_pairs()
-
+def validate_sentences(sentences_list, grammar):
     results = {}
     for sentence in sentences_list:
-        words = sentence.lower().split()
-        results[sentence] = "valid"
-
-        if len(words) != num_words:
+        if grammar.is_valid(sentence):
+            results[sentence] = "valid"
+        else:
             results[sentence] = "invalid"
-            continue
-
-        relevant_pairs = {
-            key: value
-            for key, value in valid_pairs.items()
-            if all(k < num_words for k in key)
-        }
-        for key, value in relevant_pairs.items():
-            if (words[key[0]], words[key[1]]) not in value:
-                results[sentence] = "invalid"
-                break
 
     return results
 
 
 # Function to plot side-by-side horizontal histograms with shared y-axis
-def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=None):
+def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=None, folder=None):
     # Set up the figure with two subplots, sharing the y-axis
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6), sharey=True)
 
@@ -62,14 +45,19 @@ def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=Non
 
     # Show the plot
     if plot_file_name:
-        plt.savefig(plot_file_name)
+        if folder:
+            file_path = os.path.join(folder, plot_file_name)
+            plt.savefig(file_path)
+        else:
+            plt.savefig(plot_file_name)
+        plt.close()
     else:
         plt.show()
 
 
 # Function to prepare data and plot results
-def histogram_results(training_sentences, generated_sentences, catsanddogs=False, subtitle=None, plot_file_name=None):
-    num_words = len(training_sentences[0].split())
+def histogram_results(training_sentences, generated_sentences, grammar, catsanddogs=False, subtitle=None, plot_file_name=None, folder=None):
+    # Count the occurrences of each sentence in both datasets
     training_counts = Counter(training_sentences)
     generated_counts = Counter(generated_sentences)
     training_data = pd.DataFrame(
@@ -79,7 +67,7 @@ def histogram_results(training_sentences, generated_sentences, catsanddogs=False
         list(generated_counts.items()), columns=["Sentence", "Count"]
     )
     valid_generated = validate_sentences(
-        training_sentences + generated_sentences, num_words=num_words, catsanddogs=catsanddogs
+        training_sentences + generated_sentences, grammar
     )
     generated_data["Status"] = [
         "valid" if valid_generated[sentence] == "valid" else "invalid"
@@ -87,7 +75,7 @@ def histogram_results(training_sentences, generated_sentences, catsanddogs=False
     ]
 
     # Plot side-by-side histograms for both datasets
-    plot_side_by_side_histograms(training_data, generated_data, subtitle=subtitle, plot_file_name=plot_file_name)
+    plot_side_by_side_histograms(training_data, generated_data, subtitle=subtitle, plot_file_name=plot_file_name, folder=folder)
 
 
 def main():

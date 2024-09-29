@@ -35,9 +35,11 @@ def print_params(state, vocab, silence_print=False):
                     text += f"-- position {position}\n"
                     for token_num, token_weights in enumerate(position_weights):
                         if any(token_weights > 0.1):
-                            text += f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000} -- {vocab[token_num]}\n"
+                            # text += f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000} -- {vocab[token_num]}\n"
+                            text += f"{token_weights} -- {vocab[token_num]}\n"
                         else:
-                            text += f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000}\n"
+                            # text += f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000}\n"
+                            text += f"{token_weights}\n"
                     text += "\n"
             else:
                 text += f"{layer_params[sublayer]['weights']}\n"
@@ -55,9 +57,11 @@ def print_params(state, vocab, silence_print=False):
                     text += f"-- position {position}\n"
                     for token_num, token_weights in enumerate(position_weights):
                         if any(token_weights > 0.1):
-                            text += f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000} -- {vocab[token_num]}\n"
+                            # text += f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000} -- {vocab[token_num]}\n"
+                            text += f"{token_weights} -- {vocab[token_num]}\n"
                         else:
-                            text += f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000}\n"
+                            # text += f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000}\n"
+                            text += f"{token_weights}\n"
                     text += "\n"
             else:
                 text += f"{layer_params[sublayer]['weights']}\n"
@@ -68,7 +72,7 @@ def print_params(state, vocab, silence_print=False):
 
 
 def print_activations(
-    n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations
+    n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations, silence_print=False
 ):
     text = ""
     np.set_printoptions(threshold=np.inf)
@@ -126,5 +130,6 @@ def print_activations(
                 text += f"{layer_activation[key][idx]}\n"
                 text += "\n"
         text += "--------------------------\n"
-    print(text)
+    if not silence_print:
+        print(text)
     return text
