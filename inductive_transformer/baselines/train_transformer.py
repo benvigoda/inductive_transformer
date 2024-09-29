@@ -33,8 +33,8 @@ from inductive_transformer.baselines.histograms import (
 # result, and repeating.
 
 
-def make_train_state(key, model, dataset, learning_rate):
-    x = jnp.zeros((1, dataset.sentence_length), dtype=jnp.int32)
+def make_train_state(key, model, sequence_length, learning_rate):
+    x = jnp.zeros((1, sequence_length), dtype=jnp.int32)
     key, subkey = jax.random.split(key)
     params = model.init(subkey, x)
     optimizer = optax.adam(learning_rate)
@@ -46,10 +46,10 @@ def make_train_state(key, model, dataset, learning_rate):
 
 def sample_sentences(key, data, batch_size):
     # Generates a batch of sentences.
-    n_sentences, sentence_length = data.shape
+    n_sentences, sequence_length = data.shape
     sentence_ids = jax.random.randint(key, (batch_size,), 0, n_sentences)
     result = data[sentence_ids]
-    assert result.shape == (batch_size, sentence_length)
+    assert result.shape == (batch_size, sequence_length)
     return result
 
 
@@ -57,30 +57,25 @@ def word_ids_to_one_hot(data, vocab_size):
     return jax.nn.one_hot(data, vocab_size)
 
 
-def generate_batch(key, data, batch_size, start_token):
-    sentence_length = data.shape[1]
+def generate_batch(key, data, batch_size):
+    sequence_length = data.shape[1]
     key, subkey = jax.random.split(key)
     data = sample_sentences(subkey, data, batch_size)
-    assert data.shape == (batch_size, sentence_length)
-    # We want our network to guess the first word as well. The easiest way to achieve this is to
-    # prepend every sentence with a start token.
-    start_tokens = jnp.full(batch_size, start_token).reshape(-1, 1)
-    data = jnp.concatenate([start_tokens, data], axis=-1)
-    assert data.shape == (batch_size, sentence_length + 1)
+    assert data.shape == (batch_size, sequence_length)
     return data
 
 
-@partial(jax.jit, static_argnums=(4, 5, 6))
-def train_step(key, dropout_key, data, state, vocab_size, batch_size, start_token):
+@partial(jax.jit, static_argnums=(4, 5))
+def train_step(key, dropout_key, data, state, vocab_size, batch_size):
     # Sample a batch of sentences.
-    sentence_length = data.shape[-1] + 1
+    sequence_length = data.shape[-1]
     step_key = jax.random.fold_in(key, state.step)
     step_dropout_key = jax.random.fold_in(dropout_key, state.step)
-    batch_x = generate_batch(step_key, data, batch_size, start_token)
-    assert batch_x.shape == (batch_size, sentence_length)
+    batch_x = generate_batch(step_key, data, batch_size)
+    assert batch_x.shape == (batch_size, sequence_length)
 
     # Hopefully JAX/XLA recognizes that this is a constant.
-    mask = make_causal_attention_mask(sentence_length)
+    mask = make_causal_attention_mask(sequence_length)
 
     # Define the loss function.
     def loss_fn(params):
@@ -92,11 +87,11 @@ def train_step(key, dropout_key, data, state, vocab_size, batch_size, start_toke
             training=False,
             rngs={"dropout": step_dropout_key},
         )
-        assert logits.shape == (batch_size, sentence_length, vocab_size)
+        assert logits.shape == (batch_size, sequence_length, vocab_size)
         x_entropies = optax.softmax_cross_entropy_with_integer_labels(
             logits=logits[:, 0:-1, :], labels=batch_x[:, 1:]
         )
-        assert x_entropies.shape == (batch_size, sentence_length - 1)
+        assert x_entropies.shape == (batch_size, sequence_length - 1)
         return x_entropies.mean()
 
     # Compute gradients and apply updates.
@@ -106,16 +101,15 @@ def train_step(key, dropout_key, data, state, vocab_size, batch_size, start_toke
     return state, loss
 
 
-def train(key, dropout_key, dataset, state, batch_size, n_steps, start_token):
+def train(key, dropout_key, dataset, state, batch_size, n_steps, vocab_size):
     for step in range(n_steps):
         state, loss = train_step(
             key,
             dropout_key,
-            dataset.data,
+            dataset,
             state,
-            dataset.vocab_size,
+            vocab_size,
             batch_size,
-            start_token,
         )
         if step % 1000 == 0:
             print(f"Step {step}, loss: {loss}")
@@ -126,7 +120,13 @@ def train(key, dropout_key, dataset, state, batch_size, n_steps, start_token):
 
 @click.command()
 @click.option("--training_sentences", "-t", type=click.Path(exists=True), required=True)
-def main(training_sentences):
+@click.option(
+    "--use_start_token",
+    "-s",
+    is_flag=True,
+    help="Prepend a start token so the model tries to guess the first word.",
+)
+def main(training_sentences, use_start_token):
     np_rng = np.random.default_rng()
     seed = np_rng.integers(0, 2**32 - 1)
     print(f"seed: {seed}\n")
@@ -148,6 +148,12 @@ def main(training_sentences):
         assert grammar.is_valid(
             sentence
         ), f"training data contains an invalid sentence: {sentence}"
+
+    dataset = data.data
+    assert dataset.shape == (data.n_sentences, data.sentence_length)
+    if use_start_token:
+        start_tokens = jnp.full(data.n_sentences, data.blank_token).reshape(-1, 1)
+        dataset = jnp.concatenate([start_tokens, dataset], axis=-1)
 
     # Generative pipeline
     """
@@ -183,7 +189,8 @@ def main(training_sentences):
     # The sentence length is one longer than the length of the sentences in the dataset because we
     # include a start token at the beginning of each sentence (so the model can predict the first
     # word).
-    sequence_length = data.sentence_length + 1
+    sentence_length = data.sentence_length
+    sequence_length = sentence_length if not use_start_token else sentence_length + 1
     n_classes = data.vocab_size
     embedding_dim = 16
     feedforward_dim = 4 * embedding_dim
@@ -213,28 +220,32 @@ def main(training_sentences):
     train_state = make_train_state(
         subkey,
         model,
-        data,
+        sequence_length,
         learning_rate,
     )
     print("")
 
     print("Training...")
     key, batch_key, dropout_key = jax.random.split(key, 3)
-    start_token = data.blank_token
     state = train(
-        batch_key, dropout_key, data, train_state, batch_size, n_steps, start_token
+        batch_key,
+        dropout_key,
+        dataset,
+        train_state,
+        batch_size,
+        n_steps,
+        data.vocab_size,
     )
     print("")
 
     print("Sampling...")
+    mask = make_causal_attention_mask(sequence_length)
     n_samples = 1000
     key, subkey = jax.random.split(key)
-    mask = make_causal_attention_mask(sequence_length)
-    generated_tokens = jnp.full(
-        (n_samples, data.sentence_length + 1), start_token, dtype=jnp.int32
-    )
-
-    for position in range(data.sentence_length):
+    # We will only let the model see the first column of these samples. So if we're prepending start
+    # tokens, there's no information. If we're not, it gets single word prompts.
+    generated_tokens = generate_batch(subkey, dataset, n_samples)
+    for position in range(sequence_length - 1):
         logits = model.apply(state.params, generated_tokens, mask=mask, training=False)
         assert logits.shape == (n_samples, sequence_length, n_classes)
 
@@ -248,7 +259,10 @@ def main(training_sentences):
 
         generated_tokens = generated_tokens.at[:, position + 1].set(next_tokens)
 
-    generated_sentences = data.ids_to_strings(generated_tokens[:, 1:])
+    if use_start_token:
+        generated_tokens = generated_tokens[:, 1:]
+
+    generated_sentences = data.ids_to_strings(generated_tokens)
 
     # Text file pipeline
     def classify_sentence(sentence: str) -> SampleStatus:

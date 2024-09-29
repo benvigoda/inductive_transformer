@@ -35,6 +35,24 @@ class Dataset(NamedTuple):
 
 
 def load_dataset(filepath) -> Dataset:
+    """Loads data from a file where each line is a sentence."""
+
+    # Load the file into memory.
+    with open(filepath, "r") as f:
+        # Split on '\n' and drop empty
+        sentences = [x.strip() for x in f]
+        sentences = [x for x in sentences if x != ""]
+        n_sentences = len(sentences)
+        assert n_sentences > 0
+
+    # Split on ' '.
+    words = [x.split() for x in sentences]
+    return make_dataset_from_sentences(words)
+
+
+def load_dataset_old(filepath) -> Dataset:
+    """Loads sentences separated by '.' from a file and returns a Dataset."""
+
     # Load the file into memory.
     with open(filepath, "r") as f:
         data = f.read()
