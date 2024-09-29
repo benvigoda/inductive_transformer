@@ -6,9 +6,12 @@ import numpy as np
 import optax
 
 from inductive_transformer.datasets.big_cat_small_dog import BigCatSmallDog
-from tokens import load_dataset, make_dataset_from_sentences
-from transformer import TransformerClassifier, make_causal_attention_mask
-from histograms import (
+from inductive_transformer.baselines.tokens import make_dataset_from_sentences
+from inductive_transformer.baselines.transformer import (
+    TransformerClassifier,
+    make_causal_attention_mask,
+)
+from inductive_transformer.baselines.histograms import (
     SampleStatus,
     sample_status_names,
     generate_histogram_data,

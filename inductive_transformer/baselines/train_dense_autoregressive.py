@@ -5,10 +5,10 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 
-from grammars import BigCatSmallDog
-from tokens import load_dataset, make_dataset_from_sentences
-from models import FullyConnectedAutoregressive
-from histograms import (
+from inductive_transformer.datasets.big_cat_small_dog import BigCatSmallDog
+from inductive_transformer.baselines.tokens import make_dataset_from_sentences
+from inductive_transformer.baselines.dense_models import FullyConnectedAutoregressive
+from inductive_transformer.baselines.histograms import (
     SampleStatus,
     sample_status_names,
     generate_histogram_data,
