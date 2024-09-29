@@ -278,7 +278,7 @@ class TransformerClassifier(nn.Module):
 
 def make_causal_attention_mask(sequence_length):
     shape = (sequence_length, sequence_length)
-    return jnp.triu(jnp.ones(shape, dtype=jnp.uint8), k=1).transpose()
+    return jnp.triu(jnp.ones(shape, dtype=jnp.uint8)).transpose()
 
 
 if __name__ == "__main__":

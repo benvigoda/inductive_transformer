@@ -148,7 +148,7 @@ def main():
     data = make_dataset_from_sentences(training_sentences)
     print(
         f"Training on {data.n_sentences} sentences of length {data.sentence_length} "
-        "with a vocabulary size of {data.vocab_size}."
+        f"with a vocabulary size of {data.vocab_size}."
     )
     print("")
 
