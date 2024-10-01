@@ -49,3 +49,6 @@ __pycache__
 
 # weights
 *_output_weights.txt
+
+# mac spotlight indices
+.DS_Store
