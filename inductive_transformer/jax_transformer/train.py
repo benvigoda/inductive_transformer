@@ -442,8 +442,8 @@ def main():
             )
             state = update_model(state, grads)
 
-            if epoch % print_every == 0 or epoch == n_epochs - 1 and step_idx == 0:
-            # if (epoch % print_every == 0 or epoch == n_epochs - 1) and step_idx % 20 == 0:
+            # if (epoch % print_every == 0 or epoch == n_epochs - 1) and step_idx == 0:
+            if (epoch % print_every == 0 or epoch == n_epochs - 1) and step_idx % 20 == 0:
                 print("\nTop:", "↓" * 100)
                 print(f"epoch {epoch}, loss: {loss:.20e}")
                 printed_weights = print_params(state, data.vocab, silence_print=True)
