@@ -12,7 +12,9 @@ def split_sentences(input_file, output_file):
     sentences = text.split(". ")
 
     # Remove any trailing period and add a newline for each sentence
-    cleaned_sentences = [sentence.strip().rstrip(".") for sentence in sentences]
+    cleaned_sentences = [
+        sentence.strip().rstrip(".") for sentence in sentences if sentence != ""
+    ]
 
     # Write the cleaned sentences to the output file
     with open(output_file, "w") as outfile:

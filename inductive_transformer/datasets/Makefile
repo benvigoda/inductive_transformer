@@ -6,7 +6,8 @@ OUTPUT_DIR = oct_1_newline
 PYTHON = python
 
 # Script to split sentences
-SCRIPT = split_sentences.py
+SPLIT_SCRIPT = split_sentences.py
+COUNT_SCRIPT = count_sentences.py
 
 # List of input files
 INPUT_FILES = $(wildcard $(INPUT_DIR)/*.txt)
@@ -23,7 +24,16 @@ $(OUTPUT_DIR):
 
 # Rule to process each file
 $(OUTPUT_DIR)/%.txt: $(INPUT_DIR)/%.txt | $(OUTPUT_DIR)
-	$(PYTHON) $(SCRIPT) -i $< -o $@
+	$(PYTHON) $(SPLIT_SCRIPT) -i $< -o $@
+
+# PHONY rule to count sentences in all newline files
+.PHONY: count_sentences
+count_sentences:
+	@for file in $(wildcard $(OUTPUT_DIR)/*.txt); do \
+		echo "Processing $$file..."; \
+		$(PYTHON) $(COUNT_SCRIPT) $$file; \
+	done
+
 
 # Clean up
 clean:
