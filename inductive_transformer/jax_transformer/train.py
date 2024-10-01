@@ -8,6 +8,7 @@ import numpy as np  # type: ignore
 import optax  # type: ignore
 import pathlib
 import datetime
+from flax import linen as nn
 
 
 from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
@@ -139,8 +140,6 @@ def apply_model(state, z_in, t_in, truths):
         assert t_out.shape == truths.shape
         # loss = jnp.mean(jnp.square(t_out - truths))
         # Use cross entropy loss
-        import optax
-        from flax import linen as nn
         t_out_for_loss = jnp.log(nn.relu(t_out) + 1e-20)
         loss = optax.safe_softmax_cross_entropy(t_out_for_loss, truths).mean()
         # loss = optax.convex_kl_divergence(t_out_for_loss, truths).mean()
@@ -230,7 +229,8 @@ def inference_and_plot(
     plot_file_name,
     activations_file_name,
     silence_print=False,
-    folder_name=None
+    folder_name=None,
+    total_number_of_steps=0,
 ):
     decoder_t = run_and_print_inference(
         state=state,
@@ -245,13 +245,33 @@ def inference_and_plot(
 
     temperature = 1
     generated_sentences = []
+    total_loss = 0.0
+    count_examples = 0
     for example_idx, example in enumerate(
         data.raw_inference_text.replace(" .", ".").split(".")
     ):
         if not example:
             continue
+        count_examples += 1
         text += f"Example {example_idx}: {example.capitalize()}\n"
         single_decoder_t = decoder_t[example_idx]
+        ############################
+        ########### WIP ############
+        ############################
+        expected_decoder_t = jnp.full_like(single_decoder_t, 0.0)
+        for p in range(prob_tensors.num_positions):
+            if example.strip().lower() in grammar.right_zeroth_words:
+                active_words = grammar.get_valid_right_ordered_words()[p]
+            elif example.strip().lower() in grammar.left_zeroth_words:
+                active_words = grammar.get_valid_left_ordered_words()[p]
+            else:
+                print("ERROR: example not found in grammar")
+            indices_to_set = [data.vocab.index(w) for w in active_words]
+            expected_decoder_t = expected_decoder_t.at[p, indices_to_set].set(1.0 / len(active_words))
+        # Compute kl divergence safely
+        t_out_for_loss = jnp.log(nn.relu(single_decoder_t) + 1e-20)
+        loss = optax.safe_softmax_cross_entropy(t_out_for_loss, expected_decoder_t).mean()
+        total_loss += loss
         for sample_idx in range(args.num_samples):
             key, subkey = jax.random.split(key)
             samples = sample(subkey, single_decoder_t, temperature=temperature)
@@ -260,6 +280,14 @@ def inference_and_plot(
             generated_sentences.append(generated_sentence)
         text += "\n"
     text += f"seed: {seed}\n"
+    total_loss /= count_examples
+    # Append result to loss file (in folder_name):
+    # check if the file exists, if not create it
+    if not os.path.exists(os.path.join(folder_name, "loss.txt")):
+        with open(os.path.join(folder_name, "loss.txt"), "w") as f:
+            f.write("total_number_of_steps, loss\n")
+    with open(os.path.join(folder_name, "loss.txt"), "a") as f:
+        f.write(f"{total_number_of_steps}, {total_loss}\n")
 
     # Generate histograms:
     training_sentences = [t.capitalize() for t in data.training_sentences]
@@ -343,8 +371,8 @@ def main():
         grammar = make_cat_dog_worm_bird_anavan()
 
     # Verify that the training sentences are valid.
-    # for sentence in data.training_sentences:
-    #     assert grammar.is_valid(sentence), f"training data contains an invalid sentence: {sentence}"
+    for sentence in data.training_sentences:
+        assert grammar.is_valid(sentence), f"training data contains an invalid sentence: {sentence}"
 
     # Construct the probability tensors.
     prob_tensors = ProbTensors(
@@ -422,6 +450,7 @@ def main():
         os.makedirs(folder_name)
 
     epoch = 0
+    total_number_of_steps = 0
     for epoch in range(n_epochs):
         # Shuffle the data.
         # shuffle_key = jax.random.fold_in(subkey, epoch)
@@ -432,6 +461,7 @@ def main():
             break
 
         for step_idx in range(0, n_steps_per_epoch):
+            total_number_of_steps += 1
             start = step_idx * batch_size
             batch_input_data = all_t_tensors[start: start + batch_size]
             batch_output_data = all_outputs[
@@ -467,6 +497,7 @@ def main():
                     activations_file_name=file_prefix + f"{epoch}_{step_idx}_step_epoch_output_activations.txt",
                     silence_print=False,
                     folder_name=folder_name,
+                    total_number_of_steps=total_number_of_steps,
                 )
                 print("Bottom", "↑" * 100)
 
@@ -504,6 +535,7 @@ def main():
             plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
             activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
             folder_name=folder_name,
+            total_number_of_steps=total_number_of_steps,
         )
     print(f"Saved results to {folder_name}")
     return seed, loss, lr
