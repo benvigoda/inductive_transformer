@@ -1,0 +1,9 @@
+python train_transformer.py -i ../datasets/oct_1_newline/16_dogs_worms.txt -l 1e-3 -e 5000
+python train_transformer.py -i ../datasets/oct_1_newline/32_dogs_worms.txt -l 1e-3 -e 5000
+python train_transformer.py -i ../datasets/oct_1_newline/64_dogs_worms.txt -l 1e-3 -e 5000
+python train_transformer.py -i ../datasets/oct_1_newline/128_dogs_worms.txt -l 1e-3 -e 5000
+python train_transformer.py -i ../datasets/oct_1_newline/256_dogs_worms.txt -l 1e-3 -e 5000
+python train_transformer.py -i ../datasets/oct_1_newline/512_dogs_worms.txt -l 1e-3 -e 5000
+python train_transformer.py -i ../datasets/oct_1_newline/1024_dogs_worms.txt -l 1e-3 -e 5000
+python train_transformer.py -i ../datasets/oct_1_newline/2048_dogs_worms.txt -l 1e-3 -e 5000
+python train_transformer.py -i ../datasets/oct_1_newline/4096_dogs_worms.txt -l 1e-3 -e 5000

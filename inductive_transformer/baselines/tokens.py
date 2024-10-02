@@ -33,6 +33,14 @@ class Dataset(NamedTuple):
         ids = np.asarray(ids).tolist()
         return [" ".join([self.id_to_word[id] for id in sentence]) for sentence in ids]
 
+    def strings_to_ids(self, strings):
+        return jnp.array(
+            [
+                [self.word_to_id[word] for word in sentence.split()]
+                for sentence in strings
+            ]
+        )
+
 
 def load_dataset(filepath) -> Dataset:
     """Loads data from a file where each line is a sentence."""

@@ -1,5 +1,6 @@
 from flax.training import train_state
 from functools import partial
+from pathlib import Path
 import click
 import jax
 import jax.numpy as jnp
@@ -31,6 +32,13 @@ from inductive_transformer.baselines.histograms import (
 # over tokens conditional on all prior tokens. During inference, this network can be operated in an
 # autoregressive manner by sampling only from the distribution for the next token, feeding in the
 # result, and repeating.
+
+# TODO
+# - [x] Generate all valid sentences
+# - [ ] epochs
+# - [ ] For testing, I should use each sentence in the training and global sets once (not sampled)
+# - [ ] I should also save stats on the number of in sample, out of sample, and invalid sentences
+#   - [ ] report results from 10k samples?
 
 
 def make_train_state(key, model, sequence_length, learning_rate):
@@ -65,17 +73,34 @@ def generate_batch(key, data, batch_size):
     return data
 
 
-@partial(jax.jit, static_argnums=(4, 5))
-def train_step(key, dropout_key, data, state, vocab_size, batch_size):
-    # Sample a batch of sentences.
-    sequence_length = data.shape[-1]
-    step_key = jax.random.fold_in(key, state.step)
-    step_dropout_key = jax.random.fold_in(dropout_key, state.step)
-    batch_x = generate_batch(step_key, data, batch_size)
-    assert batch_x.shape == (batch_size, sequence_length)
-
-    # Hopefully JAX/XLA recognizes that this is a constant.
+@jax.jit
+def evaluate_step(data, state):
+    sequence_length = data.shape[1]
     mask = make_causal_attention_mask(sequence_length)
+    logits = state.apply_fn(state.params, data, mask=mask, training=False)
+    x_entropies = optax.softmax_cross_entropy_with_integer_labels(
+        logits=logits[:, 0:-1, :], labels=data[:, 1:]
+    )
+    return x_entropies.mean()
+
+
+def evaluate(dataset, state, batch_size):
+    n_sentences = dataset.shape[0]
+    n_batches = n_sentences // batch_size
+    assert n_batches * batch_size == n_sentences, "Expected even batches"
+    losses = []
+    for batch in range(n_batches):
+        batch_data = dataset[batch * batch_size : (batch + 1) * batch_size]
+        mean_x_entropy = evaluate_step(batch_data, state)
+        losses.append(mean_x_entropy)
+    return np.mean(np.array(losses))
+
+
+@partial(jax.jit, static_argnums=(3))
+def train_step(dropout_key, batch_x, state, vocab_size):
+    batch_size, sequence_length = batch_x.shape
+    mask = make_causal_attention_mask(sequence_length)
+    step_dropout_key = jax.random.fold_in(dropout_key, state.step)
 
     # Define the loss function.
     def loss_fn(params):
@@ -101,32 +126,69 @@ def train_step(key, dropout_key, data, state, vocab_size, batch_size):
     return state, loss
 
 
-def train(key, dropout_key, dataset, state, batch_size, n_steps, vocab_size):
-    for step in range(n_steps):
-        state, loss = train_step(
-            key,
-            dropout_key,
-            dataset,
-            state,
-            vocab_size,
-            batch_size,
-        )
-        if step % 1000 == 0:
-            print(f"Step {step}, loss: {loss}")
+def train(key, train_data, test_data, state, batch_size, n_epochs, vocab_size):
+    n_sentences = train_data.shape[0]
 
-    print(f"Step {step}, loss: {loss}")
-    return state
+    train_batch_size = batch_size if batch_size < n_sentences else n_sentences
+    n_batches_per_epoch = train_data.shape[0] // train_batch_size
+    assert (
+        n_batches_per_epoch * train_batch_size == train_data.shape[0]
+    ), "Expected even batches"
+
+    assert batch_size < test_data.shape[0]
+    n_batches_per_epoch_test = test_data.shape[0] // batch_size
+    assert (
+        n_batches_per_epoch_test * batch_size == test_data.shape[0]
+    ), "Expected even batches"
+
+    key, dropout_key = jax.random.split(key)
+
+    losses = np.zeros((n_epochs, 2))
+    for epoch in range(n_epochs):
+        # shuffle the dataset
+        if train_batch_size < n_sentences:
+            key, subkey = jax.random.split(key)
+            indices = jax.random.permutation(subkey, jnp.arange(train_data.shape[0]))
+        else:
+            indices = jnp.arange(train_data.shape[0])
+
+        # run the training loop
+        for step in range(n_batches_per_epoch):
+            batch_indices = indices[
+                step * train_batch_size : (step + 1) * train_batch_size
+            ]
+            batch_x = train_data[batch_indices]
+            state, loss = train_step(
+                dropout_key,
+                batch_x,
+                state,
+                vocab_size,
+            )
+            # if step % 100 == 0 or step == n_batches_per_epoch - 1:
+            #     print(f"Epoch {epoch}, step {step}, loss: {loss}")
+
+        # Evaluate on the training and test data.
+        train_loss = evaluate(train_data, state, train_batch_size)
+        test_loss = evaluate(test_data, state, batch_size)
+
+        losses[epoch] = [train_loss, test_loss]
+        if epoch % 100 == 0 or epoch == n_epochs - 1:
+            print(f"Epoch {epoch}, train loss: {train_loss}, test loss: {test_loss}")
+
+    return state, losses
 
 
 @click.command()
-@click.option("--training_sentences", "-t", type=click.Path(exists=True), required=True)
+@click.option("--training_sentences", "-i", type=click.Path(exists=True), required=True)
+@click.option("--learning_rate", "-l", type=float, default=1e-4)
+@click.option("--n_epochs", "-e", type=int, default=10000)
 @click.option(
     "--use_start_token",
     "-s",
     is_flag=True,
     help="Prepend a start token so the model tries to guess the first word.",
 )
-def main(training_sentences, use_start_token):
+def main(training_sentences, learning_rate, n_epochs, use_start_token):
     np_rng = np.random.default_rng()
     seed = np_rng.integers(0, 2**32 - 1)
     print(f"seed: {seed}\n")
@@ -144,7 +206,7 @@ def main(training_sentences, use_start_token):
     sentence_strings = data.ids_to_strings(data.data)
     training_sentences_set = set(sentence_strings)
     for sentence in sentence_strings:
-        print(sentence)
+        # print(sentence)
         assert grammar.is_valid(
             sentence
         ), f"training data contains an invalid sentence: {sentence}"
@@ -154,6 +216,10 @@ def main(training_sentences, use_start_token):
     if use_start_token:
         start_tokens = jnp.full(data.n_sentences, data.blank_token).reshape(-1, 1)
         dataset = jnp.concatenate([start_tokens, dataset], axis=-1)
+
+    # Generate all valid sentences (for testing purposes)
+    all_valid_sentences = grammar.generate()
+    all_valid_sentences = data.strings_to_ids(all_valid_sentences)
 
     # Generative pipeline
     """
@@ -200,10 +266,33 @@ def main(training_sentences, use_start_token):
     v_dim = 4
     dropout_rate = 0.1
 
-    batch_size = 64
-    n_steps = 20000
-    learning_rate = 1e-4
+    batch_size = 64  # this will be reduced if the dataset is smaller
+    learning_rate = 1e-3
 
+    stem = Path(training_sentences).stem
+    log_file_name = f"log_{stem}.txt"
+    log_file = open(log_file_name, "w")
+
+    # write the hyperparameters to the log file
+    log_file.write(f"dataset: {training_sentences}\n")
+    log_file.write(f"seed: {seed}\n")
+    log_file.write(f"sequence_length: {sequence_length}\n")
+    log_file.write(f"sentence_length: {sentence_length}\n")
+    log_file.write(f"n_classes: {n_classes}\n")
+    log_file.write(f"embedding_dim: {embedding_dim}\n")
+    log_file.write(f"feedforward_dim: {feedforward_dim}\n")
+    log_file.write(f"n_blocks: {n_blocks}\n")
+    log_file.write(f"n_heads: {n_heads}\n")
+    log_file.write(f"k_dim: {k_dim}\n")
+    log_file.write(f"v_dim: {v_dim}\n")
+    # log_file.write(f"dropout_rate: {dropout_rate}\n")
+    log_file.write(f"batch_size: {batch_size}\n")
+    log_file.write(f"n_epochs: {n_epochs}\n")
+    log_file.write(f"learning_rate: {learning_rate}\n")
+    log_file.write("\n")
+
+
+    print("")
     print("Initializing model...")
     key, subkey = jax.random.split(key)
     model = TransformerClassifier(
@@ -226,43 +315,22 @@ def main(training_sentences, use_start_token):
     print("")
 
     print("Training...")
-    key, batch_key, dropout_key = jax.random.split(key, 3)
-    state = train(
-        batch_key,
-        dropout_key,
+    key, subkey = jax.random.split(key)
+    # def train(key, train_data, test_data, state, batch_size, n_epochs, vocab_size):
+    state, losses = train(
+        subkey,
         dataset,
+        all_valid_sentences,
         train_state,
         batch_size,
-        n_steps,
+        n_epochs,
         data.vocab_size,
     )
+    log_file.write("epoch, train_loss, test_loss\n")
+    for epoch, (train_loss, test_loss) in enumerate(losses):
+        log_file.write(f"{epoch} {train_loss} {test_loss}\n")
+    log_file.write("\n")
     print("")
-
-    print("Sampling...")
-    mask = make_causal_attention_mask(sequence_length)
-    n_samples = 1000
-    key, subkey = jax.random.split(key)
-    # We will only let the model see the first column of these samples. So if we're prepending start
-    # tokens, there's no information. If we're not, it gets single word prompts.
-    generated_tokens = generate_batch(subkey, dataset, n_samples)
-    for position in range(sequence_length - 1):
-        logits = model.apply(state.params, generated_tokens, mask=mask, training=False)
-        assert logits.shape == (n_samples, sequence_length, n_classes)
-
-        # This samples according to the categorical distribution given by logits.
-        key, subkey = jax.random.split(key)
-        next_tokens = jax.random.categorical(subkey, logits[:, position, :])
-        assert next_tokens.shape == (n_samples,)
-
-        # This chooses the most likely word.
-        # next_tokens = jnp.argmax(jax.nn.softmax(logits[:, position, :]), axis=-1)
-
-        generated_tokens = generated_tokens.at[:, position + 1].set(next_tokens)
-
-    if use_start_token:
-        generated_tokens = generated_tokens[:, 1:]
-
-    generated_sentences = data.ids_to_strings(generated_tokens)
 
     # Text file pipeline
     def classify_sentence(sentence: str) -> SampleStatus:
@@ -272,15 +340,50 @@ def main(training_sentences, use_start_token):
             return SampleStatus.OUT_OF_SAMPLE
         return SampleStatus.INVALID
 
-    # Generative pipeline
-    """
-    def classify_sentence(sentence: str) -> SampleStatus:
-        if sentence in training_sentences_set:
-            return SampleStatus.IN_SAMPLE
-        if sentence in all_valid_sentences_set:
-            return SampleStatus.OUT_OF_SAMPLE
-        return SampleStatus.INVALID
-    """
+    print("Sampling...")
+    mask = make_causal_attention_mask(sequence_length)
+    n_samples = 1000
+    n_in_sample = 0
+    n_out_of_sample = 0
+    n_invalid = 0
+
+    for sample_batch in range(10):
+        key, subkey = jax.random.split(key)
+        # We will only let the model see the first column of these samples. So if we're prepending start
+        # tokens, there's no information. If we're not, it gets single word prompts.
+        generated_tokens = generate_batch(subkey, dataset, n_samples)
+        for position in range(sequence_length - 1):
+            logits = model.apply(state.params, generated_tokens, mask=mask, training=False)
+            assert logits.shape == (n_samples, sequence_length, n_classes)
+
+            # This samples according to the categorical distribution given by logits.
+            key, subkey = jax.random.split(key)
+            next_tokens = jax.random.categorical(subkey, logits[:, position, :])
+            assert next_tokens.shape == (n_samples,)
+
+            # This chooses the most likely word.
+            # next_tokens = jnp.argmax(jax.nn.softmax(logits[:, position, :]), axis=-1)
+
+            generated_tokens = generated_tokens.at[:, position + 1].set(next_tokens)
+
+        if use_start_token:
+            generated_tokens = generated_tokens[:, 1:]
+
+        generated_sentences = data.ids_to_strings(generated_tokens)
+
+        for id in range(n_samples):
+            category = classify_sentence(generated_sentences[id])
+            if category == SampleStatus.IN_SAMPLE:
+                n_in_sample += 1
+            elif category == SampleStatus.OUT_OF_SAMPLE:
+                n_out_of_sample += 1
+            else:
+                n_invalid += 1
+
+    log_file.write(f"n_in_sample: {n_in_sample}\n")
+    log_file.write(f"n_out_of_sample: {n_out_of_sample}\n")
+    log_file.write(f"n_invalid: {n_invalid}\n")
+    log_file.close()
 
     n_printed_samples = 50
     limit = min(n_printed_samples, n_samples)
