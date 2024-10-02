@@ -247,6 +247,7 @@ def inference_and_plot(
     generated_sentences = []
     total_loss = 0.0
     count_examples = 0
+    num_training_examples = len(prob_tensors.data.training_sentences)
     for example_idx, example in enumerate(
         data.raw_inference_text.replace(" .", ".").split(".")
     ):
@@ -283,11 +284,13 @@ def inference_and_plot(
     total_loss /= count_examples
     # Append result to loss file (in folder_name):
     # check if the file exists, if not create it
-    if not os.path.exists(os.path.join(folder_name, "loss.txt")):
-        with open(os.path.join(folder_name, "loss.txt"), "w") as f:
-            f.write("total_number_of_steps, loss\n")
-    with open(os.path.join(folder_name, "loss.txt"), "a") as f:
-        f.write(f"{total_number_of_steps}, {total_loss}\n")
+    file_path = os.path.join(folder_name, f"{num_training_examples}_loss.csv")
+    for file in [file_path, f"{num_training_examples}_loss.csv"]:
+        if not os.path.exists(file):
+            with open(file, "w") as f:
+                f.write("Steps,Loss\n")
+        with open(file, "a") as f:
+            f.write(f"{total_number_of_steps},{total_loss}\n")
 
     # Generate histograms:
     training_sentences = [t.capitalize() for t in data.training_sentences]
@@ -395,6 +398,7 @@ def main():
         prob_tensors.vocab_size,
     )
     print(f"vocab: {data.vocab}")
+    print("Length of vocab:", len(data.vocab))
     print(f"num training examples: {all_t_tensors.shape[0]}")
 
     # Initialize all training state (most importantly, the model parameters and optimizer).
@@ -473,7 +477,7 @@ def main():
             state = update_model(state, grads)
 
             # if (epoch % print_every == 0 or epoch == n_epochs - 1) and step_idx == 0:
-            if (epoch % print_every == 0 or epoch == n_epochs - 1) and step_idx % 20 == 0:
+            if (epoch % print_every == 0 or epoch == n_epochs - 1) and step_idx % 10 == 0 and step_idx < 500:
                 print("\nTop:", "↓" * 100)
                 print(f"epoch {epoch}, loss: {loss:.20e}")
                 printed_weights = print_params(state, data.vocab, silence_print=True)
@@ -549,3 +553,5 @@ if __name__ == "__main__":
             # Append to the file if it already exists
             with open("seed_loss.txt", "a") as f:
                 f.write(f"seed: {seed}, loss: {loss:.20e}, learning rate: {lr}\n")
+    # ping when done:
+    os.system('afplay /System/Library/Sounds/Ping.aiff')

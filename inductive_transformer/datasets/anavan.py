@@ -1,5 +1,6 @@
 from typing import List, Optional
 from itertools import product
+import argparse
 
 
 class ANAVAN:
@@ -335,13 +336,34 @@ def make_cat_dog_worm_bird_anavan():
     )
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--num_sentences', type=int, default=32)
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
+    num_sentences_to_generate = parse_args().num_sentences
     # synonyms = make_cat_dog_anavan()
     synonyms = make_cat_dog_worm_bird_anavan()
     # sentences = synonyms.generate(500, side='both', single_synonyms=[0, 4])
-    sentences = synonyms.generate(50000, side='both')
+    all_sentences = set(synonyms.generate(50000, side='both'))
+    # Randomly select a subset of the sentences
+    import random
+    random.seed(0)
+    with open('/Users/nombredor/Gamalon/inductive_transformer/16_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt', 'r') as f:
+        training_sentences = f.readlines()[0].split('.')
+    must_have_sentences = {sentence.strip().lower() for sentence in training_sentences if sentence}
+    if len(must_have_sentences) >= num_sentences_to_generate:
+        selected_sentences = must_have_sentences
+    else:
+        selected_sentences = set(random.sample(list(all_sentences - must_have_sentences), num_sentences_to_generate - len(must_have_sentences))) | must_have_sentences
+
     # sentences = synonyms.generate_all_syns(side='both')
-    for sentence in sentences:
-        print(sentence.capitalize(), end='. ')
-    print()
-    print(len(sentences))
+    with open(f'{num_sentences_to_generate}_dogs_worms.txt', 'w') as f:
+        for sentence in selected_sentences:
+            f.write(sentence.capitalize().strip('.') + '. ')
+    # for sentence in selected_sentences:
+    #     print(sentence.capitalize().strip('.'), end='. ')
+    # print()
+    # print(len(selected_sentences))
