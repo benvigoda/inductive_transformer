@@ -44,6 +44,7 @@ def plot_generalization_performance(sizes, data):
         n_out_of_sample,
         n_invalid,
         labels=["In Sample", "Out of Sample", "Invalid"],
+        colors=["blue", "green", "red"],
     )
 
     # Add labels and title
@@ -85,7 +86,7 @@ def main():
     )
 
     fig = plot_generalization_performance(sizes, data)
-    fig.savefig("generalization.png")
+    fig.savefig("generalization_vs_training_size.png")
     plt.close(fig)
 
 

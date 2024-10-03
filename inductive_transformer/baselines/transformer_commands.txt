@@ -7,3 +7,5 @@ python train_transformer.py -i ../datasets/oct_1_newline/512_dogs_worms.txt -l 1
 python train_transformer.py -i ../datasets/oct_1_newline/1024_dogs_worms.txt -l 1e-3 -e 5000
 python train_transformer.py -i ../datasets/oct_1_newline/2048_dogs_worms.txt -l 1e-3 -e 5000
 python train_transformer.py -i ../datasets/oct_1_newline/4096_dogs_worms.txt -l 1e-3 -e 5000
+
+python train_transformer.py -i ../../48_6_layer_sentences_balanced_newline.txt -l 1e-3 -e 5000

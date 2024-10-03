@@ -23,6 +23,9 @@ from inductive_transformer.baselines.histograms import (
     generate_histogram_data,
     plot_histogram,
 )
+from inductive_transformer.jax_transformer.histogram_generations import (
+    histogram_results,
+)
 
 
 # This file trains a transformer to output a probability distributions over tokens for each position
@@ -126,7 +129,19 @@ def train_step(dropout_key, batch_x, state, vocab_size):
     return state, loss
 
 
-def train(key, train_data, test_data, state, batch_size, n_epochs, vocab_size):
+def train(
+    key,
+    data,
+    train_data,
+    test_data,
+    model,
+    state,
+    batch_size,
+    n_epochs,
+    vocab_size,
+    use_start_token,
+    classify_sentence,
+):
     n_sentences = train_data.shape[0]
 
     train_batch_size = batch_size if batch_size < n_sentences else n_sentences
@@ -143,7 +158,8 @@ def train(key, train_data, test_data, state, batch_size, n_epochs, vocab_size):
 
     key, dropout_key = jax.random.split(key)
 
-    losses = np.zeros((n_epochs, 2))
+    losses = np.zeros((n_epochs, 2), dtype=np.float32)
+    sample_stats = np.zeros((n_epochs, 3), dtype=np.int32)
     for epoch in range(n_epochs):
         # shuffle the dataset
         if train_batch_size < n_sentences:
@@ -171,11 +187,80 @@ def train(key, train_data, test_data, state, batch_size, n_epochs, vocab_size):
         train_loss = evaluate(train_data, state, train_batch_size)
         test_loss = evaluate(test_data, state, batch_size)
 
-        losses[epoch] = [train_loss, test_loss]
         if epoch % 100 == 0 or epoch == n_epochs - 1:
-            print(f"Epoch {epoch}, train loss: {train_loss}, test loss: {test_loss}")
+            key, subkey = jax.random.split(key)
+            _, n_in_sample, n_out_of_sample, n_invalid = sample(
+                subkey,
+                model,
+                state.params,
+                data,
+                train_data,
+                vocab_size,
+                use_start_token,
+                classify_sentence,
+            )
+        else:
+            n_in_sample = 0
+            n_out_of_sample = 0
+            n_invalid = 0
 
-    return state, losses
+        losses[epoch] = [train_loss, test_loss]
+        sample_stats[epoch] = [n_in_sample, n_out_of_sample, n_invalid]
+        if epoch % 100 == 0 or epoch == n_epochs - 1:
+            print(
+                f"Epoch {epoch}, train loss: {train_loss}, test loss: {test_loss}, n_in_sample: {n_in_sample}, n_out_of_sample: {n_out_of_sample}, n_invalid: {n_invalid}"
+            )
+
+    return state, losses, sample_stats
+
+
+def sample(
+    key, model, params, data, dataset, n_classes, use_start_token, classify_sentence
+):
+    sequence_length = dataset.shape[1]
+    mask = make_causal_attention_mask(sequence_length)
+
+    generated_sentences = []
+    n_samples = 1000
+    n_in_sample = 0
+    n_out_of_sample = 0
+    n_invalid = 0
+
+    for sample_batch in range(10):
+        key, subkey = jax.random.split(key)
+        # We will only let the model see the first column of these samples. So if we're prepending start
+        # tokens, there's no information. If we're not, it gets single word prompts.
+        generated_tokens = generate_batch(subkey, dataset, n_samples)
+        for position in range(sequence_length - 1):
+            logits = model.apply(params, generated_tokens, mask=mask, training=False)
+            assert logits.shape == (n_samples, sequence_length, n_classes)
+
+            # This samples according to the categorical distribution given by logits.
+            key, subkey = jax.random.split(key)
+            next_tokens = jax.random.categorical(subkey, logits[:, position, :])
+            assert next_tokens.shape == (n_samples,)
+
+            # This chooses the most likely word.
+            # next_tokens = jnp.argmax(jax.nn.softmax(logits[:, position, :]), axis=-1)
+
+            generated_tokens = generated_tokens.at[:, position + 1].set(next_tokens)
+
+        if use_start_token:
+            generated_tokens = generated_tokens[:, 1:]
+
+        new_sentences = data.ids_to_strings(generated_tokens)
+        generated_sentences.extend(new_sentences)
+
+        for id in range(n_samples):
+            category = classify_sentence(new_sentences[id])
+            if category == SampleStatus.IN_SAMPLE:
+                n_in_sample += 1
+            elif category == SampleStatus.OUT_OF_SAMPLE:
+                n_out_of_sample += 1
+            else:
+                n_invalid += 1
+
+    return generated_sentences, n_in_sample, n_out_of_sample, n_invalid
 
 
 @click.command()
@@ -203,9 +288,9 @@ def main(training_sentences, learning_rate, n_epochs, use_start_token):
 
     # Verify that the training sentences are valid.
     grammar = make_cat_dog_worm_bird_anavan()
-    sentence_strings = data.ids_to_strings(data.data)
-    training_sentences_set = set(sentence_strings)
-    for sentence in sentence_strings:
+    training_sentence_strings = data.ids_to_strings(data.data)
+    training_sentences_set = set(training_sentence_strings)
+    for sentence in training_sentence_strings:
         # print(sentence)
         assert grammar.is_valid(
             sentence
@@ -291,7 +376,6 @@ def main(training_sentences, learning_rate, n_epochs, use_start_token):
     log_file.write(f"learning_rate: {learning_rate}\n")
     log_file.write("\n")
 
-
     print("")
     print("Initializing model...")
     key, subkey = jax.random.split(key)
@@ -314,24 +398,6 @@ def main(training_sentences, learning_rate, n_epochs, use_start_token):
     )
     print("")
 
-    print("Training...")
-    key, subkey = jax.random.split(key)
-    # def train(key, train_data, test_data, state, batch_size, n_epochs, vocab_size):
-    state, losses = train(
-        subkey,
-        dataset,
-        all_valid_sentences,
-        train_state,
-        batch_size,
-        n_epochs,
-        data.vocab_size,
-    )
-    log_file.write("epoch, train_loss, test_loss\n")
-    for epoch, (train_loss, test_loss) in enumerate(losses):
-        log_file.write(f"{epoch} {train_loss} {test_loss}\n")
-    log_file.write("\n")
-    print("")
-
     # Text file pipeline
     def classify_sentence(sentence: str) -> SampleStatus:
         if sentence in training_sentences_set:
@@ -340,54 +406,54 @@ def main(training_sentences, learning_rate, n_epochs, use_start_token):
             return SampleStatus.OUT_OF_SAMPLE
         return SampleStatus.INVALID
 
+    print("Training...")
+    key, subkey = jax.random.split(key)
+    state, losses, sample_stats = train(
+        subkey,
+        data,
+        dataset,
+        all_valid_sentences,
+        model,
+        train_state,
+        batch_size,
+        n_epochs,
+        data.vocab_size,
+        use_start_token,
+        classify_sentence,
+    )
+    log_file.write(
+        "epoch, train_loss, test_loss, n_in_sample, n_out_of_sample, n_invalid\n"
+    )
+    for epoch, (
+        (train_loss, test_loss),
+        (n_in_sample, n_out_of_sample, n_invalid),
+    ) in enumerate(zip(losses, sample_stats)):
+        log_file.write(
+            f"{epoch} {train_loss} {test_loss} {n_in_sample} {n_out_of_sample} {n_invalid}\n"
+        )
+    log_file.write("\n")
+    print("")
+
     print("Sampling...")
-    mask = make_causal_attention_mask(sequence_length)
-    n_samples = 1000
-    n_in_sample = 0
-    n_out_of_sample = 0
-    n_invalid = 0
-
-    for sample_batch in range(10):
-        key, subkey = jax.random.split(key)
-        # We will only let the model see the first column of these samples. So if we're prepending start
-        # tokens, there's no information. If we're not, it gets single word prompts.
-        generated_tokens = generate_batch(subkey, dataset, n_samples)
-        for position in range(sequence_length - 1):
-            logits = model.apply(state.params, generated_tokens, mask=mask, training=False)
-            assert logits.shape == (n_samples, sequence_length, n_classes)
-
-            # This samples according to the categorical distribution given by logits.
-            key, subkey = jax.random.split(key)
-            next_tokens = jax.random.categorical(subkey, logits[:, position, :])
-            assert next_tokens.shape == (n_samples,)
-
-            # This chooses the most likely word.
-            # next_tokens = jnp.argmax(jax.nn.softmax(logits[:, position, :]), axis=-1)
-
-            generated_tokens = generated_tokens.at[:, position + 1].set(next_tokens)
-
-        if use_start_token:
-            generated_tokens = generated_tokens[:, 1:]
-
-        generated_sentences = data.ids_to_strings(generated_tokens)
-
-        for id in range(n_samples):
-            category = classify_sentence(generated_sentences[id])
-            if category == SampleStatus.IN_SAMPLE:
-                n_in_sample += 1
-            elif category == SampleStatus.OUT_OF_SAMPLE:
-                n_out_of_sample += 1
-            else:
-                n_invalid += 1
-
+    # def sample(key, model, params, data, dataset, n_classes, use_start_token, classify_sentence):
+    key, subkey = jax.random.split(key)
+    generated_sentences, n_in_sample, n_out_of_sample, n_invalid = sample(
+        subkey,
+        model,
+        state.params,
+        data,
+        dataset,
+        n_classes,
+        use_start_token,
+        classify_sentence,
+    )
     log_file.write(f"n_in_sample: {n_in_sample}\n")
     log_file.write(f"n_out_of_sample: {n_out_of_sample}\n")
     log_file.write(f"n_invalid: {n_invalid}\n")
     log_file.close()
 
     n_printed_samples = 50
-    limit = min(n_printed_samples, n_samples)
-    for id in range(limit):
+    for id in range(n_printed_samples):
         category = classify_sentence(generated_sentences[id])
         print(f"{generated_sentences[id]} ({sample_status_names[category]})")
     print("")
@@ -395,6 +461,15 @@ def main(training_sentences, learning_rate, n_epochs, use_start_token):
     print("Generating histograms...")
     histogram_data = generate_histogram_data(generated_sentences, classify_sentence)
     plot_histogram(histogram_data, "histogram_t.png", size=(8.0, 12.0))
+
+    # histogram_results(
+    #     training_sentence_strings,
+    #     generated_sentences,
+    #     grammar=grammar,
+    #     subtitle=f"subtitle?",
+    #     plot_file_name="histogram_t_v2.png",
+    #     folder=None,
+    # )
 
 
 if __name__ == "__main__":
