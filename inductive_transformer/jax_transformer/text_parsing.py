@@ -10,7 +10,7 @@ from inductive_transformer.jax_transformer.helper_functions import PROBABLE, IMP
 
 
 class InputData:
-    def __init__(self, training_path, inference_path, stop_token=".", print_vals=True):
+    def __init__(self, training_path, inference_path, stop_token=".", print_vals=True, truncate_training_at=0):
         self.stop_token = stop_token
         # Reads a text files
 
@@ -18,15 +18,21 @@ class InputData:
             raise FileNotFoundError(f"File {training_path} not found")
         with open(training_path) as f:
             raw_training_text = " ".join(f.readlines()).lower()
+            # Drop everything after the 16th stop token
+            if truncate_training_at:
+                raw_training_text = ".".join(raw_training_text.split(".")[:truncate_training_at])
         if not inference_path or not inference_path.exists():
             raw_inference_text = ""
         else:
             with open(inference_path) as f:
                 raw_inference_text = " ".join(f.readlines()).lower()
+        with open('16_dogs_worms.txt') as f:
+            base_text = " ".join(f.readlines()).lower()
 
         self.raw_training_text = self.clean(raw_training_text)
         self.raw_inference_text = self.clean(raw_inference_text)
-        self.text = self.raw_training_text + " " + self.raw_inference_text
+        self.base_text = self.clean(base_text)
+        self.text = self.raw_training_text + " " + self.raw_inference_text + " " + self.base_text
         self.training_sentences = [
             sent.strip() for sent in raw_training_text.split(".") if sent.strip()
         ]

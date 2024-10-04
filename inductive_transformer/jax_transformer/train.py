@@ -335,6 +335,7 @@ def parse_args():
     parser.add_argument("--loss_threshold", type=float, default=None)
     parser.add_argument("--catsanddogs", action="store_true")
     parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--num_training_sentences", type=int, default=None)
     return parser.parse_args()
 
 
@@ -365,7 +366,7 @@ def main():
     noise_seed = None  # type: ignore  # To not include noise in the training process.
 
     # Load training data.
-    data = InputData(args.training_text, args.prompt_text, print_vals=False)
+    data = InputData(args.training_text, args.prompt_text, print_vals=False, truncate_training_at=args.num_training_sentences)
 
     # Construct the grammar.
     if args.catsanddogs:

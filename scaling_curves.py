@@ -5,7 +5,7 @@ import pandas as pd  # type: ignore
 
 # We have loss vs. #steps to plot for different numbers of training sentences
 # Each data set is stored in a different file:
-num_training_sentences = [16 * 2 ** i for i in range(0, 9)]
+num_training_sentences = [8]
 file_names = [f"{n}_loss.csv" for n in num_training_sentences]
 # Each file has two columns: steps and loss
 # The steps is an integer, and the loss is a float
@@ -13,7 +13,7 @@ data_sets = []
 for file_name in file_names:
     data_set = pd.read_csv(file_name)
     # Limit to the first 400 steps
-    data_set = data_set[data_set["Steps"] <= 400]
+    data_set = data_set#[data_set["Steps"] <= 400]
     data_sets.append(data_set)
 
 # Plot each data set
