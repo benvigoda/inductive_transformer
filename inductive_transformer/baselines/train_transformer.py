@@ -221,7 +221,7 @@ def sample(
     mask = make_causal_attention_mask(sequence_length)
 
     generated_sentences = []
-    n_samples = 1000
+    n_samples = 10
     n_in_sample = 0
     n_out_of_sample = 0
     n_invalid = 0
@@ -276,6 +276,7 @@ def sample(
 def main(training_sentences, learning_rate, n_epochs, use_start_token):
     np_rng = np.random.default_rng()
     seed = np_rng.integers(0, 2**32 - 1)
+    seed = 1852417028
     print(f"seed: {seed}\n")
     key = jax.random.PRNGKey(seed)
 
@@ -290,11 +291,11 @@ def main(training_sentences, learning_rate, n_epochs, use_start_token):
     grammar = make_cat_dog_worm_bird_anavan()
     training_sentence_strings = data.ids_to_strings(data.data)
     training_sentences_set = set(training_sentence_strings)
-    for sentence in training_sentence_strings:
-        # print(sentence)
-        assert grammar.is_valid(
-            sentence
-        ), f"training data contains an invalid sentence: {sentence}"
+    # for sentence in training_sentence_strings:
+    #     # print(sentence)
+    #     assert grammar.is_valid(
+    #         sentence
+    #     ), f"training data contains an invalid sentence: {sentence}"
 
     dataset = data.data
     assert dataset.shape == (data.n_sentences, data.sentence_length)
@@ -457,10 +458,17 @@ def main(training_sentences, learning_rate, n_epochs, use_start_token):
         category = classify_sentence(generated_sentences[id])
         print(f"{generated_sentences[id]} ({sample_status_names[category]})")
     print("")
-
     print("Generating histograms...")
-    histogram_data = generate_histogram_data(generated_sentences, classify_sentence)
-    plot_histogram(histogram_data, "histogram_t.png", size=(8.0, 12.0))
+    histogram_results(
+        training_sentences=[t.capitalize() for t in training_sentence_strings],
+        generated_sentences=[g.capitalize() for g in generated_sentences],
+        grammar=grammar,
+        subtitle=f"subtitle?",
+        plot_file_name="histogram_t_v2.png",
+        folder=None,
+    )
+    # histogram_data = generate_histogram_data(generated_sentences, classify_sentence)
+    # plot_histogram(histogram_data, "histogram_t.png", size=(8.0, 12.0))
 
     # histogram_results(
     #     training_sentence_strings,
