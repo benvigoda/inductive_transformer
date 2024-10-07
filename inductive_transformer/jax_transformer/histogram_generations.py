@@ -130,7 +130,7 @@ def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=Non
         #     else:
         #         label.set_visible(True)
         # Make sure the y-ticks are evenly spaced
-        ax.yaxis.set_major_locator(MaxNLocator(nbins=50, prune='both'))
+        # ax.yaxis.set_major_locator(MaxNLocator(nbins=50, prune='both'))
         # Save the plot
         if plot_file_name:
             if folder:
