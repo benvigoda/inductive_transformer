@@ -28,7 +28,7 @@ def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=Non
     zoomed_plot = True
     second_plot = True
     if big_plot:
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6), sharey=True)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 5), sharey=True)
         # Plot training data on the first subplot
         sns.barplot(x="Count", y="Sentence", data=data1, hue="Status", palette=training_palette, ax=ax1, width=bar_width)
         ax1.set_title("Training Data")
@@ -73,7 +73,7 @@ def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=Non
     # Still show both histograms, but only the first 100 sentences
     if zoomed_plot:
         num_zoom_sentences = 50
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6), sharey=True)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 5), sharey=True)
         sns.barplot(x="Count", y="Sentence", data=data1.head(num_zoom_sentences), hue="Status", palette=training_palette, ax=ax1, width=bar_width)
         ax1.set_title("Training Data")
         ax1.set_xlabel("Count")
@@ -113,7 +113,7 @@ def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=Non
     # Make a another plot with the same original data, but only show the second histogram
     # This is useful for saving the second histogram separately
     if second_plot:
-        fig, ax = plt.subplots(figsize=(8, 6))
+        fig, ax = plt.subplots(figsize=(9, 5))
         sns.barplot(
             x="Count", y="Sentence", data=data2, hue="Status", palette=palette, ax=ax, width=bar_width
         )
@@ -130,7 +130,7 @@ def plot_side_by_side_histograms(data1, data2, subtitle=None, plot_file_name=Non
         #     else:
         #         label.set_visible(True)
         # Make sure the y-ticks are evenly spaced
-        # ax.yaxis.set_major_locator(MaxNLocator(nbins=50, prune='both'))
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=50, prune='both'))
         # Save the plot
         if plot_file_name:
             if folder:
