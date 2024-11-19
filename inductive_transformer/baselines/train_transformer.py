@@ -221,7 +221,7 @@ def sample(
     mask = make_causal_attention_mask(sequence_length)
 
     generated_sentences = []
-    n_samples = 10
+    n_samples = 100
     n_in_sample = 0
     n_out_of_sample = 0
     n_invalid = 0
