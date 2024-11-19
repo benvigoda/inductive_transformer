@@ -62,15 +62,18 @@ def train_step(state, batch_x, batch_y):
         loss = optax.softmax_cross_entropy_with_integer_labels(
             logits=logits, labels=batch_y
         ).mean()
+        jax.debug.breakpoint()
         return loss
 
+    jax.debug.breakpoint()
     grad_fn = jax.value_and_grad(loss_fn)
     loss, grads = grad_fn(state.params)
     state = state.apply_gradients(grads=grads)
+    jax.debug.breakpoint()
     return state, loss
 
 
-@partial(jax.jit, static_argnums=(3, 4))
+# @partial(jax.jit, static_argnums=(3, 4))
 def full_train_step(key, data, state, vocab_size, batch_size):
     step_key = jax.random.fold_in(key, state.step)
     batch_x, batch_y, _ = generate_batch(step_key, data, vocab_size, batch_size)

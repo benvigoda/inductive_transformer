@@ -1,6 +1,7 @@
 from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
+import jax
 
 from inductive_transformer.jax_transformer.decoder_layer import DecoderLayer
 from inductive_transformer.jax_transformer.encoder_layer import EncoderLayer
@@ -89,6 +90,21 @@ class InductiveTransformer(nn.Module):
             assert x.shape == (2, self.layer_width)
             assert y.shape == (2, self.layer_width)
 
+            if jnp.isnan(z).any().val[0]:
+                jax.debug.breakpoint()
+            if jnp.isnan(x).any().val[0]:
+                jax.debug.breakpoint()
+            y_nan = jnp.isnan(y).any()
+            try:
+                if y_nan.val[0]:
+                    jax.debug.breakpoint()
+            except:
+                try:
+                    if y_nan:
+                        jax.debug.breakpoint()
+                except:
+                    pass
+
             encoder_z.append(z)
             encoder_x.append(x)
             encoder_y.append(y)
@@ -100,6 +116,10 @@ class InductiveTransformer(nn.Module):
         for idx in range(self.num_layers - 1, -1, -1):
             decoder = self.decoders[idx]
             z, t, activations = decoder(z, encoder_x[idx], encoder_y[idx])
+
+            if jnp.isnan(z).any().val[0]:
+                jax.debug.breakpoint()
+
             assert z.shape == (2, self.layer_width)
             assert t.shape == (self.num_positions, self.vocab_size, self.layer_width)
             decoder_z[idx] = z

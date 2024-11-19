@@ -2,7 +2,7 @@ from flax import linen as nn  # type: ignore
 import jax.numpy as jnp  # type: ignore
 from typing import Callable
 from inductive_transformer.jax_transformer.helper_functions import EPSILON
-
+import jax
 
 class EncoderTokenPi(nn.Module):
     num_positions: int
@@ -36,5 +36,7 @@ class EncoderTokenPi(nn.Module):
             rho, axis=1
         )  # after summing it is size = (num_positions, layer_width)
         # rho = custom_normalize(rho, dim=1)
-
+        if jnp.isnan(rho).any().val[0]:
+            print("nan in encoder_token_pi rho")
+            jax.debug.breakpoint()
         return rho  # rho is categorical

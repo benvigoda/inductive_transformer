@@ -1,6 +1,7 @@
 from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
+import jax
 
 from inductive_transformer.jax_transformer.encoder_universe import EncoderUniverse
 from inductive_transformer.jax_transformer.encoder_bernoulli_categorical import (
@@ -135,5 +136,19 @@ class EncoderLayer(nn.Module):
             "x_bernoulli": x_bernoulli,
             "z_prime": z_prime,
         }
+        if jnp.isnan(z_prime).any().val[0]:
+                jax.debug.breakpoint()
+        if jnp.isnan(x_bernoulli).any().val[0]:
+            jax.debug.breakpoint()
+        y_nan = jnp.isnan(y_bernoulli).any()
+        try:
+            if y_nan.val[0]:
+                jax.debug.breakpoint()
+        except:
+            try:
+                if y_nan:
+                    jax.debug.breakpoint()
+            except:
+                pass
 
         return z_prime, x_bernoulli, y_bernoulli, activations

@@ -129,7 +129,7 @@ def create_train_state(
 # t_out.shape = truths.shape
 # num_training_examples is used when computing the initial loss
 # batch_size = 10, is used during the training loop
-@jax.jit
+# @jax.jit
 def apply_model(state, z_in, t_in, truths):
     """Computes gradients and loss for a single instance (not yet batched)."""
 
@@ -140,7 +140,7 @@ def apply_model(state, z_in, t_in, truths):
         assert t_out.shape == truths.shape
         # loss = jnp.mean(jnp.square(t_out - truths))
         # Use cross entropy loss
-        t_out_for_loss = jnp.log(nn.relu(t_out) + 1e-20)
+        t_out_for_loss = jnp.log(nn.relu(t_out) + 1e-10)
         loss = optax.safe_softmax_cross_entropy(t_out_for_loss, truths).mean()
         # loss = optax.convex_kl_divergence(t_out_for_loss, truths).mean()
         # jax.debug.print("t_out\n{}", t_out)
@@ -148,13 +148,30 @@ def apply_model(state, z_in, t_in, truths):
         # jax.debug.print("loss {}\n", loss)
         return loss
 
+    for i in range(6):
+        encoder_l = f"encoders_{i}"
+        if jnp.isnan(state.params['params'][encoder_l]['encoder_token_pi']['weights'][0][0]).any():
+            print(f"A) nan in encoder_token_pi {i} weights")
+            jax.debug.breakpoint()
     grad_fn = jax.value_and_grad(loss_fn)
+    for i in range(6):
+        encoder_l = f"encoders_{i}"
+        if jnp.isnan(state.params['params'][encoder_l]['encoder_token_pi']['weights'][0][0]).any():
+            print(f"B) nan in encoder_token_pi {i} weights")
+            jax.debug.breakpoint()
     loss, grads = grad_fn(state.params)
+    #TODO:
+    # Check if state.params['params']['encoders_1'] or any other weights are nan
+    for i in range(6):
+        encoder_l = f"encoders_{i}"
+        if jnp.isnan(state.params['params'][encoder_l]['encoder_token_pi']['weights'][0][0]).any():
+            print(f"C) nan in encoder_token_pi {i} weights")
+            jax.debug.breakpoint()
 
     return grads, loss
 
 
-@jax.jit
+# @jax.jit
 def update_model(state, grads):
     # Zero out the gradients of parameters that we don't want to update.
     if state.grad_mask is not None:
@@ -514,7 +531,7 @@ def main():
         print("No training was done.")
         print(f"epoch {epoch}, loss: {loss:.20e}")
         # Print trained weights.
-        printed_weights = print_params(state, data.vocab)
+        printed_weights = print_params(state, data.vocab, silence_print=True)
         # save printed weights to a file
         file_name = file_prefix + f"{epoch}_epoch_output_weights.txt"
         file_path = os.path.join(folder_name, file_name)
