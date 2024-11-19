@@ -133,7 +133,10 @@ def apply_model(state, z_in, t_in, truths):
         # Use cross entropy loss
         import optax
         from flax import linen as nn
-        t_out_for_loss = jnp.log(nn.relu(t_out))
+
+        # Add a small epsilon to ensure t_out is strictly positive
+        epsilon = 1e-10
+        t_out_for_loss = jnp.log(nn.relu(t_out) + epsilon)
         loss = optax.safe_softmax_cross_entropy(t_out_for_loss, truths).mean()
         # jax.debug.print("t_out\n{}", t_out)
         # jax.debug.print("truths\n{}", truths)
