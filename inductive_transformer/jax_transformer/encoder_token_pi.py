@@ -4,6 +4,7 @@ from typing import Callable
 from inductive_transformer.jax_transformer.helper_functions import EPSILON
 import jax
 
+
 class EncoderTokenPi(nn.Module):
     num_positions: int
     layer_width: int
@@ -20,6 +21,8 @@ class EncoderTokenPi(nn.Module):
             self.weight_init,
             (self.num_positions, self.vocab_size, self.layer_width),
         )
+        if jnp.isnan(weights).any():
+            print("nan in encoder_token_pi weights")
         prob_weights = nn.relu(weights) + EPSILON
         # NOTE: we decided not to normalize the weights (it shouldn't matter)
         # prob_weights = nn.functional.normalize(prob_weights, p=1, axis=0)
@@ -38,5 +41,4 @@ class EncoderTokenPi(nn.Module):
         # rho = custom_normalize(rho, dim=1)
         if jnp.isnan(rho).any().val[0]:
             print("nan in encoder_token_pi rho")
-            jax.debug.breakpoint()
         return rho  # rho is categorical

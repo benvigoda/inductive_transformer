@@ -67,23 +67,60 @@ class EncoderLayer(nn.Module):
         # Encoder Open Closed Universe
         u = self.encoder_universe(z)
         assert u.shape == (2, self.layer_width, self.layer_width)
+        u_nan = jnp.isnan(u).any()
+        try:
+            if u_nan.val[0]:
+                print("nan in u at encoder_layer")
+        except:
+            if u_nan:
+                print("nan in u at encoder_layer")
 
         # Encoder Bernoulli-Categorical
         # u is bernoulli, v is categorical
         v = self.encoder_bernoulli_categorical(u)
+        v_nan = jnp.isnan(v).any()
+        try:
+            if v_nan.val[0]:
+                print("nan in v at encoder_layer")
+        except:
+            if v_nan:
+                print("nan in v at encoder_layer")
+
+        # u and v appear to be fine
 
         # Encoder Attention $\pi$
         y_categorical = self.encoder_attention_pi(v)
         assert y_categorical.shape == (1, self.layer_width)
+        y_categorical_nan = jnp.isnan(y_categorical).any()
+        try:
+            if y_categorical_nan.val[0]:
+                print("nan in y_categorical at encoder_layer")
+        except:
+            if y_categorical_nan:
+                print("nan in y_categorical at encoder_layer")
 
         y_bernoulli = self.encoder_categorical_bernoulli(y_categorical)
         assert y_bernoulli.shape == (2, self.layer_width)
+        y_bernoulli_nan = jnp.isnan(y_bernoulli).any()
+        try:
+            if y_bernoulli_nan.val[0]:
+                print("nan in y_bernoulli at encoder_layer")
+        except:
+            if y_bernoulli_nan:
+                print("nan in y_bernoulli at encoder_layer")
+
+        # import pdb; pdb.set_trace()
 
         # Hook 3 pi_t's to their parent pi_rho, everywhere this occurs.
         # The encoder open-closed universe without backwards info from the decoder simply clones the input data for a given token and position
         # and sends it to the corresponding pi_t in both the the left and right columns.
         # We simply make the input data have the same values for every value of lw (which indexes layer_width).
         rho_categorical = self.encoder_token_pi(t_categorical)
+        # This is one place where the nan's are coming from
+        # But there are nan's earlier in the code as well
+        if jnp.isnan(rho_categorical).any().val[0]:
+            print("nan in rho_categorical at encoder_layer")
+            import pdb; pdb.set_trace()
         # Encoder Position $\pi$
         # without position, we had pi_t outputting x_categorical, with
         # t_categorical.shape() = (vocab_size, layer_width)
@@ -137,18 +174,19 @@ class EncoderLayer(nn.Module):
             "z_prime": z_prime,
         }
         if jnp.isnan(z_prime).any().val[0]:
-                jax.debug.breakpoint()
+            print("nan in z_prime at encoder_layer")
+            import pdb; pdb.set_trace()
         if jnp.isnan(x_bernoulli).any().val[0]:
-            jax.debug.breakpoint()
+            print("nan in x_bernoulli at encoder_layer")
+            import pdb; pdb.set_trace()
         y_nan = jnp.isnan(y_bernoulli).any()
         try:
             if y_nan.val[0]:
-                jax.debug.breakpoint()
+                print("nan in y_bernoulli at encoder_layer")
+                import pdb; pdb.set_trace()
         except:
-            try:
-                if y_nan:
-                    jax.debug.breakpoint()
-            except:
-                pass
+            if y_nan:
+                print("nan in y_bernoulli at encoder_layer")
+                import pdb; pdb.set_trace()
 
         return z_prime, x_bernoulli, y_bernoulli, activations

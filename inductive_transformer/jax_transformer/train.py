@@ -122,13 +122,23 @@ def create_train_state(
     print(f"Number of parameters: {num_params}")
     return state, model, lr
 
-# (num_positions, vocab_size)
 
-# t_out.shape = (48 or 10, 6, 54)
-# t_out.shape = (num_training_examples initially but batch_size when training, num_layers=num positions, vocab_size)
-# t_out.shape = truths.shape
-# num_training_examples is used when computing the initial loss
-# batch_size = 10, is used during the training loop
+def check_nan_weights(state, step):
+    for i in range(6):
+        encoder_l = f"encoders_{i}"
+        for encoder_type in ["encoder_token_pi", "encoder_position_pi", "encoder_attention_pi"]:
+            if jnp.isnan(state.params['params'][encoder_l][encoder_type]['weights'][0][0]).any():
+                print(f"{step} nan in {encoder_type} {i} weights")
+                import pdb; pdb.set_trace()
+    for i in range(6):
+        decoder_l = f"decoders_{i}"
+        for decoder_type in ["decoder_token_pi", "decoder_position_pi", "decoder_attention_pi"]:
+            if jnp.isnan(state.params['params'][decoder_l][decoder_type]['weights'][0][0]).any():
+                print(f"{step} nan in {decoder_type} {i} weights")
+                import pdb; pdb.set_trace()
+    return
+
+
 # @jax.jit
 def apply_model(state, z_in, t_in, truths):
     """Computes gradients and loss for a single instance (not yet batched)."""
@@ -148,25 +158,20 @@ def apply_model(state, z_in, t_in, truths):
         # jax.debug.print("loss {}\n", loss)
         return loss
 
-    for i in range(6):
-        encoder_l = f"encoders_{i}"
-        if jnp.isnan(state.params['params'][encoder_l]['encoder_token_pi']['weights'][0][0]).any():
-            print(f"A) nan in encoder_token_pi {i} weights")
-            jax.debug.breakpoint()
+    # Check for nan weights before computing gradients
+    check_nan_weights(state, "A)")
     grad_fn = jax.value_and_grad(loss_fn)
-    for i in range(6):
-        encoder_l = f"encoders_{i}"
-        if jnp.isnan(state.params['params'][encoder_l]['encoder_token_pi']['weights'][0][0]).any():
-            print(f"B) nan in encoder_token_pi {i} weights")
-            jax.debug.breakpoint()
+    # Check for nan weights after computing gradients
+    check_nan_weights(state, "B)")
     loss, grads = grad_fn(state.params)
-    #TODO:
-    # Check if state.params['params']['encoders_1'] or any other weights are nan
-    for i in range(6):
-        encoder_l = f"encoders_{i}"
-        if jnp.isnan(state.params['params'][encoder_l]['encoder_token_pi']['weights'][0][0]).any():
-            print(f"C) nan in encoder_token_pi {i} weights")
-            jax.debug.breakpoint()
+    # Check for nan weights after computing gradients
+    check_nan_weights(state, "C)")
+
+    # Check for NaN in gradients
+    if any(jnp.isnan(x).any() for x in jax.tree_util.tree_leaves(grads)):
+        print("NaN detected in gradients")
+        import pdb; pdb.set_trace()
+
 
     return grads, loss
 
@@ -517,7 +522,7 @@ def main():
                     loss=loss,
                     plot_file_name=file_prefix + f"{epoch}_epoch_{step_idx}_step_output_histograms.png",
                     activations_file_name=file_prefix + f"{epoch}_{step_idx}_step_epoch_output_activations.txt",
-                    silence_print=False,
+                    silence_print=True,
                     folder_name=folder_name,
                     total_number_of_steps=total_number_of_steps,
                 )
@@ -558,6 +563,7 @@ def main():
             activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
             folder_name=folder_name,
             total_number_of_steps=total_number_of_steps,
+            silence_print=True,
         )
     print(f"Saved results to {folder_name}")
     return seed, loss, lr

@@ -91,17 +91,17 @@ class InductiveTransformer(nn.Module):
             assert y.shape == (2, self.layer_width)
 
             if jnp.isnan(z).any().val[0]:
-                jax.debug.breakpoint()
+                import pdb; pdb.set_trace()
             if jnp.isnan(x).any().val[0]:
-                jax.debug.breakpoint()
+                import pdb; pdb.set_trace()
             y_nan = jnp.isnan(y).any()
             try:
                 if y_nan.val[0]:
-                    jax.debug.breakpoint()
+                    import pdb; pdb.set_trace()
             except:
                 try:
                     if y_nan:
-                        jax.debug.breakpoint()
+                        import pdb; pdb.set_trace()
                 except:
                     pass
 
@@ -118,7 +118,7 @@ class InductiveTransformer(nn.Module):
             z, t, activations = decoder(z, encoder_x[idx], encoder_y[idx])
 
             if jnp.isnan(z).any().val[0]:
-                jax.debug.breakpoint()
+                import pdb; pdb.set_trace()
 
             assert z.shape == (2, self.layer_width)
             assert t.shape == (self.num_positions, self.vocab_size, self.layer_width)

@@ -5,6 +5,7 @@ from inductive_transformer.jax_transformer.helper_functions import (
     custom_normalize,
     EPSILON,
 )
+import jax  # type: ignore
 
 
 class EncoderAttentionPi(nn.Module):
@@ -19,6 +20,13 @@ class EncoderAttentionPi(nn.Module):
         weights = self.param(
             "weights", self.weight_init, (self.layer_width, self.layer_width)
         )
+        weights_nan = jnp.isnan(weights).any()
+        try:
+            if weights_nan.val[0]:
+                print("nan in weights at encoder_attention_pi")
+        except:
+            if weights_nan:
+                print("nan in weights at encoder_attention_pi")
         prob_weights = nn.relu(weights) + EPSILON
 
         prob_weights = custom_normalize(prob_weights, axis=1)
@@ -34,7 +42,13 @@ class EncoderAttentionPi(nn.Module):
             y, axis=0, keepdims=True
         )  # after summing it is size = (1, layer_width)
         assert y.shape == (1, self.layer_width)
-
+        y_nan = jnp.isnan(y).any()
+        try:
+            if y_nan.val[0]:
+                print("nan in y at encoder_attention_pi")
+        except:
+            if y_nan:
+                print("nan in y at encoder_attention_pi")
         # we had to remove this since otherwise, y_categorical would have 0.5's instead of 1's,
         # when it is certain on both values of the layer_width index:
         # y = custom_normalize(y, axis=1)
