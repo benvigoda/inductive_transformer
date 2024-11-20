@@ -185,9 +185,9 @@ def update_model(state, grads, key):
     grads = jax.tree_util.tree_map(lambda g: jnp.clip(g, -1.0, 1.0), grads)
 
     # Generate small random values to replace NaNs
-    def replace_nan_with_random(g, key):
+    def replace_nan_with_random(g, k):
         nan_mask = jnp.isnan(g)
-        random_values = jax.random.uniform(key, shape=g.shape, minval=-1e-5, maxval=1e-5)
+        random_values = jax.random.uniform(k, shape=g.shape, minval=-1e-5, maxval=1e-5)
         return jnp.where(nan_mask, random_values, g)
 
     # Flatten the grads to get the number of leaves
@@ -196,11 +196,14 @@ def update_model(state, grads, key):
     # Split the key into the same number of parts as there are leaves
     keys = jax.random.split(key, len(leaves))
 
+    # Reconstruct the tree with keys
+    keys_tree = treedef.unflatten(keys)
+
     # Map the replace_nan_with_random function over the tree
-    # grads = jax.tree_util.tree_map(replace_nan_with_random, grads, keys)
+    grads = jax.tree_util.tree_map(replace_nan_with_random, grads, keys_tree)
 
     # Reset NaN gradients to zero
-    grads = jax.tree_util.tree_map(lambda g: jnp.where(jnp.isnan(g), 0.0, g), grads)
+    # grads = jax.tree_util.tree_map(lambda g: jnp.where(jnp.isnan(g), 0.0, g), grads)
 
     return state.apply_gradients(grads=grads)
 
