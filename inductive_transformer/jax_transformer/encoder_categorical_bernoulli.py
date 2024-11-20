@@ -43,11 +43,11 @@ class EncoderCategoricalBernoulli:
         # by construction these are each normalized
         # bernoulli = custom_normalize(bernoulli, axis=0)
         assert bernoulli.shape == (2, self.layer_width)
-        bernoulli_nan = jnp.isnan(bernoulli).any()
-        try:
-            if bernoulli_nan.val[0]:
-                print("nan in bernoulli at encoder_categorical_bernoulli")
-        except:
-            if bernoulli_nan:
-                print("nan in bernoulli at encoder_categorical_bernoulli")
+        # bernoulli_nan = jnp.isnan(bernoulli).any()
+        # try:
+        #     if bernoulli_nan.val[0]:
+        #         print("nan in bernoulli at encoder_categorical_bernoulli")
+        # except:
+        #     if bernoulli_nan:
+        #         print("nan in bernoulli at encoder_categorical_bernoulli")
         return bernoulli

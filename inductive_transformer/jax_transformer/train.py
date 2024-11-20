@@ -124,22 +124,22 @@ def create_train_state(
 
 
 def check_nan_weights(state, step):
-    for i in range(6):
-        encoder_l = f"encoders_{i}"
-        for encoder_type in ["encoder_token_pi", "encoder_position_pi", "encoder_attention_pi"]:
-            if jnp.isnan(state.params['params'][encoder_l][encoder_type]['weights'][0][0]).any():
-                print(f"{step} nan in {encoder_type} {i} weights")
-                import pdb; pdb.set_trace()
-    for i in range(6):
-        decoder_l = f"decoders_{i}"
-        for decoder_type in ["decoder_token_pi", "decoder_position_pi", "decoder_attention_pi"]:
-            if jnp.isnan(state.params['params'][decoder_l][decoder_type]['weights'][0][0]).any():
-                print(f"{step} nan in {decoder_type} {i} weights")
-                import pdb; pdb.set_trace()
+    # for i in range(6):
+    #     encoder_l = f"encoders_{i}"
+    #     for encoder_type in ["encoder_token_pi", "encoder_position_pi", "encoder_attention_pi"]:
+    #         if jnp.isnan(state.params['params'][encoder_l][encoder_type]['weights'][0][0]).any():
+    #             print(f"{step} nan in {encoder_type} {i} weights")
+    #             import pdb; pdb.set_trace()
+    # for i in range(6):
+    #     decoder_l = f"decoders_{i}"
+    #     for decoder_type in ["decoder_token_pi", "decoder_position_pi", "decoder_attention_pi"]:
+    #         if jnp.isnan(state.params['params'][decoder_l][decoder_type]['weights'][0][0]).any():
+    #             print(f"{step} nan in {decoder_type} {i} weights")
+    #             import pdb; pdb.set_trace()
     return
 
 
-# @jax.jit
+@jax.jit
 def apply_model(state, z_in, t_in, truths):
     """Computes gradients and loss for a single instance (not yet batched)."""
 
@@ -168,14 +168,13 @@ def apply_model(state, z_in, t_in, truths):
     check_nan_weights(state, "C)")
 
     # Check for NaN in gradients
-    if any(jnp.isnan(x).any() for x in jax.tree_util.tree_leaves(grads)):
-        print("NaN detected in gradients")
-
+    # if any(jnp.isnan(x).any() for x in jax.tree_util.tree_leaves(grads)):
+    #     print("NaN detected in gradients")
 
     return grads, loss
 
 
-# @jax.jit
+@jax.jit
 def update_model(state, grads, key):
     # Zero out the gradients of parameters that we don't want to update.
     if state.grad_mask is not None:

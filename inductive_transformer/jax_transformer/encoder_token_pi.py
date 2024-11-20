@@ -21,8 +21,8 @@ class EncoderTokenPi(nn.Module):
             self.weight_init,
             (self.num_positions, self.vocab_size, self.layer_width),
         )
-        if jnp.isnan(weights).any():
-            print("nan in encoder_token_pi weights")
+        # if jnp.isnan(weights).any():
+        #     print("nan in encoder_token_pi weights")
         prob_weights = nn.relu(weights) + EPSILON
         # NOTE: we decided not to normalize the weights (it shouldn't matter)
         # prob_weights = nn.functional.normalize(prob_weights, p=1, axis=0)
@@ -39,6 +39,6 @@ class EncoderTokenPi(nn.Module):
             rho, axis=1
         )  # after summing it is size = (num_positions, layer_width)
         # rho = custom_normalize(rho, dim=1)
-        if jnp.isnan(rho).any().val[0]:
-            print("nan in encoder_token_pi rho")
+        # if jnp.isnan(rho).any().val[0]:
+        #     print("nan in encoder_token_pi rho")
         return rho  # rho is categorical

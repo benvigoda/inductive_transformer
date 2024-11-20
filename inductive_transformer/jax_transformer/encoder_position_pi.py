@@ -44,13 +44,13 @@ class EncoderPositionPi(nn.Module):
         weights = self.param(
             "weights", self.weight_init, (self.num_positions, self.layer_width)
         )
-        weights_nan = jnp.isnan(weights).any()
-        try:
-            if weights_nan.val[0]:
-                print("nan in weights at encoder_position_pi")
-        except:
-            if weights_nan:
-                print("nan in weights at encoder_position_pi")
+        # weights_nan = jnp.isnan(weights).any()
+        # try:
+        #     if weights_nan.val[0]:
+        #         print("nan in weights at encoder_position_pi")
+        # except:
+        #     if weights_nan:
+        #         print("nan in weights at encoder_position_pi")
         prob_weights = nn.relu(weights) + EPSILON
         # NOTE: we decided to normalize the weights (it shouldn't matter)
         prob_weights = custom_normalize(prob_weights, axis=0)
@@ -64,12 +64,12 @@ class EncoderPositionPi(nn.Module):
         # make it an inner product by taking a sum along the token dimension
         x = jnp.sum(x, axis=0, keepdims=True)
         assert x.shape == (1, self.layer_width)
-        x_nan = jnp.isnan(x).any()
-        try:
-            if x_nan.val[0]:
-                print("nan in x at encoder_position_pi")
-        except:
-            if x_nan:
-                print("nan in x at encoder_position_pi")
+        # x_nan = jnp.isnan(x).any()
+        # try:
+        #     if x_nan.val[0]:
+        #         print("nan in x at encoder_position_pi")
+        # except:
+        #     if x_nan:
+        #         print("nan in x at encoder_position_pi")
         # x = custom_normalize(x, axis=1)
         return x  # x is categorical
