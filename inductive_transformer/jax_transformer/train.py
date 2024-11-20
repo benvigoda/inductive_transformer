@@ -170,17 +170,38 @@ def apply_model(state, z_in, t_in, truths):
     # Check for NaN in gradients
     if any(jnp.isnan(x).any() for x in jax.tree_util.tree_leaves(grads)):
         print("NaN detected in gradients")
-        import pdb; pdb.set_trace()
 
 
     return grads, loss
 
 
 # @jax.jit
-def update_model(state, grads):
+def update_model(state, grads, key):
     # Zero out the gradients of parameters that we don't want to update.
     if state.grad_mask is not None:
         grads = jax.tree_util.tree_map(lambda x, y: x * y, grads, state.grad_mask)
+
+    # Clip gradients to prevent them from becoming too large
+    grads = jax.tree_util.tree_map(lambda g: jnp.clip(g, -1.0, 1.0), grads)
+
+    # Generate small random values to replace NaNs
+    def replace_nan_with_random(g, key):
+        nan_mask = jnp.isnan(g)
+        random_values = jax.random.uniform(key, shape=g.shape, minval=-1e-5, maxval=1e-5)
+        return jnp.where(nan_mask, random_values, g)
+
+    # Flatten the grads to get the number of leaves
+    leaves, treedef = jax.tree_util.tree_flatten(grads)
+
+    # Split the key into the same number of parts as there are leaves
+    keys = jax.random.split(key, len(leaves))
+
+    # Map the replace_nan_with_random function over the tree
+    # grads = jax.tree_util.tree_map(replace_nan_with_random, grads, keys)
+
+    # Reset NaN gradients to zero
+    grads = jax.tree_util.tree_map(lambda g: jnp.where(jnp.isnan(g), 0.0, g), grads)
+
     return state.apply_gradients(grads=grads)
 
 
@@ -497,7 +518,7 @@ def main():
             grads, loss = apply_model(
                 state, prob_tensors.attention_input, batch_input_data, batch_output_data
             )
-            state = update_model(state, grads)
+            state = update_model(state, grads, key)
 
             # if (epoch % print_every == 0 or epoch == n_epochs - 1) and step_idx == 0:
             if (epoch % print_every == 0 or epoch == n_epochs - 1) and step_idx % 50 == 0 and step_idx < 500:
