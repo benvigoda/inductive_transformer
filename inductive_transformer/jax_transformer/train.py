@@ -8,6 +8,7 @@ import numpy as np  # type: ignore
 import optax  # type: ignore
 import pathlib
 import datetime
+from helper_functions import shift_up_to_make_all_elements_positive
 
 
 from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
@@ -139,7 +140,7 @@ def apply_model(state, z_in, t_in, truths):
         # Use cross entropy loss
         import optax
         from flax import linen as nn
-        t_out_for_loss = jnp.log(nn.relu(t_out) + 1e-20)
+        t_out_for_loss = jnp.log(shift_up_to_make_all_elements_positive(t_out, 1))
         loss = optax.safe_softmax_cross_entropy(t_out_for_loss, truths).mean()
         # loss = optax.convex_kl_divergence(t_out_for_loss, truths).mean()
         # jax.debug.print("t_out\n{}", t_out)
@@ -167,7 +168,7 @@ def run_and_print_inference(
     args,
     activations_file_name,
     folder_name=None,
-    silence_print=False,
+    silence_print=True,
 ):
     # Load inference examples.
     inference_data = prob_tensors.make_inference_prompt_tensors()
@@ -227,7 +228,7 @@ def inference_and_plot(
     loss,
     plot_file_name,
     activations_file_name,
-    silence_print=False,
+    silence_print=True,
     folder_name=None
 ):
     decoder_t = run_and_print_inference(
@@ -447,7 +448,7 @@ def main():
                 loss=loss,
                 plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
                 activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
-                silence_print=False,
+                silence_print=True,
                 folder_name=folder_name,
             )
             print("Bottom", "↑" * 100)
@@ -500,6 +501,7 @@ def main():
             activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
             folder_name=folder_name,
         )
+    print(f"Saved results to {folder_name}")
 
     return seed, loss, lr
 

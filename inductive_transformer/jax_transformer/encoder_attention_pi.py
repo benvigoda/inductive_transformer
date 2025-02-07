@@ -1,6 +1,7 @@
 from flax import linen as nn  # type: ignore
 import jax.numpy as jnp  # type: ignore
 from typing import Callable
+from helper_functions import shift_up_to_make_all_elements_positive
 from inductive_transformer.jax_transformer.helper_functions import (
     custom_normalize,
     EPSILON,
@@ -19,7 +20,7 @@ class EncoderAttentionPi(nn.Module):
         weights = self.param(
             "weights", self.weight_init, (self.layer_width, self.layer_width)
         )
-        prob_weights = nn.relu(weights) + EPSILON
+        prob_weights = shift_up_to_make_all_elements_positive(weights, axis=1)
 
         prob_weights = custom_normalize(prob_weights, axis=1)
 

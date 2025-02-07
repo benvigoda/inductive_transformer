@@ -1,6 +1,7 @@
 from flax import linen as nn  # type: ignore
 import jax.numpy as jnp  # type: ignore
 from typing import Callable
+from helper_functions import shift_up_to_make_all_elements_positive
 from inductive_transformer.jax_transformer.helper_functions import EPSILON
 
 
@@ -20,10 +21,9 @@ class EncoderTokenPi(nn.Module):
             self.weight_init,
             (self.num_positions, self.vocab_size, self.layer_width),
         )
-        prob_weights = nn.relu(weights) + EPSILON
+        prob_weights = shift_up_to_make_all_elements_positive(weights, axis=1)
         # NOTE: we decided not to normalize the weights (it shouldn't matter)
-        # prob_weights = nn.functional.normalize(prob_weights, p=1, axis=0)
-        # prob_weights = custom_normalize(prob_weights, axis=1) + EPSILON
+        # prob_weights = custom_normalize(prob_weights, axis=1)
 
         # Add this?
         # t = custom_normalize(t, axis=1)

@@ -1,6 +1,7 @@
 from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
+from helper_functions import shift_up_to_make_all_elements_positive
 from inductive_transformer.jax_transformer.helper_functions import (
     custom_normalize,
     EPSILON,
@@ -44,7 +45,7 @@ class EncoderPositionPi(nn.Module):
         weights = self.param(
             "weights", self.weight_init, (self.num_positions, self.layer_width)
         )
-        prob_weights = nn.relu(weights) + EPSILON
+        prob_weights = shift_up_to_make_all_elements_positive(weights, axis=0)
         # NOTE: we decided to normalize the weights (it shouldn't matter)
         prob_weights = custom_normalize(prob_weights, axis=0)
 
@@ -57,5 +58,12 @@ class EncoderPositionPi(nn.Module):
         # make it an inner product by taking a sum along the token dimension
         x = jnp.sum(x, axis=0, keepdims=True)
         assert x.shape == (1, self.layer_width)
+
+        # we do not actually want to perform a lyer norm
+        # we are planning in the next step to convert each column 
+        # to an independent Bernoulli variable using categorical_to_bernoulli
+        # and they should not be normalized relative to one another
+        # that said, it doesn't seem to make a difference whether it is here or not
         # x = custom_normalize(x, axis=1)
+
         return x  # x is categorical

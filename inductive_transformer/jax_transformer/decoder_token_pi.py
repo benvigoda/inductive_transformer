@@ -1,6 +1,7 @@
 from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
+from helper_functions import shift_up_to_make_all_elements_positive
 
 from inductive_transformer.jax_transformer.helper_functions import (
     custom_normalize,
@@ -24,7 +25,7 @@ class DecoderTokenPi(nn.Module):
             self.weight_init,
             (self.num_positions, self.vocab_size, self.layer_width),
         )
-        prob_weights = nn.relu(weights) + EPSILON
+        prob_weights = shift_up_to_make_all_elements_positive(weights, axis=1)
 
         # we are going to output a categorical distribution over tokens at every lw in the layer
         # each of these output categoricals will be of length vocab_size

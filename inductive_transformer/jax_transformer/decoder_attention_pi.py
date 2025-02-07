@@ -5,6 +5,7 @@ from inductive_transformer.jax_transformer.helper_functions import (
     custom_normalize,
     EPSILON,
 )
+from helper_functions import shift_up_to_make_all_elements_positive
 
 
 class DecoderAttentionPi(nn.Module):
@@ -22,7 +23,7 @@ class DecoderAttentionPi(nn.Module):
 
         # We want to interpret the weights as probabilities. To ensure they're all strictly between
         # 0 and 1, we pass them through a relu and then normalize.
-        prob_weights = nn.relu(weights)
+        prob_weights = shift_up_to_make_all_elements_positive(weights, axis=1)
 
         # we are going to output a categorical distribution over tokens at every lw in the layer
         # each of these output categoricals will be of length vocab_size

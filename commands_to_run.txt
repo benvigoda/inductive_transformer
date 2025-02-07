@@ -155,8 +155,6 @@ the trained loss is loss: 3.866e-03 which is actually LOWER! the histogram conta
 
 
 
-
-
 now perturb and it trains perfectly:
 PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 4_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_just_small_wriggley.txt --num_layer 6 --layer_width 2 --num_samples 400 --num_epochs 0 --initialize_weights --num_epochs 50 --perturb --noise_value 0.001
 
@@ -175,3 +173,25 @@ PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 48_6_layer_se
 
 
 Then we said let's go to 2 or 4 sentences 
+
+Wednesday, February 5th, 2025:
+Try this: 
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 48_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_dog_worm.txt --num_layer 6 --layer_width 2 --num_samples 40 --num_epochs 100 --initialize_weights
+
+
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 4_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_just_small_wriggley.txt --num_layer 6 --layer_width 2 --num_samples 400 --num_epochs 100  --initialize_weights
+
+
+
+Friday February 7th, 2025:
+
+Interesting observation:
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 4_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_just_small_wriggley.txt --num_layer 6 --layer_width 2 --num_samples 400 --num_epochs 40 --initialize_weights 
+Yields NaNs
+
+
+Versus
+
+
+PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 48_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_just_small_wriggley.txt --num_layer 6 --layer_width 2 --num_samples 400 --num_epochs 40 --initialize_weights   
+Stays put with no NaNs

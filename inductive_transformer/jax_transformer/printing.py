@@ -1,9 +1,10 @@
 import numpy as np  # type: ignore
 from flax import linen as nn  # type: ignore
 from helper_functions import get_num_layers  # type: ignore
+from helper_functions import shift_up_to_make_all_elements_positive
 
 
-def print_params(state, vocab, silence_print=False):
+def print_params(state, vocab, silence_print=True):
     text = ""
     np.set_printoptions(threshold=np.inf)
     num_layers = get_num_layers(state.params)
@@ -72,7 +73,7 @@ def print_params(state, vocab, silence_print=False):
 
 
 def print_activations(
-    n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations, silence_print=False
+    n_examples, prompt_data, decoder_t, encoder_activations, decoder_activations, silence_print=True
 ):
     text = ""
     np.set_printoptions(threshold=np.inf)
