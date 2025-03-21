@@ -1,7 +1,7 @@
 from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
-from inductive_transformer.jax_transformer.helper_functions import (
+from jax_transformer.helper_functions import (
     custom_normalize,
     EPSILON,
 )

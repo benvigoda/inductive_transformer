@@ -11,15 +11,15 @@ import datetime
 
 
 from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
-from inductive_transformer.jax_transformer.model import BatchedInductiveTransformer
-from inductive_transformer.jax_transformer.text_parsing import InputData, ProbTensors
-from inductive_transformer.jax_transformer.weights_broad_init import init_weights
-from inductive_transformer.jax_transformer.printing import (
+from jax_transformer.model import BatchedInductiveTransformer
+from jax_transformer.text_parsing import InputData, ProbTensors
+from jax_transformer.weights_broad_init import init_weights
+from jax_transformer.printing import (
     print_params,
     print_activations,
 )
-from inductive_transformer.jax_transformer.sampling import sample
-from inductive_transformer.jax_transformer.histogram_generations import (
+from jax_transformer.sampling import sample
+from jax_transformer.histogram_generations import (
     histogram_results,
 )
 

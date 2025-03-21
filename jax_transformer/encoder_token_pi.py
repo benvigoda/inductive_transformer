@@ -1,7 +1,7 @@
 from flax import linen as nn  # type: ignore
 import jax.numpy as jnp  # type: ignore
 from typing import Callable
-from inductive_transformer.jax_transformer.helper_functions import EPSILON
+from jax_transformer.helper_functions import EPSILON
 
 
 class EncoderTokenPi(nn.Module):

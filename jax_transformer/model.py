@@ -2,9 +2,9 @@ from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
 
-from inductive_transformer.jax_transformer.decoder_layer import DecoderLayer
-from inductive_transformer.jax_transformer.encoder_layer import EncoderLayer
-from inductive_transformer.jax_transformer.helper_functions import PROBABLE, IMPROBABLE
+from jax_transformer.decoder_layer import DecoderLayer
+from jax_transformer.encoder_layer import EncoderLayer
+from jax_transformer.helper_functions import PROBABLE, IMPROBABLE
 
 
 class InductiveTransformer(nn.Module):

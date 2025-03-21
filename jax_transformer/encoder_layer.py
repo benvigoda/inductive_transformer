@@ -2,19 +2,19 @@ from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
 
-from inductive_transformer.jax_transformer.encoder_universe import EncoderUniverse
-from inductive_transformer.jax_transformer.encoder_bernoulli_categorical import (
+from jax_transformer.encoder_universe import EncoderUniverse
+from jax_transformer.encoder_bernoulli_categorical import (
     EncoderBernoulliCategorical,
 )
-from inductive_transformer.jax_transformer.encoder_token_pi import EncoderTokenPi
-from inductive_transformer.jax_transformer.encoder_position_pi import EncoderPositionPi
-from inductive_transformer.jax_transformer.encoder_attention_pi import (
+from jax_transformer.encoder_token_pi import EncoderTokenPi
+from jax_transformer.encoder_position_pi import EncoderPositionPi
+from jax_transformer.encoder_attention_pi import (
     EncoderAttentionPi,
 )
-from inductive_transformer.jax_transformer.encoder_categorical_bernoulli import (
+from jax_transformer.encoder_categorical_bernoulli import (
     EncoderCategoricalBernoulli,
 )
-from inductive_transformer.jax_transformer.encoder_and import EncoderAnd
+from jax_transformer.encoder_and import EncoderAnd
 
 
 # In terms of left side pi_t's

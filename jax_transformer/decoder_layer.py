@@ -2,19 +2,19 @@ from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
 
-from inductive_transformer.jax_transformer.decoder_universe import DecoderUniverse
-from inductive_transformer.jax_transformer.decoder_bernoulli_categorical import (
+from jax_transformer.decoder_universe import DecoderUniverse
+from jax_transformer.decoder_bernoulli_categorical import (
     DecoderBernoulliCategorical,
 )
-from inductive_transformer.jax_transformer.decoder_categorical_bernoulli import (
+from jax_transformer.decoder_categorical_bernoulli import (
     DecoderCategoricalBernoulli,
 )
-from inductive_transformer.jax_transformer.decoder_token_pi import DecoderTokenPi
-from inductive_transformer.jax_transformer.decoder_position_pi import DecoderPositionPi
-from inductive_transformer.jax_transformer.decoder_attention_pi import (
+from jax_transformer.decoder_token_pi import DecoderTokenPi
+from jax_transformer.decoder_position_pi import DecoderPositionPi
+from jax_transformer.decoder_attention_pi import (
     DecoderAttentionPi,
 )
-from inductive_transformer.jax_transformer.decoder_and import DecoderAnd
+from jax_transformer.decoder_and import DecoderAnd
 
 
 class DecoderLayer(nn.Module):
