@@ -24,8 +24,8 @@ def shift_up_to_make_all_elements_positive(x, axis=0):
     # and -min(x) when min(x) is negative
     # which is what we want!
     
-    # return nn.relu(x) + EPSILON
-    return x + nn.relu(-jnp.min(x, axis=axis, keepdims=True)) + EPSILON
+    return nn.relu(x) + EPSILON
+    # return x + nn.relu(-jnp.min(x, axis=axis, keepdims=True)) + EPSILON
 
 
 def custom_normalize(x, axis):
@@ -35,7 +35,8 @@ def custom_normalize(x, axis):
     # Compute the norm along the specified axis, adding EPSILON to prevent division by zero
     norm = jnp.sum(x, axis=axis, keepdims=True)
     # Normalize the input by dividing by the norm
-    return x / norm
+    
+    return (x / norm)
 
 
 # OLD VERSION
