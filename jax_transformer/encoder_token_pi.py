@@ -2,7 +2,8 @@ from flax import linen as nn  # type: ignore
 import jax.numpy as jnp  # type: ignore
 from typing import Callable
 from jax_transformer.helper_functions import EPSILON
-
+import jax.numpy as jnp
+from jax.nn import logsumexp
 
 class EncoderTokenPi(nn.Module):
     num_positions: int
@@ -20,21 +21,15 @@ class EncoderTokenPi(nn.Module):
             self.weight_init,
             (self.num_positions, self.vocab_size, self.layer_width),
         )
-        prob_weights = nn.relu(weights) + EPSILON
-        # NOTE: we decided not to normalize the weights (it shouldn't matter)
-        # prob_weights = nn.functional.normalize(prob_weights, p=1, axis=0)
-        # prob_weights = custom_normalize(prob_weights, axis=1) + EPSILON
+        # logprob_weights = nn.relu(weights) + EPSILON
 
-        # Add this?
-        # t = custom_normalize(t, axis=1)
+        # # element-wise product of weight vector and token vector for each column in the layer
+        # rho = logprob_weights * t
 
-        # element-wise product of weight vector and token vector for each column in the layer
-        rho = prob_weights * t
+        # # make it an inner product by taking a sum along the token dimension
+        # rho = jnp.sum(rho, axis=1)  # after summing it is size = (num_positions, layer_width)
 
-        # make it an inner product by taking a sum along the token dimension
-        rho = jnp.sum(
-            rho, axis=1
-        )  # after summing it is size = (num_positions, layer_width)
-        # rho = custom_normalize(rho, dim=1)
+        # this replaces an prob domain element-wise product followed by sum on the axis=1
+        rho = logsumexp(weights + t, axis=1)
 
         return rho  # rho is categorical

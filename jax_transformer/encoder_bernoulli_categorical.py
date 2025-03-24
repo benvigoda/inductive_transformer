@@ -10,10 +10,4 @@ class EncoderBernoulliCategorical:
         # if u is properly normalized then we should not need to divide by zero
         v = u[1]
 
-        # In the future we may want to normalize is the inputs to a specific attention pi,
-        #    remember from the encoder universe factor:
-        # v[0][0] + v[1][0] = 1
-        # v[0][1] + v[1][1] = 1
-        # v = custom_normalize(v, axis=0)???
-
         return v

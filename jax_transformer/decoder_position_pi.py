@@ -21,6 +21,7 @@ class DecoderPositionPi(nn.Module):
         weights = self.param(
             "weights", self.weight_init, (self.num_positions, self.layer_width)
         )
+        '''     
         prob_weights = nn.relu(weights) + EPSILON
         # we are going to output a categorical distribution over tokens at every lw in the layer
         # each of these output categoricals will be of length vocab_size
@@ -34,5 +35,9 @@ class DecoderPositionPi(nn.Module):
 
         # element-wise product of weight tensor and y
         rho = prob_weights * x
+        '''
+        
+        rho = weights + x
+        
         assert rho.shape == (self.num_positions, self.layer_width)
         return rho

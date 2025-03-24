@@ -11,6 +11,12 @@ class EncoderUniverse:
     def __call__(self, z):
         # z is a 2xlayer_width tensor of Bernoulli's
         assert z.shape == (2, self.layer_width)
+        
+        u = jnp.stack([z] * self.layer_width, axis=-1)
+        # this is just stacking so if z is normalized (it is) then we do not need to normalize here
+
+        return u
+    
         """
         # we are developing an encoder closed_to_open_universe factor
         # it's output will go into an encoder bernoulli_to_categorical
@@ -173,7 +179,4 @@ class EncoderUniverse:
         u = custom_normalize(u, dim=0)
         """
 
-        u = jnp.stack([z] * self.layer_width, axis=-1)
-        # this is just stacking so if z is normalized (it is) then we do not need to normalize here
 
-        return u

@@ -5,7 +5,8 @@ from jax_transformer.helper_functions import (
     custom_normalize,
     EPSILON,
 )
-
+import jax.numpy as jnp
+from jax.nn import logsumexp
 
 class EncoderAttentionPi(nn.Module):
     vocab_size: int
@@ -19,20 +20,16 @@ class EncoderAttentionPi(nn.Module):
         weights = self.param(
             "weights", self.weight_init, (self.layer_width, self.layer_width)
         )
-        prob_weights = nn.relu(weights) + EPSILON
+        # prob_weights = nn.relu(weights) + EPSILON
+        # prob_weights = custom_normalize(prob_weights, axis=1)
+        # # in the future we may want to normalize v here for good measure
+        # v = custom_normalize(v, axis=1)
+        # # element-wise product of weight vector and token vector for each column in the layer
+        # y = prob_weights * v
+        # # make it an inner product by taking a sum along the choice dimension
+        # y = jnp.sum(y, axis=0, keepdims=True)  # after summing it is size = (1, layer_width)
 
-        prob_weights = custom_normalize(prob_weights, axis=1)
-
-        # in the future we may want to normalize v here for good measure
-        v = custom_normalize(v, axis=1)
-
-        # element-wise product of weight vector and token vector for each column in the layer
-        y = prob_weights * v
-
-        # make it an inner product by taking a sum along the choice dimension
-        y = jnp.sum(
-            y, axis=0, keepdims=True
-        )  # after summing it is size = (1, layer_width)
+        y = logsumexp(weights + v, axis=0, keepdims=True)
         assert y.shape == (1, self.layer_width)
 
         # we had to remove this since otherwise, y_categorical would have 0.5's instead of 1's,
