@@ -15,7 +15,15 @@ def get_num_layers(params: dict) -> int:
     return num_layers
 
 
-def custom_normalize(tensor: jnp.ndarray, axis=0, default_constant=0.5) -> jnp.ndarray:
+def custom_normalize(x, axis):
+
+    # Compute the norm along the specified axis, adding EPSILON to prevent division by zero
+    norm = jnp.sum(x + EPSILON, axis=axis, keepdims=True)
+    # Normalize the input by dividing by the norm
+    return (x + EPSILON) / norm
+
+
+def custom_normalize_old(tensor: jnp.ndarray, axis=0, default_constant=0.5) -> jnp.ndarray:
     """
     axis is the dimension on which to normalize
     default_constant is the value to use when the sum is zero

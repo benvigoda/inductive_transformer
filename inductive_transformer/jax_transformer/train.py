@@ -100,9 +100,11 @@ def create_train_state(
     if noise_seed is None:
         # Pick a random number between 1e-8 and 1e-1
         # lr = 10 ** np.random.uniform(-8, -1)
-        lr = 1e-4
+        lr = 1e-5
         tx = optax.chain(
-            optax.adam(learning_rate=lr),
+            optax.clip_by_global_norm(1.0),  # clip gradients
+            optax.adam(learning_rate=lr),  # adam optimizer
+            optax.add_decayed_weights(weight_decay=1e-5),  # L2 regularization (weight decay)
         )
     else:
         tx = optax.chain(
@@ -150,7 +152,8 @@ def apply_model(state, z_in, t_in, truths):
         assert t_out.shape == truths.shape
         # loss = jnp.mean(jnp.square(t_out - truths))
         # Use cross entropy loss
-        t_out_for_loss = jnp.log(nn.relu(t_out) + 1e-10)
+        t_out = jnp.clip(nn.relu(t_out), a_min=1e-5, a_max=1e5)  # Clip values to prevent overflow
+        t_out_for_loss = jnp.log(t_out + 1e-10)
         loss = optax.safe_softmax_cross_entropy(t_out_for_loss, truths).mean()
         # loss = optax.convex_kl_divergence(t_out_for_loss, truths).mean()
         # jax.debug.print("t_out\n{}", t_out)
@@ -183,26 +186,28 @@ def update_model(state, grads, key):
     # Clip gradients to prevent them from becoming too large
     grads = jax.tree_util.tree_map(lambda g: jnp.clip(g, -1.0, 1.0), grads)
 
-    # Generate small random values to replace NaNs
-    def replace_nan_with_random(g, k):
-        nan_mask = jnp.isnan(g)
-        random_values = jax.random.uniform(k, shape=g.shape, minval=-1e-5, maxval=1e-5)
-        return jnp.where(nan_mask, random_values, g)
+    over_write_nan = False
+    if over_write_nan:
+        # Generate small random values to replace NaNs
+        def replace_nan_with_random(g, k):
+            nan_mask = jnp.isnan(g)
+            random_values = jax.random.uniform(k, shape=g.shape, minval=-1e-5, maxval=1e-5)
+            return jnp.where(nan_mask, random_values, g)
 
-    # Flatten the grads to get the number of leaves
-    leaves, treedef = jax.tree_util.tree_flatten(grads)
+        # Flatten the grads to get the number of leaves
+        leaves, treedef = jax.tree_util.tree_flatten(grads)
 
-    # Split the key into the same number of parts as there are leaves
-    keys = jax.random.split(key, len(leaves))
+        # Split the key into the same number of parts as there are leaves
+        keys = jax.random.split(key, len(leaves))
 
-    # Reconstruct the tree with keys
-    keys_tree = treedef.unflatten(keys)
+        # Reconstruct the tree with keys
+        keys_tree = treedef.unflatten(keys)
 
-    # Map the replace_nan_with_random function over the tree
-    grads = jax.tree_util.tree_map(replace_nan_with_random, grads, keys_tree)
+        # Map the replace_nan_with_random function over the tree
+        grads = jax.tree_util.tree_map(replace_nan_with_random, grads, keys_tree)
 
-    # Reset NaN gradients to zero
-    # grads = jax.tree_util.tree_map(lambda g: jnp.where(jnp.isnan(g), 0.0, g), grads)
+        # Reset NaN gradients to zero
+        # grads = jax.tree_util.tree_map(lambda g: jnp.where(jnp.isnan(g), 0.0, g), grads)
 
     return state.apply_gradients(grads=grads)
 
