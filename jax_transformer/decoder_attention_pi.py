@@ -22,19 +22,19 @@ class DecoderAttentionPi(nn.Module):
 
         # We want to interpret the weights as probabilities. To ensure they're all strictly between
         # 0 and 1, we pass them through a relu and then normalize.
-        prob_weights = nn.relu(weights)
+        # prob_weights = nn.relu(weights)
 
         # we are going to output a categorical distribution over tokens at every lw in the layer
         # each of these output categoricals will be of length vocab_size
         # each categorical will be normalized, not to 1, but to the y value at this lw
         # an easy way to do this is to normalize the prob weights in advance in dim=0
-        prob_weights = custom_normalize(prob_weights, axis=1)
+        # prob_weights = custom_normalize(prob_weights, axis=1)
 
         # and then since y comes in as categorical of size (1, layer_width)
         # y = custom_normalize(y, axis=1)
 
         # element-wise product of weight tensor and y
-        v = prob_weights * y + EPSILON
+        v = weights + y
 
         # added this because like Bayes rule, Loeliger, chapter 2 of Ben's thesis, and
         # our deep belief in Bayes rule as foundational to concepts and thinking in transformers and humans

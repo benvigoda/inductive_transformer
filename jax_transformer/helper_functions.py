@@ -2,8 +2,8 @@ import jax.numpy as jnp  # type: ignore
 import jax  # type: ignore
 
 EPSILON = 1e-20
-IMPROBABLE = 1e-9
-PROBABLE = 1 - IMPROBABLE
+IMPROBABLE = -9
+PROBABLE = 0 - 1e-9
 
 
 def get_num_layers(params: dict) -> int:
@@ -32,14 +32,9 @@ def custom_normalize(tensor: jnp.ndarray, axis=0, default_constant=0.5) -> jnp.n
 
     # Create a mask where the sum is minus infinity
     mask = jnp.isinf(-sum_tensor)
-    # And another mask where the sum is infinite
-    inf_mask = jnp.isinf(sum_tensor)
 
-    # jax print debugger:
-    # jax.debug.print('inf_mask: {}', inf_mask)
-
-    # Replace zero sums with ones to avoid division by zero and then divide
-    result = tensor - jnp.where(mask, jnp.ones_like(sum_tensor), sum_tensor)
+    # Replace -inf sums with zeros to avoid subtracting -infinity and then subtract
+    result = tensor - jnp.where(mask, jnp.zeros_like(sum_tensor), sum_tensor)
 
     # Where the sum was -infinity, replace with the constant -length where length is the length of the axis
     result = jnp.where(mask, jnp.full_like(result, fill_value=-length), result)

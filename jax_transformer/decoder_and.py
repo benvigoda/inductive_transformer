@@ -27,7 +27,7 @@ class DecoderAnd:
             # x_0 = y_encoder[0] * z[0]
             # x_1 = y_encoder[1] * z[1]
             # x = jnp.stack([x_0, x_1], axis=0)
-            x = y_encoder * z
+            x = y_encoder + z
 
             # OLD AND:
             # x0_z0 = x_encoder[0] * z[0]
@@ -37,7 +37,7 @@ class DecoderAnd:
             # y_0 = x_encoder[0] * z[0]
             # y_1 = x_encoder[1] * z[1]
             # y = jnp.stack([y_0, y_1], axis=0)
-            y = x_encoder * z
+            y = x_encoder + z
 
         # Note we should not use this
         # Not sure it is even up to date

@@ -21,6 +21,7 @@ class EncoderTokenPi(nn.Module):
             self.weight_init,
             (self.num_positions, self.vocab_size, self.layer_width),
         )
+        # FIXME: Is this all getting properly normalized?
         # logprob_weights = nn.relu(weights) + EPSILON
 
         # # element-wise product of weight vector and token vector for each column in the layer
@@ -29,7 +30,7 @@ class EncoderTokenPi(nn.Module):
         # # make it an inner product by taking a sum along the token dimension
         # rho = jnp.sum(rho, axis=1)  # after summing it is size = (num_positions, layer_width)
 
-        # this replaces an prob domain element-wise product followed by sum on the axis=1
+        # this replaces a prob domain element-wise product followed by sum on the axis=1
         rho = logsumexp(weights + t, axis=1)
 
         return rho  # rho is categorical
