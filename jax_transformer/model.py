@@ -12,7 +12,16 @@ class InductiveTransformer(nn.Module):
     num_positions: int
     vocab_size: int
     num_layers: int
-    weight_init: Callable = nn.initializers.uniform(scale=1.0, dtype=jnp.float32)
+    weight_init: Callable = nn.initializers.uniform(minval=-1.0, maxval=1.0, scale=1.0, dtype=jnp.float32)
+
+
+    # def weight_init(key, shape, dtype=jnp.float32):
+    # # # Generate raw values
+    #     raw_values = jax.random.uniform(key, shape, minval=-1.0, maxval=1.0, dtype=dtype)
+    # # # Transform to proper log probabilities using log_softmax
+    # return jax.nn.log_softmax(raw_values)
+
+
     use_encoder_message: bool = True
 
     def setup(self):
