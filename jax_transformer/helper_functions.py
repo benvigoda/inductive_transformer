@@ -1,6 +1,8 @@
 import jax.numpy as jnp  # type: ignore
 import jax  # type: ignore
 
+from jax.nn import logsumexp
+
 EPSILON = 1e-20
 IMPROBABLE = -9
 PROBABLE = 0 - 1e-9
@@ -23,7 +25,7 @@ def custom_normalize(tensor: jnp.ndarray, axis=0, default_constant=0.5) -> jnp.n
     # Compute the sum along axis=axis and keepdims=True to maintain the dimensions for broadcasting
     # sum_tensor = jnp.sum(tensor, axis=axis, keepdims=True)
 
-    sum_tensor = jnp.logsumexp(tensor, axis=axis, keepdims=True)
+    sum_tensor = logsumexp(tensor, axis=axis, keepdims=True)
 
     # Get the shape of the tensor
     shape = tensor.shape

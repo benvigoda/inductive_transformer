@@ -1,5 +1,6 @@
 from flax import linen as nn  # type: ignore
 from typing import Callable
+import jax
 import jax.numpy as jnp  # type: ignore
 
 from jax_transformer.decoder_layer import DecoderLayer
@@ -12,14 +13,10 @@ class InductiveTransformer(nn.Module):
     num_positions: int
     vocab_size: int
     num_layers: int
-    weight_init: Callable = nn.initializers.uniform(minval=-1.0, maxval=1.0, scale=1.0, dtype=jnp.float32)
-
-
-    # def weight_init(key, shape, dtype=jnp.float32):
-    # # # Generate raw values
-    #     raw_values = jax.random.uniform(key, shape, minval=-1.0, maxval=1.0, dtype=dtype)
-    # # # Transform to proper log probabilities using log_softmax
-    # return jax.nn.log_softmax(raw_values)
+    weight_init: Callable = staticmethod(lambda key, shape, dtype=jnp.float32: 
+                                         jax.nn.log_softmax(
+                                             jax.random.uniform(key, shape, minval=-1.0, maxval=1.0, dtype=dtype)
+                                         ))
 
 
     use_encoder_message: bool = True

@@ -8,6 +8,7 @@ from jax_transformer.helper_functions import (
 import jax.numpy as jnp
 from jax.nn import logsumexp
 
+
 class EncoderAttentionPi(nn.Module):
     vocab_size: int
     layer_width: int

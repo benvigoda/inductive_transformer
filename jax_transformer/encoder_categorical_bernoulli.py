@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import jax.numpy as jnp  # type: ignore
+from jax_transformer.helper_functions import custom_normalize
 
 
 @dataclass
@@ -10,10 +11,12 @@ class EncoderCategoricalBernoulli:
         # categorical is size = (1, layer_width)
         assert categorical.shape == (1, self.layer_width)
 
+        categorical = custom_normalize(categorical, axis=1)
+
         # bernoulli is size (2, layer_width)
         bernoulli_1 = categorical
         bernoulli_0 = (
-            jnp.log1p(-jnp.exp(categorical))
+            jnp.log1p(jnp.exp(-categorical))
         )
 
         bernoulli = jnp.concatenate([bernoulli_0, bernoulli_1])

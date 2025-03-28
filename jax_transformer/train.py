@@ -137,8 +137,8 @@ def apply_model(state, z_in, t_in, truths):
         assert t_out.shape == truths.shape
         # loss = jnp.mean(jnp.square(t_out - truths))
         # Use cross entropy loss
-        import optax
-        loss = optax.safe_softmax_cross_entropy(t_out, truths).mean()
+        loss = optax.safe_softmax_cross_entropy(t_out, jnp.exp(truths)).mean()
+        # loss = -jnp.sum(jnp.exp(truths) * t_out, axis=-1).mean()
         # loss = optax.convex_kl_divergence(t_out_for_loss, truths).mean()
         # jax.debug.print("t_out\n{}", t_out)
         # jax.debug.print("truths\n{}", truths)
