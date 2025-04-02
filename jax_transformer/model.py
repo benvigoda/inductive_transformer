@@ -13,11 +13,9 @@ class InductiveTransformer(nn.Module):
     num_positions: int
     vocab_size: int
     num_layers: int
-    weight_init: Callable = staticmethod(lambda key, shape, dtype=jnp.float32: 
-                                         jax.nn.log_softmax(
-                                             jax.random.uniform(key, shape, minval=-1.0, maxval=1.0, dtype=dtype)
-                                         ))
-
+    weight_init: Callable = lambda key, shape, dtype=jnp.float32: jax.nn.log_softmax(
+        jax.random.uniform(key, shape, minval=-1.0, maxval=1.0, dtype=dtype)
+    )
 
     use_encoder_message: bool = True
 

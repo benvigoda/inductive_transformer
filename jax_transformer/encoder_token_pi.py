@@ -3,7 +3,8 @@ import jax.numpy as jnp  # type: ignore
 from typing import Callable
 from jax_transformer.helper_functions import EPSILON
 import jax.numpy as jnp
-from jax.nn import logsumexp
+from jax.nn import logsumexp, log_softmax
+
 
 class EncoderTokenPi(nn.Module):
     num_positions: int
@@ -21,6 +22,9 @@ class EncoderTokenPi(nn.Module):
             self.weight_init,
             (self.num_positions, self.vocab_size, self.layer_width),
         )
+
+        log_weights = log_softmax(weights)
+
         # FIXME: Is this all getting properly normalized?
         # logprob_weights = nn.relu(weights) + EPSILON
 
@@ -31,6 +35,6 @@ class EncoderTokenPi(nn.Module):
         # rho = jnp.sum(rho, axis=1)  # after summing it is size = (num_positions, layer_width)
 
         # this replaces a prob domain element-wise product followed by sum on the axis=1
-        rho = logsumexp(weights + t, axis=1)
+        rho = logsumexp(log_weights + t, axis=1)
 
         return rho  # rho is categorical

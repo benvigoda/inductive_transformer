@@ -7,6 +7,7 @@ from jax_transformer.helper_functions import (
     EPSILON,
 )
 
+
 class DecoderTokenPi(nn.Module):
     num_positions: int
     vocab_size: int

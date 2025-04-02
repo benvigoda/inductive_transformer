@@ -6,7 +6,7 @@ from jax_transformer.helper_functions import (
     EPSILON,
 )
 import jax.numpy as jnp
-from jax.nn import logsumexp
+from jax.nn import logsumexp, log_softmax
 
 
 class EncoderPositionPi(nn.Module):
@@ -21,6 +21,7 @@ class EncoderPositionPi(nn.Module):
         weights = self.param(
             "weights", self.weight_init, (self.num_positions, self.layer_width)
         )
+        log_weights = log_softmax(weights)
 
         # prob_weights = nn.relu(weights) + EPSILON
         # # NOTE: we decided to normalize the weights (it shouldn't matter)
@@ -31,7 +32,7 @@ class EncoderPositionPi(nn.Module):
         # make it an inner product by taking a sum along the token dimension
         # x = jnp.sum(x, axis=0, keepdims=True)
 
-        x = logsumexp(weights + rho, axis=0, keepdims=True)
+        x = logsumexp(log_weights + rho, axis=0, keepdims=True)
 
         assert x.shape == (1, self.layer_width)
         return x  # x is categorical
