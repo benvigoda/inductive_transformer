@@ -1,11 +1,14 @@
 import jax  # type: ignore
 import jax.numpy as jnp  # type: ignore
 import numpy as np  # type: ignore
-from jax_transformer.helper_functions import EPSILON, get_num_layers
+from jax_transformer.helper_functions import EPSILON, get_num_layers, PROBABLE, IMPROBABLE
 from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
 
-strong = 1.0 - EPSILON  # Amplify the signal
-weak = EPSILON  # Dampen the signal
+# strong = 1.0 - EPSILON  # Amplify the signal
+# weak = EPSILON  # Dampen the signal
+
+strong = 0 - EPSILON
+weak = jnp.log(EPSILON)
 
 mask_type = int
 
@@ -55,8 +58,6 @@ def set_position_pi_weights(
         raise ValueError(f"Layer {layer_key} not found in params.")
 
 
-
-
 def init_weights(
     params,
     vocab,
@@ -66,8 +67,6 @@ def init_weights(
     perturb_token=None,
     perturb_attention=None,
     surgical_perturb=False,
-    zero_out_right_weights=False,
-    zero_out_left_weights=False,
     noise_value=0.01,
     catsanddogs=False,
 ):
@@ -75,10 +74,6 @@ def init_weights(
         synonyms = make_cat_dog_anavan()
     else:
         synonyms = make_cat_dog_worm_bird_anavan()
-    if zero_out_right_weights:
-        synonyms.zero_right_words()
-    if zero_out_left_weights:
-        synonyms.zero_left_words()
     # Get shapes:
     num_positions, vocab_size, layer_width = params["params"]["encoders_0"][
         "encoder_token_pi"
@@ -287,7 +282,6 @@ def init_weights(
             #     else:
             #         new_weights = new_weights.at[[0][0]].set(new_weights[0][0] - jax.random.normal(jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1))) * noise_value)
 
-
             if perturb_weights or perturb_attention:
                 if not surgical_perturb:
                     # Add a small amount of noise to the weights
@@ -297,7 +291,7 @@ def init_weights(
             updated_params["params"][f"{encoders_decoders}_{layer}"][
                 f"{encoder_decoder}_attention_pi"
             ]["weights"] = new_weight
-            
+
             # Fix set_weights so the gradient does not update the weights
             if lock_all_weights:
                 set_weights["params"][f"{encoders_decoders}_{layer}"][

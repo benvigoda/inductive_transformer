@@ -33,8 +33,8 @@ class DecoderPositionPi(nn.Module):
         # element-wise product of weight tensor and y
         rho = prob_weights * x
         '''
-        
+
         rho = log_weights + x
-        
+
         assert rho.shape == (self.num_positions, self.layer_width)
         return rho
