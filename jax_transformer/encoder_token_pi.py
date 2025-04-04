@@ -22,7 +22,6 @@ class EncoderTokenPi(nn.Module):
             self.weight_init,
             (self.num_positions, self.vocab_size, self.layer_width),
         )
-
         log_weights = log_softmax(weights)
 
         # FIXME: Is this all getting properly normalized?

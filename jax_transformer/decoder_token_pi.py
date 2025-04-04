@@ -1,11 +1,7 @@
 from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
-
-from jax_transformer.helper_functions import (
-    custom_normalize,
-    EPSILON,
-)
+from jax.nn import log_softmax
 
 
 class DecoderTokenPi(nn.Module):
@@ -24,6 +20,7 @@ class DecoderTokenPi(nn.Module):
             self.weight_init,
             (self.num_positions, self.vocab_size, self.layer_width),
         )
+        log_weights = log_softmax(weights)
         #FIXME: prob_weights = nn.relu(weights) + EPSILON
 
         # we are going to output a categorical distribution over tokens at every lw in the layer
@@ -36,7 +33,7 @@ class DecoderTokenPi(nn.Module):
         # element-wise product of weight tensor and rho
         #FIXME: t = prob_weights * rho.reshape((self.num_positions, 1, self.layer_width))
 
-        t = weights + rho.reshape(self.num_positions, 1, self.layer_width)
+        t = log_weights + rho.reshape(self.num_positions, 1, self.layer_width)
         assert t.shape == (self.num_positions, self.vocab_size, self.layer_width)
 
         return t

@@ -5,6 +5,7 @@ from jax_transformer.helper_functions import (
     custom_normalize,
     EPSILON,
 )
+from jax.nn import log_softmax
 
 
 class DecoderAttentionPi(nn.Module):
@@ -19,6 +20,7 @@ class DecoderAttentionPi(nn.Module):
         weights = self.param(
             "weights", self.weight_init, (self.layer_width, self.layer_width)
         )
+        log_weights = log_softmax(weights)
 
         # We want to interpret the weights as probabilities. To ensure they're all strictly between
         # 0 and 1, we pass them through a relu and then normalize.
@@ -34,7 +36,7 @@ class DecoderAttentionPi(nn.Module):
         # y = custom_normalize(y, axis=1)
 
         # element-wise product of weight tensor and y
-        v = weights + y
+        v = log_weights + y
 
         # added this because like Bayes rule, Loeliger, chapter 2 of Ben's thesis, and
         # our deep belief in Bayes rule as foundational to concepts and thinking in transformers and humans
