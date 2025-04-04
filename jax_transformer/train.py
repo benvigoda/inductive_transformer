@@ -107,7 +107,7 @@ def create_train_state(
         )
 
     tx = optax.chain(
-      optax.adam(learning_rate=optax.exponential_decay(init_value=1e-3, transition_steps=1000, decay_rate=0.9)),
+        optax.adam(learning_rate=optax.exponential_decay(init_value=1e-3, transition_steps=1000, decay_rate=0.9)),
     )
     state = TrainState.create(
         apply_fn=model.apply,
@@ -138,9 +138,10 @@ def apply_model(state, z_in, t_in, truths):
         # loss = jnp.mean(jnp.square(t_out - truths))
         # Use cross entropy loss
         # loss = optax.safe_softmax_cross_entropy(t_out, jnp.exp(truths)).mean()
-        loss = ((-jnp.sum(jnp.exp(truths) * t_out, axis=-1)) ** 2).mean()
+        # loss = ((-jnp.sum(jnp.exp(truths) * t_out, axis=-1)) ** 2).mean()
+        loss = ((-jnp.sum(jnp.exp(truths) * t_out, axis=-1))).mean()
         # loss = optax.convex_kl_divergence(t_out_for_loss, truths).mean()
-        # jax.debug.print("t_out\n{}", t_out)
+        jax.debug.print("t_out\n{}", t_out)
         # jax.debug.print("truths\n{}", truths)
         # jax.debug.print("loss {}\n", loss)
         return loss
@@ -165,7 +166,7 @@ def run_and_print_inference(
     args,
     activations_file_name,
     folder_name=None,
-    silence_print=False,
+    silence_print=True,
 ):
     # Load inference examples.
     inference_data = prob_tensors.make_inference_prompt_tensors()
@@ -225,7 +226,7 @@ def inference_and_plot(
     loss,
     plot_file_name,
     activations_file_name,
-    silence_print=False,
+    silence_print=True,
     folder_name=None
 ):
     decoder_t = run_and_print_inference(
@@ -445,7 +446,7 @@ def main():
                 loss=loss,
                 plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
                 activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
-                silence_print=False,
+                silence_print=True,
                 folder_name=folder_name,
             )
             print("Bottom", "↑" * 100)

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import jax.numpy as jnp  # type: ignore
 from jax_transformer.helper_functions import custom_normalize
-
+import jax
 
 @dataclass
 class EncoderCategoricalBernoulli:
@@ -25,28 +25,29 @@ class EncoderCategoricalBernoulli:
         # bernoulli = custom_normalize(bernoulli, axis=0)
         assert bernoulli.shape == (2, self.layer_width)
 
-        return bernoulli
-
-
         # The probability of a bernoulli variable being true is the same as the probability of the
         # corresponding categorical state.
 
         # the assumption is that the categorical coming in is properly normalized
-        # but to we should verify that each output from each attention pi's is between 0 and 1
-        # Check that the categorical is between 0 and 1
+        # but to we should verify that each output from each attention pi's is less than 0
+
         # def assert_all_in_range(categorical):
-        #     def true_fn(_):
-        #         return True
+        #     # Print the actual values and the comparison result
+        #     jax.debug.print("Categorical values: {}", categorical)
+        #     comparison = categorical < 0
+        #     jax.debug.print("Less than zero check: {}", comparison)
+        #     jax.debug.print("All less than zero: {}", jnp.all(comparison))
 
-        #     def false_fn(_):
-        #         raise ValueError("Categorical values must be in the range [0, 1]")
+        #     # Store the condition result in a variable
+        #     all_less_than_zero = jnp.all(categorical < 0)
 
-        #     jax.lax.cond(jnp.all(categorical >= 0) & jnp.all(categorical <= 1),
-        #                 true_fn,
-        #                 false_fn,
-        #                 None)
+        #     # Use a different approach with custom message
+        #     jax.debug.print("Condition result: {}", all_less_than_zero)
 
-        # # Perform the assertion
+        #     # No conditional logic, just return True
+        #     return True
+
+        # # # Perform the assertion
         # assert_all_in_range(categorical)
 
-        # print("All values are in the range [0, 1].")
+        return bernoulli
