@@ -9,22 +9,12 @@ weak = jnp.log(EPSILON)  #= IMPROBABLE# Dampen the signal
 mask_type = jnp.float32
 
 
-'''
-refactor plan:
-
-perturb = perturb_weights OR perturb_token AND NOT surgical_perturb
-set_token_weights(perturb)
-
-perturb = perturb_weights AND NOT surgical_perturb
-set_position_weights(perturb)
 
 
-we'd like to have a separate
-surgical_perturb
-that takes as an argument the full path, decoder or encoder, layer, column, etc.
 
 
-'''
+
+
 
 
 def set_position_pi_weights(
