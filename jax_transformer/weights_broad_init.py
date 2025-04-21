@@ -4,10 +4,11 @@ import numpy as np  # type: ignore
 from jax_transformer.helper_functions import EPSILON, get_num_layers
 from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
 
-strong = 1.0 - EPSILON  # Amplify the signal
-weak = EPSILON  # Dampen the signal
+strong = jnp.log(1.0 - EPSILON)  # Amplify the signal
+weak = jnp.log(EPSILON)  #= IMPROBABLE# Dampen the signal
 
-mask_type = int
+mask_type = jnp.float32
+
 
 
 def set_position_pi_weights(
@@ -115,6 +116,7 @@ def init_weights(
             noise_value=noise_value if perturb_weights else perturb_position,
             surgical_perturb=surgical_perturb,
         )
+
 
     def set_token_weights(
         num_layer,

@@ -44,7 +44,7 @@ def create_train_state(
     perturb_attention=None,
     surgical_perturb=False,
     lock_all_weights=False,
-    noise_value=0.01,
+    noise_value=0.0,
     zero_out_right_weights=False,
     zero_out_left_weights=False,
     catsanddogs=False,
@@ -141,7 +141,7 @@ def apply_model(state, z_in, t_in, truths):
         # loss = ((-jnp.sum(jnp.exp(truths) * t_out, axis=-1)) ** 2).mean()
         loss = ((-jnp.sum(jnp.exp(truths) * t_out, axis=-1))).mean()
         # loss = optax.convex_kl_divergence(t_out_for_loss, truths).mean()
-        jax.debug.print("t_out\n{}", t_out)
+        # jax.debug.print("t_out\n{}", t_out)
         # jax.debug.print("truths\n{}", truths)
         # jax.debug.print("loss {}\n", loss)
         return loss

@@ -118,8 +118,8 @@ class EncoderLayer(nn.Module):
                 axis=0,
             )
         """
-        # When padding we do not know which word should be activated, so we set all to 0.5
-        masked_z = jnp.ones(shape=(2, self.layer_width)) * 0.5
+        # When padding we do not know which word should be activated, so we set all to log(0.5)
+        masked_z = jnp.ones(shape=(2, self.layer_width)) * jnp.log(0.5)
         assert masked_z.shape == (2, self.layer_width)
 
         z_prime = jnp.where(masked, masked_z, z_prime)
