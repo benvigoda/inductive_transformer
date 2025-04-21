@@ -17,6 +17,9 @@ command line arguments:
 noise_variance = 0.1
 '''
 
+class Synonyms:
+    def __init__(self, name, ):
+
 
 
 class WeightTreeMapKeys:
@@ -26,14 +29,16 @@ class WeightTreeMapKeys:
     layer_width_idx = [0, 1] #left, right
     position_idx = [0, 1, 2, 3, 4, 5]
     token_idx = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ... 53]
+    weight_type = ["loose", "locked"]
     """
-    def __init__(self, encoder_decoder, layer, factor, position_idx, token_idx, noise_value):
+    def __init__(self, encoder_decoder, layer, factor, position_idx, token_idx, weight_type, noise_value):
         self.encoder_decoder = encoder_decoder
         self.layer = layer
         self.factor = factor
         self.position_idx = position_idx
         self.token_idx = token_idx
         self.noise_value = noise_value
+        self.weight_type = weight_type
 
 
 
@@ -97,13 +102,14 @@ add_perturbations():
         if idx is in user_perturb_indices:
             weights[idx] += noise
 
-set_weights():
-    # set_all_random()
-    set_all_weak()
+def set_weights(
+    params,
+    vocab,
+):
+    """Set the initial weights of the inductive transformer model."""
+    set_all_weak()  # Comment out if we want to leave random
     set_attention_weights()
     set_position_weights()
     set_token_weights()
     add_perturbations()
-'''
-
-
+    return weights

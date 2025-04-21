@@ -10,13 +10,6 @@ mask_type = jnp.float32
 
 
 
-
-
-
-
-
-
-
 def set_position_pi_weights(
     layer,
     params,
