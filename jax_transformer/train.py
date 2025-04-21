@@ -13,7 +13,8 @@ import datetime
 from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
 from jax_transformer.model import BatchedInductiveTransformer
 from jax_transformer.text_parsing import InputData, ProbTensors
-from jax_transformer.weights_broad_init import init_weights
+# from jax_transformer.weights_broad_init import init_weights
+from jax_transformer.weights import init_weights
 from jax_transformer.printing import (
     print_params,
     print_activations,
@@ -44,7 +45,7 @@ def create_train_state(
     perturb_attention=None,
     surgical_perturb=False,
     lock_all_weights=False,
-    noise_value=0.0,
+    noise_variance=0.0,
     catsanddogs=False,
 ):
     """Creates initial `TrainState`."""
@@ -78,13 +79,8 @@ def create_train_state(
         params, weight_mask = init_weights(
             params,
             vocab,
-            lock_all_weights=lock_all_weights,
-            perturb_weights=perturb_flag,
-            perturb_position=perturb_position,
-            perturb_token=perturb_token,
-            perturb_attention=perturb_attention,
-            surgical_perturb=surgical_perturb,
-            noise_value=noise_value,
+            noise_variance=noise_variance,
+            perturb_indices=None,
             catsanddogs=catsanddogs,
         )
         grad_mask = weight_mask
@@ -282,7 +278,7 @@ def parse_args():
     parser.add_argument("--initialize_weights", action="store_true")
     parser.add_argument("--perturb", action="store_true")
     parser.add_argument("--lock_all_weights", action="store_true")
-    parser.add_argument("--noise_value", type=float, default=0.01)
+    parser.add_argument("--noise_variance", type=float, default=0.0)
     parser.add_argument("--perturb_position", type=float, default=None)
     parser.add_argument("--perturb_token", type=float, default=None)
     parser.add_argument("--perturb_attention", type=float, default=None)
@@ -313,7 +309,7 @@ def main():
         seed = np_rng.integers(0, 2**32 - 1)
 
     num_epochs = args.num_epochs
-    noise_value = args.noise_value
+    noise_variance = args.noise_variance
 
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
@@ -376,7 +372,7 @@ def main():
         perturb_attention=args.perturb_attention,
         surgical_perturb=args.surgical_perturb,
         lock_all_weights=args.lock_all_weights,
-        noise_value=noise_value,
+        noise_variance=noise_variance,
         catsanddogs=args.catsanddogs,
     )
 
@@ -404,7 +400,7 @@ def main():
 
     # Create a folder named {seed}_seed_{n_epochs}_num_epochs if it doesn't exist
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    file_prefix = f"{current_time}_seed_{seed}_num_epochs_{n_epochs}_noise_value_{noise_value}_"
+    file_prefix = f"{current_time}_seed_{seed}_num_epochs_{n_epochs}_noise_variance_{noise_variance}_"
     folder_name = file_prefix
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)

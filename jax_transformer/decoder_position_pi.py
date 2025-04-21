@@ -17,7 +17,8 @@ class DecoderPositionPi(nn.Module):
         weights = self.param(
             "weights", self.weight_init, (self.num_positions, self.layer_width)
         )
-        log_weights = log_softmax(weights)
+        log_weights = log_softmax(weights, axis=0)
+        
         '''     
         prob_weights = nn.relu(weights) + EPSILON
         # we are going to output a categorical distribution over tokens at every lw in the layer

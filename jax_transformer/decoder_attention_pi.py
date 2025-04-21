@@ -20,7 +20,7 @@ class DecoderAttentionPi(nn.Module):
         weights = self.param(
             "weights", self.weight_init, (self.layer_width, self.layer_width)
         )
-        log_weights = log_softmax(weights)
+        log_weights = log_softmax(weights, axis=0)
 
         # We want to interpret the weights as probabilities. To ensure they're all strictly between
         # 0 and 1, we pass them through a relu and then normalize.

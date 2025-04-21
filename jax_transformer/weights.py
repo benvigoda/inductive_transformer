@@ -6,23 +6,125 @@ from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_
 
 strong = jnp.log(1.0 - EPSILON)  # Amplify the signal
 weak = jnp.log(EPSILON)  # Dampen the signal
+mask_type = jnp.float32  # Use float32 for consistency with parameters
 
 
-'''
-to write this, use example code weights_broad_init.py
-'''
+def set_all_random(params):
+    return jax.tree_util.tree_map(
+        lambda x: jax.random.normal(
+            jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)),
+            x.shape
+        ),
+        params
+    )
 
-'''
-command line arguments:
-noise_variance = 0.1
-'''
+
+def set_all_weak(params):
+    return jax.tree_util.tree_map(
+        lambda x: jnp.full_like(x, weak),
+        params
+    )
+
+
+def set_attention_weights(params, num_layers):
+    """Set attention weights to 1 for straight-up connections and 0 for cross connections"""
+    num_layers = get_num_layers(params)
+    for layer in range(num_layers):
+        for encoder_decoder in ["encoder", "decoder"]:
+            layer_key = f"{encoder_decoder}s_{layer}"
+            attention_pi = f"{encoder_decoder}_attention_pi"
+            
+            weights = params["params"][layer_key][attention_pi]["weights"]
+            # Set all to weak first
+            new_weights = jnp.full_like(weights, weak)
+            # Set straight-up connections to strong
+            new_weights = new_weights.at[:, :, 0, 0].set(strong)  # left to left
+            new_weights = new_weights.at[:, :, 1, 1].set(strong)  # right to right
+            params["params"][layer_key][attention_pi]["weights"] = new_weights
+    
+    return params
+
+
+def set_position_weights(params, num_layers):
+    """Set position weights according to the layer pattern"""
+    num_layers = get_num_layers(params)
+    for layer in range(num_layers):
+        for encoder_decoder in ["encoder", "decoder"]:
+            layer_key = f"{encoder_decoder}s_{layer}"
+            position_pi = f"{encoder_decoder}_position_pi"
+             
+            weights = params["params"][layer_key][position_pi]["weights"]
+            new_weights = jnp.full_like(weights, weak)
+            # Set the appropriate position to strong
+            new_weights = new_weights.at[-layer - 1].set(
+                jnp.full(weights.shape[-1], strong)
+            )
+            params["params"][layer_key][position_pi]["weights"] = new_weights
+    
+    return params
+
+
+
+class SynonymList:
+    def __init__(self, name, layer, position, layer_width_idx, token_list):
+        self.name = name
+        self.layer = layer
+        self.position = position
+        self.layer_width_idx = layer_width_idx
+        self.token_list = token_list
+
 
 class Synonyms:
-    def __init__(self, name, ):
+    def __init__(self, vocab, catsanddogs=False):
+        if catsanddogs:
+            anavan = make_cat_dog_anavan()
+        else:
+            anavan = make_cat_dog_worm_bird_anavan()
+            
+        self.synonym_lists = [
+            # Left side (layer_width_idx = 0)
+            SynonymList("small", 5, 0, 0, anavan.get_synonyms_of_word("small")),
+            SynonymList("dogs", 4, 1, 0, anavan.get_synonyms_of_word("dogs")),
+            SynonymList("often", 3, 2, 0, anavan.get_synonyms_of_word("often")),
+            SynonymList("fear", 2, 3, 0, anavan.get_synonyms_of_word("fear")),
+            SynonymList("large", 1, 4, 0, anavan.get_synonyms_of_word("large")),
+            SynonymList("cats", 0, 5, 0, anavan.get_synonyms_of_word("cats")),
+            
+            # Right side (layer_width_idx = 1)
+            SynonymList("wriggly", 5, 0, 1, anavan.get_synonyms_of_word("wriggly")),
+            SynonymList("worms", 4, 1, 1, anavan.get_synonyms_of_word("worms")),
+            SynonymList("sometimes", 3, 2, 1, anavan.get_synonyms_of_word("sometimes")),
+            SynonymList("chase", 2, 3, 1, anavan.get_synonyms_of_word("chase")),
+            SynonymList("angry", 1, 4, 1, anavan.get_synonyms_of_word("angry")),
+            SynonymList("birds", 0, 5, 1, anavan.get_synonyms_of_word("birds"))
+        ]
+
+
+def set_token_weights(params, synonyms, vocab):
+    """Set token weights based on synonym lists"""
+    for synonym_list in synonyms.synonym_lists:
+        for encoder_decoder in ["encoder", "decoder"]:
+            layer_key = f"{encoder_decoder}s_{synonym_list.layer}"
+            token_pi = f"{encoder_decoder}_token_pi"
+            
+            if layer_key in params["params"]:
+                weights = params["params"][layer_key][token_pi]["weights"]
+                # Set all weights at this position and layer_width to weak
+                weights = weights.at[:, :, synonym_list.layer_width_idx].set(weak)
+                
+                # Set weights for synonym tokens to strong
+                for token in synonym_list.token_list:
+                    if token in vocab:
+                        vocab_idx = next(i for i, word in enumerate(vocab) if word.lower() == token)
+                        weights = weights.at[synonym_list.position, vocab_idx, synonym_list.layer_width_idx].set(strong)
+                
+                params["params"][layer_key][token_pi]["weights"] = weights
+    
+    return params
 
 
 
-class WeightTreeMapKeys:
+'''class WeightTreeMapKeys:
     """ All possible index values
     encoder_decoder = ["encoder", "decoder"]
     factor = ["position", "token", "attention"]
@@ -40,76 +142,53 @@ class WeightTreeMapKeys:
         self.noise_value = noise_value
         self.weight_type = weight_type
 
-
-
-# create the treemap for all weights
-
-set_all_random():
-    pass
-
-set_all_weak():
-    #in future this could be more like set_strong, a subset of all weights
-    #for now, it's all weights overwriting all random
-    init all weights = WEAK
-
-
-set_attention_weights():
-    # use the existing code for this - there's a simple rule we don't need a dictionary
-    weight_to_set = attention[layer_index][position, token]
-    1's for attention weights that go straight up and 0's for attention weights that cross over
-
-set_position_weights(synoyms):
-    # position STRONGs:
-    # in layer=5, layer_width=0 or 1, the position=0 is STRONG
-    # in layer=4, layer_width=0 or 1, the position=1 is STRONG
-    ...
-    # in layer=0, layer_width=0 or 1, the position=5 is STRONG
-
+def add_perturbations(params, noise_value, perturb_indices=None):
+    """Add noise to specified indices or all weights if indices not specified"""
+    def add_noise(x):
+        if perturb_indices is None:
+            return x + jax.random.normal(
+                jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)),
+                x.shape
+            ) * noise_value
+        else:
+            new_x = x.copy()
+            for idx in perturb_indices:
+                new_x = new_x.at[idx].add(noise_value)
+            return new_x
     
-class synomym_list():
-    name
-    layer
-    layer_width_idx
-    token_list
-    
-class synonyms():
-    __init__():
-        # synoyms of small at if layer=5, layer_width=0, 
-        new synomym_list(name=small, layer = 5, layer_width_idx = 0, token_list = fron_anavan)
-        
-        # if layer=4, layer_width=0, if synoyms of dog, set weights = STRONG
-        # if layer=3, layer_width=0, if synoyms of often set weights =  STRONG
-        # if layer=2, layer_width=0, if synoyms of fear set weights =  STRONG
-        # if layer=1, layer_width=0, if synoyms of large set weights =  STRONG
-        # if layer=0, layer_width=0, if synoyms of cats set weights =  STRONG
-
-        # if layer=5, layer_width=1, if synoyms of wriggly set weights =  STRONG
-        # if layer=4, layer_width=1, if synoyms of worms set weights =  STRONG
-        # if layer=3, layer_width=1, if synoyms of sometimes set weights =  STRONG
-        # if layer=2, layer_width=1, if synoyms of chase set weights =  STRONG
-        # if layer=1, layer_width=1, if synoyms of angry set weights =  STRONG
-        # if layer=0, layer_width=1, if synoyms of birds set weights =  STRONG
+    return jax.tree_util.tree_map(add_noise, params)
+'''
 
 
-set_token_weights():
-    for synonym_list in synonym_lists:
-        for token in synonym_list.tokens
-            weights[synonym_list.layer, synonym_list.layer_width_idx, token] = STRONG
-
-
-add_perturbations():
-    loop idx:
-        if idx is in user_perturb_indices:
-            weights[idx] += noise
-
-def set_weights(
+def init_weights(
     params,
     vocab,
+    noise_variance=0.0,
+    perturb_indices=None,
+    catsanddogs=False
 ):
-    """Set the initial weights of the inductive transformer model."""
-    set_all_weak()  # Comment out if we want to leave random
-    set_attention_weights()
-    set_position_weights()
-    set_token_weights()
-    add_perturbations()
-    return weights
+    """Main function to set all weights"""
+    
+    # Initialize all weights to weak
+    params = set_all_weak(params)
+    
+    # Set specific weight patterns
+    params = set_attention_weights(params)
+    params = set_position_weights(params)
+
+    synonyms = Synonyms(vocab, catsanddogs=catsanddogs)
+    params = set_token_weights(params, synonyms, vocab)
+    
+    # Add perturbations if specified
+    # if noise_variance > 0:
+    #     params = add_perturbations(params, noise_variance, perturb_indices)
+
+
+    # Let's make a mask for the weights.
+    # Initially it's all ones
+    weights_mask = jax.tree_util.tree_map(
+        lambda x: jnp.ones_like(x, dtype=mask_type),
+        params
+    )
+
+    return params, weights_mask

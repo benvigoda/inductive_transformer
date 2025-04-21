@@ -24,6 +24,7 @@ class EncoderTokenPi(nn.Module):
         )
         log_weights = log_softmax(weights, axis=1)
 
+
         # FIXME: Is this all getting properly normalized?
         # logprob_weights = nn.relu(weights) + EPSILON
 
