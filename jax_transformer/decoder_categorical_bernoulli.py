@@ -15,7 +15,8 @@ class DecoderCategoricalBernoulli:
 
         # The probability of a bernoulli variable being False is 1 - the probability of it being True.
         # u_0 = 1.0 - u_1
-        u_0 = nn.log_sigmoid(-u_1)
+        u_0 = jnp.log1p(-u_1)
+        # u_0 = nn.log_sigmoid(-u_1)
 
         u = jnp.stack([u_0, u_1], axis=0)
 

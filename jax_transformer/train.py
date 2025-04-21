@@ -45,8 +45,6 @@ def create_train_state(
     surgical_perturb=False,
     lock_all_weights=False,
     noise_value=0.0,
-    zero_out_right_weights=False,
-    zero_out_left_weights=False,
     catsanddogs=False,
 ):
     """Creates initial `TrainState`."""
@@ -87,8 +85,6 @@ def create_train_state(
             perturb_attention=perturb_attention,
             surgical_perturb=surgical_perturb,
             noise_value=noise_value,
-            zero_out_right_weights=zero_out_right_weights,
-            zero_out_left_weights=zero_out_left_weights,
             catsanddogs=catsanddogs,
         )
         grad_mask = weight_mask
@@ -296,8 +292,6 @@ def parse_args():
     parser.add_argument("--num_layers", type=int, default=2)
     parser.add_argument("--num_epochs", type=int, default=100)
     parser.add_argument("--num_samples", type=int, default=5)
-    parser.add_argument("--zero_out_right_weights", action="store_true")
-    parser.add_argument("--zero_out_left_weights", action="store_true")
     parser.add_argument("--loss_threshold", type=float, default=None)
     parser.add_argument("--catsanddogs", action="store_true")
     parser.add_argument("--seed", type=int, default=None)
@@ -383,8 +377,6 @@ def main():
         surgical_perturb=args.surgical_perturb,
         lock_all_weights=args.lock_all_weights,
         noise_value=noise_value,
-        zero_out_right_weights=args.zero_out_right_weights,
-        zero_out_left_weights=args.zero_out_left_weights,
         catsanddogs=args.catsanddogs,
     )
 
@@ -446,7 +438,7 @@ def main():
                 loss=loss,
                 plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
                 activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
-                silence_print=True,
+                silence_print=False,
                 folder_name=folder_name,
             )
             print("Bottom", "↑" * 100)

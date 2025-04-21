@@ -11,7 +11,7 @@ class DecoderBernoulliCategorical:
         assert bernoulli.shape == (2, self.layer_width)
 
         # Tried removing denominator
-        bernoulli = custom_normalize(bernoulli, axis=0)
+        bernoulli = custom_normalize(bernoulli, axis=0)  # Should not be necessary (we already normalize at the end of the decoder_and)
         categorical = bernoulli[1]
         categorical = categorical.reshape((1, self.layer_width))
 
