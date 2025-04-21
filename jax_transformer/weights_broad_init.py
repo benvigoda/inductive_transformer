@@ -6,9 +6,25 @@ from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_
 
 strong = jnp.log(1.0 - EPSILON)  # Amplify the signal
 weak = jnp.log(EPSILON)  #= IMPROBABLE# Dampen the signal
-
 mask_type = jnp.float32
 
+
+'''
+refactor plan:
+
+perturb = perturb_weights OR perturb_token AND NOT surgical_perturb
+set_token_weights(perturb)
+
+perturb = perturb_weights AND NOT surgical_perturb
+set_position_weights(perturb)
+
+
+we'd like to have a separate
+surgical_perturb
+that takes as an argument the full path, decoder or encoder, layer, column, etc.
+
+
+'''
 
 
 def set_position_pi_weights(
@@ -56,6 +72,58 @@ def set_position_pi_weights(
         raise ValueError(f"Layer {layer_key} not found in params.")
 
 
+
+def set_encoder_decoder_token_weights(
+    updated_params,
+    vocab,
+    num_layer,
+    layer_w,
+    position,
+    target_words,
+    prefix
+):
+    """
+    in the position where we want to listen for a particular word
+    set a single word weight to strong and all the others to weak
+    """
+    vocab_size = len(vocab)
+    prefix_s = prefix + "s"
+    # encoders_1 is layer=1
+    new_weight_encoder_decoder = updated_params["params"][f"{prefix_s}_{num_layer}"][f"{prefix}_token_pi"][
+        "weights"
+    ]
+    new_weight_encoder_decoder = new_weight_encoder_decoder.at[position, :, layer_w].set(jnp.full(vocab_size, weak))
+
+    for target_word in target_words:
+        if target_word in vocab:
+            vocab_idx = next(i for i, word in enumerate(vocab) if word.lower() == target_word)
+            new_weight_encoder_decoder = new_weight_encoder_decoder.at[position, vocab_idx, layer_w].set(strong)
+        else:
+            # print(f"WARNING: Target word '{target_word}' not found in vocab")
+            continue
+    return new_weight_encoder_decoder
+
+
+def perturb_weights_func(
+    updated_params,
+    num_layer,
+    perturb_weights,
+    perturb_token,
+    surgical_perturb,
+    noise_value,
+    weights,
+    prefix,
+):
+    prefix_s = prefix + "s"
+    if perturb_weights or perturb_token:
+        if not surgical_perturb:
+            # Add a small amount of noise to the weights
+            weights = weights + jax.random.normal(
+                jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), weights.shape
+            ) * (noise_value if perturb_weights else perturb_token)
+    return weights
+
+
 def init_weights(
     params,
     vocab,
@@ -74,40 +142,16 @@ def init_weights(
         synonyms = make_cat_dog_worm_bird_anavan()
     # Get shapes:
     num_positions, vocab_size, layer_width = params["params"]["encoders_0"][
-        "encoder_token_pi"
-    ]["weights"].shape
+        "encoder_token_pi"]["weights"].shape
     assert vocab_size == len(vocab)
-    """Update weights."""
+    
+
+    """Shape the weights"""
     updated_params = params
     set_weights = jax.tree_util.tree_map(
         lambda x: jnp.ones_like(x, dtype=mask_type), params
     )
-
     num_layers = get_num_layers(params)
-
-    for layer in range(num_layers):
-        set_position_pi_weights(
-            layer=layer,
-            params=updated_params,
-            mask=set_weights,
-            perturb_weights=perturb_weights or bool(perturb_position),
-            lock_weights=False,
-            prefix="decoder",
-            layer_width=layer_width,
-            noise_value=noise_value if perturb_weights else perturb_position,
-            surgical_perturb=surgical_perturb,
-        )
-        set_position_pi_weights(
-            layer=layer,
-            params=updated_params,
-            mask=set_weights,
-            perturb_weights=perturb_weights or bool(perturb_position),
-            lock_weights=False,
-            prefix="encoder",
-            layer_width=layer_width,
-            noise_value=noise_value if perturb_weights else perturb_position,
-            surgical_perturb=surgical_perturb,
-        )
 
 
     def set_token_weights(
@@ -123,52 +167,23 @@ def init_weights(
         in the position where we want to listen for a particular word
         set a single word weight to strong and all the others to weak
         """
-        # encoders_1 is layer=1
-        new_weight_encoder = updated_params["params"][f"encoders_{num_layer}"]["encoder_token_pi"][
-            "weights"
-        ]
-        new_weight_encoder = new_weight_encoder.at[position, :, layer_w].set(jnp.full(vocab_size, weak))
+        prefix = 'encoder'
+        new_weight_encoder = set_encoder_decoder_token_weights(
+            updated_params=updated_params, vocab=vocab, num_layer=num_layer,
+            layer_w=layer_w, position=position, target_words=target_words, prefix=prefix)
+        new_weight_encoder = perturb_weights_func(updated_params=updated_params, num_layer=num_layer, surgical_perturb=surgical_perturb, noise_value=noise_value, prefix=prefix)
+        
+        updated_params["params"][f"{prefix_s}_{num_layer}"][f"{prefix}_token_pi"][
+        "weights"] = weights
 
-        for target_word in target_words:
-            if target_word in vocab:
-                vocab_idx = next(i for i, word in enumerate(vocab) if word.lower() == target_word)
-                new_weight_encoder = new_weight_encoder.at[position, vocab_idx, layer_w].set(strong)
-            else:
-                # print(f"WARNING: Target word '{target_word}' not found in vocab")
-                continue
+        prefix = 'decoder'
+        new_weight_decoder = set_encoder_decoder_token_weights(
+            updated_params=updated_params, vocab=vocab, num_layer=num_layer,
+            layer_w=layer_w, position=position, target_words=target_words, prefix=prefix)
+        new_weight_decoder = perturb_weights_func(updated_params=updated_params, num_layer=num_layer, surgical_perturb=surgical_perturb, noise_value=noise_value, prefix=prefix)
 
-        if perturb_weights or perturb_token:
-            if not surgical_perturb:
-                # Add a small amount of noise to the weights
-                new_weight_encoder = new_weight_encoder + jax.random.normal(
-                    jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weight_encoder.shape
-                ) * (noise_value if perturb_weights else perturb_token)
-        updated_params["params"][f"encoders_{num_layer}"]["encoder_token_pi"][
-            "weights"
-        ] = new_weight_encoder
 
-        # decoder_1 is layer=1
-        new_weight_decoder = updated_params["params"][f"decoders_{num_layer}"]["decoder_token_pi"][
-            "weights"
-        ]
-        new_weight_decoder = new_weight_decoder.at[position, :, layer_w].set(jnp.full(vocab_size, weak))
-        for target_word in target_words:
-            if target_word in vocab:
-                vocab_idx = next(i for i, word in enumerate(vocab) if word.lower() == target_word)
-                new_weight_decoder = new_weight_decoder.at[position, vocab_idx, layer_w].set(strong)
-            else:
-                print(f"WARNING: Target word '{target_word}' not found in vocab")
-                continue
 
-        if perturb_weights or perturb_token:
-            if not surgical_perturb:
-                # Add a small amount of noise to the weights
-                new_weight_decoder = new_weight_decoder + jax.random.normal(
-                    jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1)), new_weight_decoder.shape
-                ) * (noise_value if perturb_weights else perturb_token)
-        updated_params["params"][f"decoders_{num_layer}"]["decoder_token_pi"][
-            "weights"
-        ] = new_weight_decoder
 
         """
         in the position where we want to listen for NO word
@@ -211,6 +226,31 @@ def init_weights(
             updated_params["params"][f"decoders_{num_layer}"]["decoder_token_pi"][
                 "weights"
             ] = new_weight_decoder
+
+
+    for layer in range(num_layers):
+        set_position_pi_weights(
+            layer=layer,
+            params=updated_params,
+            mask=set_weights,
+            perturb_weights=perturb_weights or bool(perturb_position),
+            lock_weights=False,
+            prefix="decoder",
+            layer_width=layer_width,
+            noise_value=noise_value if perturb_weights else perturb_position,
+            surgical_perturb=surgical_perturb,
+        )
+        set_position_pi_weights(
+            layer=layer,
+            params=updated_params,
+            mask=set_weights,
+            perturb_weights=perturb_weights or bool(perturb_position),
+            lock_weights=False,
+            prefix="encoder",
+            layer_width=layer_width,
+            noise_value=noise_value if perturb_weights else perturb_position,
+            surgical_perturb=surgical_perturb,
+        )
 
     left_targets = synonyms.get_valid_left_ordered_words()
     right_targets = synonyms.get_valid_right_ordered_words()
