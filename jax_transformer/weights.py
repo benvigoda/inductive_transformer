@@ -26,7 +26,7 @@ def set_all_weak(params):
     )
 
 
-def set_attention_weights(params, num_layers):
+def set_attention_weights(params):
     """Set attention weights to 1 for straight-up connections and 0 for cross connections"""
     num_layers = get_num_layers(params)
     for layer in range(num_layers):
@@ -38,14 +38,14 @@ def set_attention_weights(params, num_layers):
             # Set all to weak first
             new_weights = jnp.full_like(weights, weak)
             # Set straight-up connections to strong
-            new_weights = new_weights.at[:, :, 0, 0].set(strong)  # left to left
-            new_weights = new_weights.at[:, :, 1, 1].set(strong)  # right to right
+            new_weights = new_weights.at[0, 0].set(strong)  # left to left
+            new_weights = new_weights.at[1, 1].set(strong)  # right to right
             params["params"][layer_key][attention_pi]["weights"] = new_weights
     
     return params
 
 
-def set_position_weights(params, num_layers):
+def set_position_weights(params):
     """Set position weights according to the layer pattern"""
     num_layers = get_num_layers(params)
     for layer in range(num_layers):
@@ -83,20 +83,20 @@ class Synonyms:
             
         self.synonym_lists = [
             # Left side (layer_width_idx = 0)
-            SynonymList("small", 5, 0, 0, anavan.get_synonyms_of_word("small")),
-            SynonymList("dogs", 4, 1, 0, anavan.get_synonyms_of_word("dogs")),
-            SynonymList("often", 3, 2, 0, anavan.get_synonyms_of_word("often")),
-            SynonymList("fear", 2, 3, 0, anavan.get_synonyms_of_word("fear")),
-            SynonymList("large", 1, 4, 0, anavan.get_synonyms_of_word("large")),
-            SynonymList("cats", 0, 5, 0, anavan.get_synonyms_of_word("cats")),
-            
+            SynonymList("small",    5, 0, 0, anavan.get_synonyms_of_word("small")),
+            SynonymList("dogs",     4, 1, 0, anavan.get_synonyms_of_word("dogs")),
+            SynonymList("often",    3, 2, 0, anavan.get_synonyms_of_word("often")),
+            SynonymList("fear",     2, 3, 0, anavan.get_synonyms_of_word("fear")),
+            SynonymList("large",    1, 4, 0, anavan.get_synonyms_of_word("large")),
+            SynonymList("cats",     0, 5, 0, anavan.get_synonyms_of_word("cats")),
+
             # Right side (layer_width_idx = 1)
-            SynonymList("wriggly", 5, 0, 1, anavan.get_synonyms_of_word("wriggly")),
-            SynonymList("worms", 4, 1, 1, anavan.get_synonyms_of_word("worms")),
-            SynonymList("sometimes", 3, 2, 1, anavan.get_synonyms_of_word("sometimes")),
-            SynonymList("chase", 2, 3, 1, anavan.get_synonyms_of_word("chase")),
-            SynonymList("angry", 1, 4, 1, anavan.get_synonyms_of_word("angry")),
-            SynonymList("birds", 0, 5, 1, anavan.get_synonyms_of_word("birds"))
+            SynonymList("wriggly",  5, 0, 1, anavan.get_synonyms_of_word("wriggly")),
+            SynonymList("worms",    4, 1, 1, anavan.get_synonyms_of_word("worms")),
+            SynonymList("sometimes",3, 2, 1, anavan.get_synonyms_of_word("sometimes")),
+            SynonymList("chase",    2, 3, 1, anavan.get_synonyms_of_word("chase")),
+            SynonymList("angry",    1, 4, 1, anavan.get_synonyms_of_word("angry")),
+            SynonymList("birds",    0, 5, 1, anavan.get_synonyms_of_word("birds"))
         ]
 
 
@@ -109,8 +109,8 @@ def set_token_weights(params, synonyms, vocab):
             
             if layer_key in params["params"]:
                 weights = params["params"][layer_key][token_pi]["weights"]
-                # Set all weights at this position and layer_width to weak
-                weights = weights.at[:, :, synonym_list.layer_width_idx].set(weak)
+                # # Set all weights at this position and layer_width to weak
+                # weights = weights.at[:, :, synonym_list.layer_width_idx].set(weak)
                 
                 # Set weights for synonym tokens to strong
                 for token in synonym_list.token_list:
