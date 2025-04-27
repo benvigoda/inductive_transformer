@@ -298,7 +298,7 @@ def make_cat_dog_worm_bird_anavan():
     ]
 
     valid_right_zeroth_words = [
-        "wriggley",
+        "wriggly",
         "gross",
         "slimy",
         "disgusting",

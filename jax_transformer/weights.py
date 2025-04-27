@@ -3,6 +3,7 @@ import jax.numpy as jnp  # type: ignore
 import numpy as np  # type: ignore
 from jax_transformer.helper_functions import EPSILON, get_num_layers
 from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
+from flax.core.frozen_dict import unfreeze, freeze  # Add import for unfreeze/freeze
 
 strong = jnp.log(1.0 - EPSILON)  # Amplify the signal
 weak = jnp.log(EPSILON)  # Dampen the signal
@@ -19,49 +20,43 @@ def set_all_random(params):
     )
 
 
-def set_all_weak(params):
-    return jax.tree_util.tree_map(
-        lambda x: jnp.full_like(x, weak),
-        params
-    )
 
-
-def set_attention_weights(params):
+def set_attention_weights(p):
     """Set attention weights to 1 for straight-up connections and 0 for cross connections"""
-    num_layers = get_num_layers(params)
+    num_layers = get_num_layers(p)
     for layer in range(num_layers):
         for encoder_decoder in ["encoder", "decoder"]:
             layer_key = f"{encoder_decoder}s_{layer}"
             attention_pi = f"{encoder_decoder}_attention_pi"
             
-            weights = params["params"][layer_key][attention_pi]["weights"]
+            weights = p["params"][layer_key][attention_pi]["weights"]
             # Set all to weak first
             new_weights = jnp.full_like(weights, weak)
             # Set straight-up connections to strong
             new_weights = new_weights.at[0, 0].set(strong)  # left to left
             new_weights = new_weights.at[1, 1].set(strong)  # right to right
-            params["params"][layer_key][attention_pi]["weights"] = new_weights
+            p["params"][layer_key][attention_pi]["weights"] = new_weights
     
-    return params
+    return p
 
 
-def set_position_weights(params):
+def set_position_weights(p):
     """Set position weights according to the layer pattern"""
-    num_layers = get_num_layers(params)
+    num_layers = get_num_layers(p)
     for layer in range(num_layers):
         for encoder_decoder in ["encoder", "decoder"]:
             layer_key = f"{encoder_decoder}s_{layer}"
             position_pi = f"{encoder_decoder}_position_pi"
              
-            weights = params["params"][layer_key][position_pi]["weights"]
+            weights = p["params"][layer_key][position_pi]["weights"]
             new_weights = jnp.full_like(weights, weak)
             # Set the appropriate position to strong
             new_weights = new_weights.at[-layer - 1].set(
                 jnp.full(weights.shape[-1], strong)
             )
-            params["params"][layer_key][position_pi]["weights"] = new_weights
+            p["params"][layer_key][position_pi]["weights"] = new_weights
     
-    return params
+    return p
 
 
 
@@ -109,15 +104,11 @@ def set_token_weights(params, synonyms, vocab):
             
             if layer_key in params["params"]:
                 weights = params["params"][layer_key][token_pi]["weights"]
-                # # Set all weights at this position and layer_width to weak
-                # weights = weights.at[:, :, synonym_list.layer_width_idx].set(weak)
-                
                 # Set weights for synonym tokens to strong
                 for token in synonym_list.token_list:
                     if token in vocab:
                         vocab_idx = next(i for i, word in enumerate(vocab) if word.lower() == token)
                         weights = weights.at[synonym_list.position, vocab_idx, synonym_list.layer_width_idx].set(strong)
-                
                 params["params"][layer_key][token_pi]["weights"] = weights
     
     return params
@@ -168,27 +159,22 @@ def init_weights(
     catsanddogs=False
 ):
     """Main function to set all weights"""
+    p = unfreeze(params)           # unwrap immutables
     
     # Initialize all weights to weak
-    params = set_all_weak(params)
+    p["params"] = jax.tree_util.tree_map(lambda x: jnp.full_like(x, weak), p["params"])
     
     # Set specific weight patterns
-    params = set_attention_weights(params)
-    params = set_position_weights(params)
+    p = set_attention_weights(p)
+    p = set_position_weights(p)
 
     synonyms = Synonyms(vocab, catsanddogs=catsanddogs)
-    params = set_token_weights(params, synonyms, vocab)
+    p = set_token_weights(p, synonyms, vocab)
     
     # Add perturbations if specified
     # if noise_variance > 0:
     #     params = add_perturbations(params, noise_variance, perturb_indices)
 
+    weights_mask = jax.tree_util.tree_map(lambda x: jnp.ones_like(x, dtype=mask_type), params)
 
-    # Let's make a mask for the weights.
-    # Initially it's all ones
-    weights_mask = jax.tree_util.tree_map(
-        lambda x: jnp.ones_like(x, dtype=mask_type),
-        params
-    )
-
-    return params, weights_mask
+    return freeze(p), weights_mask
