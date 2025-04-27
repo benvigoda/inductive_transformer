@@ -158,12 +158,13 @@ def init_weights(
     perturb_indices=None,
     catsanddogs=False
 ):
+
     """Main function to set all weights"""
-    p = unfreeze(params)           # unwrap immutables
-    
     # Initialize all weights to weak
+    p = unfreeze(params)   
+
     p["params"] = jax.tree_util.tree_map(lambda x: jnp.full_like(x, weak), p["params"])
-    
+
     # Set specific weight patterns
     p = set_attention_weights(p)
     p = set_position_weights(p)

@@ -9,7 +9,6 @@ import jax.numpy as jnp
 from jax.nn import logsumexp, log_softmax
 
 
-
 class EncoderAttentionPi(nn.Module):
     vocab_size: int
     layer_width: int

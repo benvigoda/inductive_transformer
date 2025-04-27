@@ -22,8 +22,7 @@ class EncoderTokenPi(nn.Module):
             self.weight_init,
             (self.num_positions, self.vocab_size, self.layer_width),
         )
-        log_weights = weights #log_softmax(weights, axis=1)
-
+        log_weights = log_softmax(weights, axis=1)
 
         # FIXME: Is this all getting properly normalized?
         # logprob_weights = nn.relu(weights) + EPSILON
