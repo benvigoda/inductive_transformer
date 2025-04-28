@@ -6,6 +6,7 @@ import jax.numpy as jnp
 from jax.nn import logsumexp, log_softmax
 
 
+
 class EncoderTokenPi(nn.Module):
     num_positions: int
     layer_width: int
@@ -22,7 +23,14 @@ class EncoderTokenPi(nn.Module):
             self.weight_init,
             (self.num_positions, self.vocab_size, self.layer_width),
         )
-        log_weights = log_softmax(weights, axis=1)
+        # log_weights = weights
+
+        # log_weights = log_softmax(weights, axis=1)
+        # log_weights = log_weights - log_weights.max(axis=1, keepdims=True)
+        # log_weights = jnp.minimum(log_weights, 0.0)
+
+        # log_weights = weights - jnp.max(weights, axis=1, keepdims=True)
+        log_weights = weights - jnp.max(weights, axis=1, keepdims=True)
 
         # FIXME: Is this all getting properly normalized?
         # logprob_weights = nn.relu(weights) + EPSILON

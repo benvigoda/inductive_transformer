@@ -3,7 +3,7 @@ from flax import linen as nn  # type: ignore
 from helper_functions import get_num_layers  # type: ignore
 
 
-def print_params(state, vocab, silence_print=True):
+def print_params(state, vocab, silence_print=False):
     text = ""
     np.set_printoptions(threshold=np.inf)
     num_layers = get_num_layers(state.params)

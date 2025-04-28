@@ -161,7 +161,7 @@ def init_weights(
 
     """Main function to set all weights"""
     # Initialize all weights to weak
-    p = unfreeze(params)   
+    p = unfreeze(params)
 
     p["params"] = jax.tree_util.tree_map(lambda x: jnp.full_like(x, weak), p["params"])
 
@@ -178,4 +178,7 @@ def init_weights(
 
     weights_mask = jax.tree_util.tree_map(lambda x: jnp.ones_like(x, dtype=mask_type), params)
 
-    return freeze(p), weights_mask
+    return freeze(p), freeze(weights_mask)
+
+
+

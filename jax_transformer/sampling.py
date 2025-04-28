@@ -14,6 +14,6 @@ def sample(key: jax.Array, decoder_t: jax.Array, temperature: float = 1.0):
 
     # For now we just generate a single sample.
     # TODO: Allow taking multiple (independent) samples.
-    log_probs = jnp.log(decoder_t) / temperature
+    log_probs = decoder_t / temperature
     samples = jax.random.categorical(key, log_probs, axis=-1)
     return samples

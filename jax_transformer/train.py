@@ -253,8 +253,7 @@ def inference_and_plot(
     # Generate histograms:
     training_sentences = [t.capitalize() for t in data.training_sentences]
     text += f"loss: {loss:.20e}\n"
-    if not silence_print:
-        print(text)
+    print(text)
 
     histogram_results(
         training_sentences,
@@ -291,6 +290,7 @@ def parse_args():
     parser.add_argument("--loss_threshold", type=float, default=None)
     parser.add_argument("--catsanddogs", action="store_true")
     parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--silence_print", action="store_true", default=False)
     return parser.parse_args()
 
 
@@ -415,7 +415,7 @@ def main():
         if epoch % print_every == 0 or epoch == n_epochs - 1:
             print("\nTop:", "↓" * 100)
             print(f"epoch {epoch}, loss: {loss:.20e}")
-            printed_weights = print_params(state, data.vocab, silence_print=True)
+            printed_weights = print_params(state, data.vocab, silence_print=args.silence_print)
             file_name = file_prefix + f"{epoch}_epoch_output_weights.txt"
             file_path = os.path.join(folder_name, file_name)
             with open(file_path, "w") as f:
@@ -434,7 +434,7 @@ def main():
                 loss=loss,
                 plot_file_name=file_prefix + f"{epoch}_epoch_output_histograms.png",
                 activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
-                silence_print=False,
+                silence_print=True,
                 folder_name=folder_name,
             )
             print("Bottom", "↑" * 100)
@@ -458,9 +458,8 @@ def main():
     if n_epochs == 0:
         print("\nTop:", "↓" * 100)
         print("No training was done.")
-        print(f"epoch {epoch}, loss: {loss:.20e}")
-        # Print trained weights.
-        printed_weights = print_params(state, data.vocab)
+        print(f"epoch {epoch}, loss: {loss:.20e}")        # Print trained weights.
+        printed_weights = print_params(state, data.vocab, silence_print=args.silence_print)
         # save printed weights to a file
         file_name = file_prefix + f"{epoch}_epoch_output_weights.txt"
         file_path = os.path.join(folder_name, file_name)
