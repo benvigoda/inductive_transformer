@@ -22,6 +22,9 @@ class EncoderAttentionPi(nn.Module):
             "weights", self.weight_init, (self.layer_width, self.layer_width)
         )
         log_weights = log_softmax(weights, axis=0)
+        # log_weights = log_softmax(weights, axis=1)
+        
+        
         # prob_weights = nn.relu(weights) + EPSILON
         # prob_weights = custom_normalize(prob_weights, axis=1)
         # # in the future we may want to normalize v here for good measure

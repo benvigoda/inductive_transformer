@@ -29,8 +29,9 @@ class EncoderTokenPi(nn.Module):
         # log_weights = log_weights - log_weights.max(axis=1, keepdims=True)
         # log_weights = jnp.minimum(log_weights, 0.0)
 
+
+        log_weights = log_softmax(weights, axis=0)
         # log_weights = weights - jnp.max(weights, axis=1, keepdims=True)
-        log_weights = weights - jnp.max(weights, axis=1, keepdims=True)
 
         # FIXME: Is this all getting properly normalized?
         # logprob_weights = nn.relu(weights) + EPSILON

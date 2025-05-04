@@ -20,7 +20,10 @@ class DecoderTokenPi(nn.Module):
             self.weight_init,
             (self.num_positions, self.vocab_size, self.layer_width),
         )
+
         log_weights = log_softmax(weights, axis=1)
+        
+        
         #FIXME: prob_weights = nn.relu(weights) + EPSILON
 
         # we are going to output a categorical distribution over tokens at every lw in the layer
