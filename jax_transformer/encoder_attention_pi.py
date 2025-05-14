@@ -21,8 +21,10 @@ class EncoderAttentionPi(nn.Module):
         weights = self.param(
             "weights", self.weight_init, (self.layer_width, self.layer_width)
         )
-        log_weights = log_softmax(weights, axis=0)
-        # log_weights = log_softmax(weights, axis=1)
+        
+        log_weights = log_softmax(weights, axis=0)  #given the same seed, gets to lower loss, faster
+        # log_weights = log_softmax(weights, axis=1) 
+        # log_weights = log_softmax(weights, axis=(0,1)) #the right thing to do if it didn't get stuck in local minima
         
         
         # prob_weights = nn.relu(weights) + EPSILON

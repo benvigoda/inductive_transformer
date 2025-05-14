@@ -1,6 +1,5 @@
-import jax.numpy as jnp  # type: ignore
 import jax  # type: ignore
-
+import jax.numpy as jnp  # type: ignore
 from jax.nn import logsumexp
 
 EPSILON = 1e-20
@@ -15,6 +14,15 @@ def get_num_layers(params: dict) -> int:
             break
         num_layers += 1
     return num_layers
+
+
+def bound_values(tensor: jnp.ndarray, upper_bound = -0.01, lower_bound= -25.0):
+    # nan (ArrayLike) – value to substitute for NaN entries. FIXME: Should it be lower_bound or upper_bound?
+    jax.numpy.nan_to_num(tensor, nan=lower_bound, posinf=upper_bound, neginf=lower_bound)
+
+    # https://docs.jax.dev/en/latest/_autosummary/jax.numpy.clip.html 
+    return jnp.clip(tensor, min=lower_bound, max=upper_bound)
+ 
 
 
 def custom_normalize(tensor: jnp.ndarray, axis=0, default_constant=0.5) -> jnp.ndarray:
