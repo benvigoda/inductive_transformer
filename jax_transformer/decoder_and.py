@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from jax_transformer.helper_functions import custom_normalize
+from jax_transformer.helper_functions import custom_normalize, bound_activations
 
 
 @dataclass
@@ -48,4 +48,6 @@ class DecoderAnd:
         x = custom_normalize(x, axis=0)
         y = custom_normalize(y, axis=0)
 
+        x = bound_activations(x)
+        y = bound_activations(y)
         return x, y  # Bernoullis

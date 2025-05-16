@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import jax.numpy as jnp  # type: ignore
 
-from jax_transformer.helper_functions import custom_normalize
+from jax_transformer.helper_functions import custom_normalize, bound_activations
 
 
 @dataclass
@@ -22,5 +22,6 @@ class EncoderAnd:
         z = jnp.stack([z_0, z_1])
         z = custom_normalize(z, axis=0)
 
+        z = bound_activations(z)
         return z
 

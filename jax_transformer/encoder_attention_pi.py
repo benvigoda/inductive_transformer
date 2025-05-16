@@ -4,6 +4,8 @@ from typing import Callable
 from jax_transformer.helper_functions import (
     custom_normalize,
     EPSILON,
+    bound_activations,
+    bound_weights
 )
 import jax.numpy as jnp
 from jax.nn import logsumexp, log_softmax
@@ -23,6 +25,7 @@ class EncoderAttentionPi(nn.Module):
         )
         
         log_weights = log_softmax(weights, axis=0)  #given the same seed, gets to lower loss, faster
+        log_weights = bound_weights(log_weights)
         # log_weights = log_softmax(weights, axis=1) 
         # log_weights = log_softmax(weights, axis=(0,1)) #the right thing to do if it didn't get stuck in local minima
         
@@ -43,4 +46,5 @@ class EncoderAttentionPi(nn.Module):
         # when it is certain on both values of the layer_width index:
         # y = custom_normalize(y, axis=1)
 
+        y = bound_activations(y)
         return y  # y is categorical

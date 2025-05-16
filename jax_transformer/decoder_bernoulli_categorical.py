@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from jax_transformer.helper_functions import custom_normalize
+from jax_transformer.helper_functions import custom_normalize, bound_activations
 
 
 @dataclass
@@ -17,4 +17,5 @@ class DecoderBernoulliCategorical:
 
         # Removed the layer norm
 
+        categorical = bound_activations(categorical)
         return categorical

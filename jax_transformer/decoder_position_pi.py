@@ -2,6 +2,7 @@ from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
 from jax.nn import log_softmax
+from jax_transformer.helper_functions import bound_weights, bound_activations
 
 
 class DecoderPositionPi(nn.Module):
@@ -19,9 +20,8 @@ class DecoderPositionPi(nn.Module):
         )
 
         log_weights = log_softmax(weights, axis=0)
-        
-        
-        
+        log_weights = bound_weights(log_weights)
+
         '''     
         prob_weights = nn.relu(weights) + EPSILON
         # we are going to output a categorical distribution over tokens at every lw in the layer
@@ -41,4 +41,6 @@ class DecoderPositionPi(nn.Module):
         rho = log_weights + x
 
         assert rho.shape == (self.num_positions, self.layer_width)
+
+        rho = bound_activations(rho)
         return rho

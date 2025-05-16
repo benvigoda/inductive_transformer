@@ -2,6 +2,8 @@ from dataclasses import dataclass
 import jax.nn as nn
 import jax.numpy as jnp  # type: ignore
 
+from jax_transformer.helper_functions import bound_activations
+
 
 @dataclass
 class DecoderUniverse:
@@ -43,4 +45,6 @@ class DecoderUniverse:
 
         # z = custom_normalize(z, axis=0)  # Has to be unecessary Otherwise we would not be allowed to do z_1 = 1 - z_0
         assert z.shape == (2, self.layer_width)
+
+        z = bound_activations(z)
         return z

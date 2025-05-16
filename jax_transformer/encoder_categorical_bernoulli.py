@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import jax.numpy as jnp  # type: ignore
-from jax_transformer.helper_functions import custom_normalize
+from jax_transformer.helper_functions import custom_normalize, bound_activations, bound_weights
 import jax
 
 @dataclass
@@ -49,5 +49,7 @@ class EncoderCategoricalBernoulli:
 
         # # # Perform the assertion
         # assert_all_in_range(categorical)
+
+        bernoulli = bound_activations(bernoulli)
 
         return bernoulli

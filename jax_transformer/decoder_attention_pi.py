@@ -4,6 +4,8 @@ import jax.numpy as jnp  # type: ignore
 from jax_transformer.helper_functions import (
     custom_normalize,
     EPSILON,
+    bound_weights,
+    bound_activations
 )
 from jax.nn import log_softmax
 
@@ -23,6 +25,7 @@ class DecoderAttentionPi(nn.Module):
         # log_weights = log_softmax(weights, axis=1)
         # log_weights = log_softmax(weights, axis=0)
         log_weights = log_softmax(weights, axis=(0,1))
+        log_weights = bound_weights(log_weights)
         
         
 
@@ -53,4 +56,5 @@ class DecoderAttentionPi(nn.Module):
         # v[0, 0] = the straight down on the left output of the left hand attention pi
         # similarly, v[:, 1] = the outputs of the right hand attention pi
 
+        v = bound_activations(v)
         return v
