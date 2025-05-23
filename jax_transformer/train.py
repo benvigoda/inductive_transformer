@@ -86,10 +86,9 @@ def create_train_state(
         grad_mask = weight_mask
 
     key, subkey = jax.random.split(key)
+
+    lr = 0.0 #1e-4
     if noise_seed is None:
-        # Pick a random number between 1e-8 and 1e-1
-        # lr = 10 ** np.random.uniform(-8, -1)
-        lr = 1e-4
         tx = optax.chain(
             optax.adam(learning_rate=lr),
         )

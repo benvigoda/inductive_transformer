@@ -38,10 +38,10 @@ def bound_weights(tensor: jnp.ndarray, upper_bound = 0.0, lower_bound= -1000.0):
     # https://docs.jax.dev/en/latest/_autosummary/jax.numpy.clip.html 
     return jnp.clip(tensor, min=lower_bound, max=upper_bound)
 
-def bound_activations(tensor: jnp.ndarray, upper_bound = 0.0, lower_bound= -1000.0):
+def bound_activations(tensor: jnp.ndarray, upper_bound = 0.000001, lower_bound= -1000000.0):   
     # return tensor
     # nan (ArrayLike) – value to substitute for NaN entries. FIXME: Should it be lower_bound or upper_bound?
-    jax.numpy.nan_to_num(tensor, nan=lower_bound, posinf=upper_bound, neginf=lower_bound)
+    # jax.numpy.nan_to_num(tensor, nan=lower_bound, posinf=upper_bound, neginf=lower_bound)
 
     # https://docs.jax.dev/en/latest/_autosummary/jax.numpy.clip.html 
     return jnp.clip(tensor, min=lower_bound, max=upper_bound)
