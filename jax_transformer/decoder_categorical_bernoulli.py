@@ -13,7 +13,7 @@
 from dataclasses import dataclass
 import jax.numpy as jnp  # type: ignore
 import jax.nn as nn
-from jax_transformer.helper_functions import bound_activations
+from jax_transformer.helper_functions import bound_activations, custom_normalize
 
 @dataclass
 class DecoderCategoricalBernoulli:
