@@ -30,12 +30,12 @@ class DecoderCategoricalBernoulli:
         # pu_0 = 1.0 - pu_1
         # u_0 = log(1 - pu_1)
         # u_0 = log(1 - exp(u_1))
-        # u_0 = jnp.log1p(-jnp.exp(u_1))
-        u_0 = nn.log_sigmoid(-u_1)
+        u_0 = jnp.log1p(-jnp.exp(u_1))
+        # u_0 = nn.log_sigmoid(-u_1)
 
         u = jnp.stack([u_0, u_1], axis=0)
 
         assert u.shape == (2, self.layer_width, self.layer_width)
 
-        u = bound_activations(u)
+        # u = bound_activations(u)
         return u
