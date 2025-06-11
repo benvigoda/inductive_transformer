@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-
 from jax_transformer.helper_functions import custom_normalize, bound_activations
 
 

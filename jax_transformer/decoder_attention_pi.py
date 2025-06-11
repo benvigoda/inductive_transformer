@@ -14,8 +14,6 @@ from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
 from jax_transformer.helper_functions import (
-    custom_normalize,
-    EPSILON,
     bound_weights,
     bound_activations
 )
@@ -36,11 +34,9 @@ class DecoderAttentionPi(nn.Module):
         )
         # log_weights = log_softmax(weights, axis=1)
         # log_weights = log_softmax(weights, axis=0)
-        log_weights = log_softmax(weights, axis=(0))
-        log_weights = log_softmax(weights, axis=(1))
+        log_weights = log_softmax(weights, axis=1)
+        log_weights = log_softmax(log_weights, axis=0)
         log_weights = bound_weights(log_weights)
-        
-        
 
         # We want to interpret the weights as probabilities. To ensure they're all strictly between
         # 0 and 1, we pass them through a relu and then normalize.

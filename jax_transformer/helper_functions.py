@@ -38,8 +38,7 @@ def get_num_layers(params: dict) -> int:
 
 # if we bound both, obviously we are bounding activations so again we're good.
 
-# we still need masking 
-
+# we still need masking
 
 
 def bound_weights(tensor: jnp.ndarray, upper_bound = -1e-6, lower_bound= -35):
@@ -50,6 +49,7 @@ def bound_weights(tensor: jnp.ndarray, upper_bound = -1e-6, lower_bound= -35):
     # https://docs.jax.dev/en/latest/_autosummary/jax.numpy.clip.html 
     return jnp.clip(tensor, min=lower_bound, max=upper_bound)
 
+
 def bound_activations(tensor: jnp.ndarray, upper_bound = -1e-6, lower_bound= -35):   
     # return tensor
     # nan (ArrayLike) – value to substitute for NaN entries. FIXME: Should it be lower_bound or upper_bound?
@@ -57,7 +57,6 @@ def bound_activations(tensor: jnp.ndarray, upper_bound = -1e-6, lower_bound= -35
 
     # https://docs.jax.dev/en/latest/_autosummary/jax.numpy.clip.html 
     return jnp.clip(tensor, min=lower_bound, max=upper_bound)
- 
 
 
 def custom_normalize(tensor: jnp.ndarray, axis=0, default_constant=0.5) -> jnp.ndarray:

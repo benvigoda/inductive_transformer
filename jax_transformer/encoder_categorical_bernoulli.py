@@ -27,9 +27,7 @@ class EncoderCategoricalBernoulli:
 
         # bernoulli is size (2, layer_width)
         bernoulli_1 = categorical
-        bernoulli_0 = (
-            jnp.log(-jnp.expm1(categorical))
-        )
+        bernoulli_0 = jnp.log1p(-jnp.exp(categorical))
 
         bernoulli = jnp.concatenate([bernoulli_0, bernoulli_1])
 

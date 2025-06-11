@@ -31,7 +31,6 @@ class DecoderCategoricalBernoulli:
         # u_0 = log(1 - pu_1)
         # u_0 = log(1 - exp(u_1))
         u_0 = jnp.log1p(-jnp.exp(u_1))
-        # u_0 = nn.log_sigmoid(-u_1)
 
         u = jnp.stack([u_0, u_1], axis=0)
 

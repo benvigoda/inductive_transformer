@@ -53,7 +53,7 @@ class DecoderUniverse:
         # z = jnp.stack([z_0, z_1], axis=0)
 
         z_0 = jnp.sum(u[0], axis=-1)
-        z_1 = jnp.log(1 - jnp.exp(z_0))
+        z_1 = jnp.log1p(-jnp.exp(z_0))
         z = jnp.stack([z_0, z_1], axis=0)
 
         # z = custom_normalize(z, axis=0)  # Has to be unecessary Otherwise we would not be allowed to do z_1 = 1 - z_0

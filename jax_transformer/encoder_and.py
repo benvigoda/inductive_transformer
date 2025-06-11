@@ -23,7 +23,7 @@ class EncoderAnd:
         # OLD SOFTAND:
         # z_1 = x[1] * y[1]
         # z_0 = x[0] * y[1] + x[1] * y[0] + x[0] * y[0]
-        
+
         # NEW SOFTEQUAL
         z_1 = x[1] + y[1]
         z_0 = x[0] + y[0]
@@ -36,4 +36,3 @@ class EncoderAnd:
 
         z = bound_activations(z)
         return z
-
