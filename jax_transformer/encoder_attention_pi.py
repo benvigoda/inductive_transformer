@@ -14,12 +14,9 @@ from flax import linen as nn  # type: ignore
 import jax.numpy as jnp  # type: ignore
 from typing import Callable
 from jax_transformer.helper_functions import (
-    custom_normalize,
-    EPSILON,
     bound_activations,
     bound_weights
 )
-import jax.numpy as jnp
 from jax.nn import logsumexp, log_softmax
 
 

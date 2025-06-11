@@ -24,7 +24,6 @@ from jax_transformer.encoder_attention_pi import (
     EncoderAttentionPi,
 )
 from jax_transformer.encoder_categorical_bernoulli import (
- 
     EncoderCategoricalBernoulli,
 )
 from jax_transformer.encoder_and import EncoderAnd

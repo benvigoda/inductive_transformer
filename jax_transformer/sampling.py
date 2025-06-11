@@ -11,7 +11,6 @@
 # limitations under the License.
 
 import jax
-import jax.numpy as jnp
 
 
 def sample(key: jax.Array, decoder_t: jax.Array, temperature: float = 1.0):

@@ -14,12 +14,9 @@ from flax import linen as nn  # type: ignore
 from typing import Callable
 import jax.numpy as jnp  # type: ignore
 from jax_transformer.helper_functions import (
-    custom_normalize,
-    EPSILON,
     bound_activations,
     bound_weights
 )
-import jax.numpy as jnp
 from jax.nn import logsumexp, log_softmax
 
 
@@ -37,8 +34,7 @@ class EncoderPositionPi(nn.Module):
         )
         log_weights = log_softmax(weights, axis=0)
         log_weights = bound_weights(log_weights)
-        
-        
+
         # prob_weights = nn.relu(weights) + EPSILON
         # # NOTE: we decided to normalize the weights (it shouldn't matter)
         # prob_weights = custom_normalize(prob_weights, axis=0)

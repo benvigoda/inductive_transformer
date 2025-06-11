@@ -12,8 +12,7 @@
 
 from dataclasses import dataclass
 import jax.numpy as jnp  # type: ignore
-
-from jax_transformer.helper_functions import EPSILON, bound_activations, bound_weights
+from jax_transformer.helper_functions import bound_activations
 
 
 @dataclass

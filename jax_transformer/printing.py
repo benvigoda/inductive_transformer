@@ -11,7 +11,6 @@
 # limitations under the License.
 
 import numpy as np  # type: ignore
-from flax import linen as nn  # type: ignore
 from helper_functions import get_num_layers  # type: ignore
 
 

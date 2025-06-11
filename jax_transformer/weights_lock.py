@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-command line args:
---lock_weights dictonary
---loose_weights dictionary
+# command line args:
+# --lock_weights dictonary
+# --loose_weights dictionary
 
-mask_type = jnp.float32
+# mask_type = jnp.float32
 
-weights_lock():
+# weights_lock():
 
 '''
 # ":" means use all indices
@@ -39,7 +39,7 @@ if lock
     loop over all coordinates
         # this mask zeros out the gradient update at places where it is zero
         set the mask = 0 at lock spots
-        
+
 # if given a loose_weights coordinates then this mask is 0's everywhere,
 except 1's at those coordinates
 if loose
@@ -50,8 +50,6 @@ if loose
 
 
 '''
-
-
 
 '''
     # in future we will want:

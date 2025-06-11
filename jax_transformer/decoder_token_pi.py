@@ -36,18 +36,18 @@ class DecoderTokenPi(nn.Module):
 
         log_weights = log_softmax(weights, axis=1)
         log_weights = bound_weights(log_weights)
-        
-        #FIXME: prob_weights = nn.relu(weights) + EPSILON
+
+        # FIXME: prob_weights = nn.relu(weights) + EPSILON
 
         # we are going to output a categorical distribution over tokens at every lw in the layer
         # each of these output categoricals will be of length vocab_size
         # each categorical will be normalized, not to 1, but to the x value at this lw
         # an easy way to do this is to normalize the prob weights in advance in dim=0
-        ## FIXME: prob_weights = custom_normalize(prob_weights, axis=1)
+        # FIXME: prob_weights = custom_normalize(prob_weights, axis=1)
 
         # rho = custom_normalize(rho, axis=1)  #FIXME: do we want this? We already do it in the decoder_position_pi
         # element-wise product of weight tensor and rho
-        #FIXME: t = prob_weights * rho.reshape((self.num_positions, 1, self.layer_width))
+        # FIXME: t = prob_weights * rho.reshape((self.num_positions, 1, self.layer_width))
 
         t = log_weights + rho.reshape(self.num_positions, 1, self.layer_width)
         assert t.shape == (self.num_positions, self.vocab_size, self.layer_width)

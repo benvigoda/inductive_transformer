@@ -12,7 +12,7 @@
 
 from dataclasses import dataclass
 
-from jax_transformer.helper_functions import custom_normalize, EPSILON, bound_activations
+from jax_transformer.helper_functions import bound_activations
 
 
 @dataclass

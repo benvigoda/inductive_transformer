@@ -34,7 +34,7 @@ class DecoderPositionPi(nn.Module):
         log_weights = log_softmax(weights, axis=0)
         log_weights = bound_weights(log_weights)
 
-        '''     
+        '''
         prob_weights = nn.relu(weights) + EPSILON
         # we are going to output a categorical distribution over tokens at every lw in the layer
         # each of these output categoricals will be of length vocab_size

@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-import jax.nn as nn
 import jax.numpy as jnp  # type: ignore
 
 from jax_transformer.helper_functions import bound_activations

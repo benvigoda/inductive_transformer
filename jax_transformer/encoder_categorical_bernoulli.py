@@ -12,8 +12,8 @@
 
 from dataclasses import dataclass
 import jax.numpy as jnp  # type: ignore
-from jax_transformer.helper_functions import custom_normalize, bound_activations, bound_weights
-import jax
+from jax_transformer.helper_functions import custom_normalize, bound_activations
+
 
 @dataclass
 class EncoderCategoricalBernoulli:

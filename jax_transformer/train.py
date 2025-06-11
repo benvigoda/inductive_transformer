@@ -99,7 +99,7 @@ def create_train_state(
 
     key, subkey = jax.random.split(key)
 
-    lr = 0.0 #1e-4
+    lr = 1e-4
     if noise_seed is None:
         tx = optax.chain(
             optax.adam(learning_rate=lr),
@@ -122,8 +122,8 @@ def create_train_state(
     print(f"Number of parameters: {num_params}")
     return state, model, lr
 
-# (num_positions, vocab_size)
 
+# (num_positions, vocab_size)
 # t_out.shape = (48 or 10, 6, 54)
 # t_out.shape = (num_training_examples initially but batch_size when training, num_layers=num positions, vocab_size)
 # t_out.shape = truths.shape
@@ -394,8 +394,8 @@ def main():
     print(f"initial loss: {loss:.20e}")
 
     # temp: duplicate our training data
-    all_t_tensors = jnp.concatenate([all_t_tensors] * 100, axis=0) # one-hot inputs
-    all_outputs = jnp.concatenate([all_outputs] * 100, axis=0) #probability output predictions
+    all_t_tensors = jnp.concatenate([all_t_tensors] * 100, axis=0)  # one-hot inputs
+    all_outputs = jnp.concatenate([all_outputs] * 100, axis=0)  # probability output predictions
     print(f"num training examples (padded): {all_t_tensors.shape[0]}")
 
     # Train the model.

@@ -13,13 +13,12 @@
 import jax  # type: ignore
 import jax.numpy as jnp  # type: ignore
 import numpy as np  # type: ignore
-from jax_transformer.helper_functions import EPSILON, get_num_layers, PROBABLE, IMPROBABLE
+from jax_transformer.helper_functions import EPSILON, get_num_layers
 from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
 
 strong = jnp.log(1.0 - EPSILON)  # Amplify the signal
-weak = jnp.log(EPSILON)  #= IMPROBABLE# Dampen the signal
+weak = jnp.log(EPSILON)  # = IMPROBABLE# Dampen the signal
 mask_type = jnp.float32
-
 
 
 def set_position_pi_weights(
@@ -67,7 +66,6 @@ def set_position_pi_weights(
         raise ValueError(f"Layer {layer_key} not found in params.")
 
 
-
 def set_encoder_decoder_token_weights(
     updated_params,
     vocab,
@@ -109,7 +107,7 @@ def perturb_weights_func(
     weights,
     prefix,
 ):
-    prefix_s = prefix + "s"
+    # prefix_s = prefix + "s"
     if perturb_weights or perturb_token:
         if not surgical_perturb:
             # Add a small amount of noise to the weights
@@ -139,7 +137,6 @@ def init_weights(
     num_positions, vocab_size, layer_width = params["params"]["encoders_0"][
         "encoder_token_pi"]["weights"].shape
     assert vocab_size == len(vocab)
-    
 
     """Shape the weights"""
     updated_params = params
@@ -147,7 +144,6 @@ def init_weights(
         lambda x: jnp.ones_like(x, dtype=mask_type), params
     )
     num_layers = get_num_layers(params)
-
 
     def set_token_weights(
         num_layer,
@@ -167,7 +163,7 @@ def init_weights(
             updated_params=updated_params, vocab=vocab, num_layer=num_layer,
             layer_w=layer_w, position=position, target_words=target_words, prefix=prefix)
         new_weight_encoder = perturb_weights_func(updated_params=updated_params, num_layer=num_layer, surgical_perturb=surgical_perturb, noise_value=noise_value, prefix=prefix)
-        
+
         updated_params["params"][f"{prefix_s}_{num_layer}"][f"{prefix}_token_pi"][
         "weights"] = weights
 
@@ -176,9 +172,6 @@ def init_weights(
             updated_params=updated_params, vocab=vocab, num_layer=num_layer,
             layer_w=layer_w, position=position, target_words=target_words, prefix=prefix)
         new_weight_decoder = perturb_weights_func(updated_params=updated_params, num_layer=num_layer, surgical_perturb=surgical_perturb, noise_value=noise_value, prefix=prefix)
-
-
-
 
         """
         in the position where we want to listen for NO word
@@ -221,7 +214,6 @@ def init_weights(
             updated_params["params"][f"decoders_{num_layer}"]["decoder_token_pi"][
                 "weights"
             ] = new_weight_decoder
-
 
     for layer in range(num_layers):
         set_position_pi_weights(

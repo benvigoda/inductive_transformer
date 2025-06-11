@@ -29,7 +29,7 @@ def get_num_layers(params: dict) -> int:
 
 
 # when missing both bound_weights and bound_activations we hit nans with this command:
-# PYTHONPATH=. python jax_transformer/train.py 48_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text.txt 
+# PYTHONPATH=. python jax_transformer/train.py 48_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text.txt
 # --num_layer 6 --layer_width 2 --num_samples 10 --num_epochs 100 --silence_print --seed 2768615008 --initialize_weights
 
 # when we bound_weights but not activations we still hit nans
@@ -41,21 +41,21 @@ def get_num_layers(params: dict) -> int:
 # we still need masking
 
 
-def bound_weights(tensor: jnp.ndarray, upper_bound = -1e-6, lower_bound= -35):
+def bound_weights(tensor: jnp.ndarray, upper_bound=-1e-6, lower_bound=-35):
     return tensor
     # nan (ArrayLike) – value to substitute for NaN entries. FIXME: Should it be lower_bound or upper_bound?
     jax.numpy.nan_to_num(tensor, nan=lower_bound, posinf=upper_bound, neginf=lower_bound)
 
-    # https://docs.jax.dev/en/latest/_autosummary/jax.numpy.clip.html 
+    # https://docs.jax.dev/en/latest/_autosummary/jax.numpy.clip.html
     return jnp.clip(tensor, min=lower_bound, max=upper_bound)
 
 
-def bound_activations(tensor: jnp.ndarray, upper_bound = -1e-6, lower_bound= -35):   
+def bound_activations(tensor: jnp.ndarray, upper_bound=-1e-6, lower_bound=-35):
     # return tensor
     # nan (ArrayLike) – value to substitute for NaN entries. FIXME: Should it be lower_bound or upper_bound?
     # jax.numpy.nan_to_num(tensor, nan=lower_bound, posinf=upper_bound, neginf=lower_bound)
 
-    # https://docs.jax.dev/en/latest/_autosummary/jax.numpy.clip.html 
+    # https://docs.jax.dev/en/latest/_autosummary/jax.numpy.clip.html
     return jnp.clip(tensor, min=lower_bound, max=upper_bound)
 
 
