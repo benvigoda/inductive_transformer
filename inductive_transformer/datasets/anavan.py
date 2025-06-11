@@ -169,7 +169,7 @@ class ANAVAN:
                 return False
 
         return True
-    
+
     def get_synonyms_of_word(self, word) -> Set:
         """Get the synonyms for the given word."""
         # Example if word is "cat":
