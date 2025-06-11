@@ -175,3 +175,21 @@ PYTHONPATH=. python inductive_transformer/jax_transformer/train.py 48_6_layer_se
 
 
 Then we said let's go to 2 or 4 sentences 
+
+
+
+Friday, March 21 2025
+
+PYTHONPATH=. python jax_transformer/train.py 48_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_dog_worm.txt --num_layer 6 --layer_width 2 --num_samples 40 --num_epochs 40 --initialize_weights
+
+
+
+Friday, March 28, 2025
+
+need to look at how we initialize the weights
+
+PYTHONPATH=. python jax_transformer/train.py 48_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text_dog_worm.txt --num_layer 6 --layer_width 2 --num_samples 10 --num_epochs 40 --initialize_weights
+
+
+May 5, 2025
+PYTHONPATH=. python jax_transformer/train.py 48_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text.txt --num_layer 6 --layer_width 2 --num_samples 10 --num_epochs 200 --silence_print

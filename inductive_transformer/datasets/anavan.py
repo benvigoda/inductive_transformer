@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Set
 from itertools import product
 
 
@@ -170,6 +170,23 @@ class ANAVAN:
 
         return True
 
+    def get_synonyms_of_word(self, word) -> Set:
+        """Get the synonyms for the given word."""
+        # Example if word is "cat":
+        # return {cats, felines}
+        # If word is "small":
+        # return {small, little, tiny, micro, mini, pico, femto, diminimus}
+        """Loop through the words in the left and right lists and return the synonyms."""
+        for word_list in self.get_valid_left_ordered_words():
+            for w in word_list:
+                if w == word:
+                    return word_list
+        for word_list in self.get_valid_right_ordered_words():
+            for w in word_list:
+                if w == word:
+                    return word_list
+        return {}
+
 
 def make_cat_dog_anavan():
     valid_left_zeroth_words = [
@@ -281,7 +298,7 @@ def make_cat_dog_worm_bird_anavan():
     ]
 
     valid_right_zeroth_words = [
-        "wriggley",
+        "wriggly",
         "gross",
         "slimy",
         "disgusting",
