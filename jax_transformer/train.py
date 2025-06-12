@@ -22,7 +22,7 @@ import pathlib
 import datetime
 
 
-from inductive_transformer.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
+from experimental_code.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
 from jax_transformer.model import BatchedInductiveTransformer
 from jax_transformer.text_parsing import InputData, ProbTensors
 # from jax_transformer.weights_broad_init import init_weights
