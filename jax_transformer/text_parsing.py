@@ -18,7 +18,9 @@ import pathlib
 import re
 import string
 from typing import List, Dict, Tuple
+from jax.nn import logsumexp
 from jax_transformer.helper_functions import PROBABLE, IMPROBABLE
+
 
 
 class InputData:
@@ -184,6 +186,22 @@ class ProbTensors:
                     self.layer_width,
                 ),
             )
+
+            # epsilon = 1e-4
+            # if self.layer_width == 2:
+            #     # column-specific bias  [+ε, −ε]
+            #     bias = np.array([+epsilon, -epsilon], dtype=np.float32)    # shape (layer_width,)
+            # else:
+            #     # give each column its own small bias in (−ε , +ε)
+            #     rng  = np.random.default_rng()
+            #     bias = rng.uniform(-epsilon, +epsilon,
+            #                        size=(self.layer_width,)).astype(np.float32)
+            # input_tensor = input_tensor + bias                # broadcasts over the first 3 axes
+
+            # re-normalise so each (layer, position, column) slice is still a valid log-prob distribution
+            # input_tensor = input_tensor - logsumexp(input_tensor, axis=2, keepdims=True)
+
+
             if self.print_flag:
                 print(f"format_training_data for window {window}:\n{input_tensor}")
                 print(f"input_tensor.size:\n{input_tensor.size}")
@@ -221,6 +239,7 @@ class ProbTensors:
                 inference_element[word_position, vocab_index] = self.probable
             # Reshape the training element to be (1, num_positions, vocab_size, 1)
             inference_element = inference_element[None, :, :, None]
+
             # Make copies along the num_layer and layer_width dimensions
             input_tensor = np.broadcast_to(
                 inference_element,
@@ -231,6 +250,8 @@ class ProbTensors:
                     self.layer_width,
                 ),
             )
+
+
             inference_data.append(input_tensor)
         return inference_data
 

@@ -15,8 +15,8 @@ import jax.numpy as jnp  # type: ignore
 from jax.nn import logsumexp
 
 EPSILON = 1e-20
-IMPROBABLE = -9
-PROBABLE = 0 - 1e-9
+IMPROBABLE = -46
+PROBABLE = -1e-9
 
 
 def get_num_layers(params: dict) -> int:
@@ -41,19 +41,15 @@ def get_num_layers(params: dict) -> int:
 # we still need masking
 
 
-def bound_weights(tensor: jnp.ndarray, upper_bound=-1e-6, lower_bound=-35):
-    return tensor
-    # nan (ArrayLike) – value to substitute for NaN entries. FIXME: Should it be lower_bound or upper_bound?
+def bound_weights(tensor: jnp.ndarray, upper_bound= -1e-06, lower_bound=-46):
     jax.numpy.nan_to_num(tensor, nan=lower_bound, posinf=upper_bound, neginf=lower_bound)
 
     # https://docs.jax.dev/en/latest/_autosummary/jax.numpy.clip.html
     return jnp.clip(tensor, min=lower_bound, max=upper_bound)
 
 
-def bound_activations(tensor: jnp.ndarray, upper_bound=-1e-6, lower_bound=-35):
-    # return tensor
-    # nan (ArrayLike) – value to substitute for NaN entries. FIXME: Should it be lower_bound or upper_bound?
-    # jax.numpy.nan_to_num(tensor, nan=lower_bound, posinf=upper_bound, neginf=lower_bound)
+def bound_activations(tensor: jnp.ndarray, upper_bound= -1e-06, lower_bound=-46):
+    jax.numpy.nan_to_num(tensor, nan=lower_bound, posinf=upper_bound, neginf=lower_bound)
 
     # https://docs.jax.dev/en/latest/_autosummary/jax.numpy.clip.html
     return jnp.clip(tensor, min=lower_bound, max=upper_bound)

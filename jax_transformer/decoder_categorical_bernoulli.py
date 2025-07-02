@@ -12,6 +12,7 @@
 
 from dataclasses import dataclass
 import jax.numpy as jnp  # type: ignore
+from helper_functions import bound_activations
 
 
 @dataclass
@@ -35,5 +36,5 @@ class DecoderCategoricalBernoulli:
 
         assert u.shape == (2, self.layer_width, self.layer_width)
 
-        # u = bound_activations(u)
+        u = bound_activations(u)
         return u

@@ -17,6 +17,7 @@ from jax_transformer.helper_functions import EPSILON, get_num_layers
 from experimental_code.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
 from flax.core.frozen_dict import unfreeze, freeze  # Add import for unfreeze/freeze
 
+
 strong = jnp.log(1.0 - EPSILON)  # Amplify the signal
 weak = jnp.log(EPSILON)  # Dampen the signal
 mask_type = jnp.float32  # Use float32 for consistency with parameters
@@ -187,3 +188,4 @@ def init_weights(
     weights_mask = jax.tree_util.tree_map(lambda x: jnp.ones_like(x, dtype=mask_type), params)
 
     return freeze(p), freeze(weights_mask)
+

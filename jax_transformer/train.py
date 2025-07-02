@@ -25,7 +25,6 @@ import datetime
 from experimental_code.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
 from jax_transformer.model import BatchedInductiveTransformer
 from jax_transformer.text_parsing import InputData, ProbTensors
-# from jax_transformer.weights_broad_init import init_weights
 from jax_transformer.weights import init_weights
 from jax_transformer.printing import (
     print_params,
@@ -57,7 +56,7 @@ def create_train_state(
     perturb_attention=None,
     surgical_perturb=False,
     lock_all_weights=False,
-    noise_variance=0.0,
+    init_weight_noise=0.0,
     catsanddogs=False,
 ):
     """Creates initial `TrainState`."""
@@ -91,7 +90,7 @@ def create_train_state(
         params, weight_mask = init_weights(
             params,
             vocab,
-            noise_variance=noise_variance,
+            noise_variance=init_weight_noise,
             perturb_indices=None,
             catsanddogs=catsanddogs,
         )
@@ -99,19 +98,26 @@ def create_train_state(
 
     key, subkey = jax.random.split(key)
 
-    lr = 1e-4
-    if noise_seed is None:
-        tx = optax.chain(
-            optax.adam(learning_rate=lr),
-        )
-    else:
-        tx = optax.chain(
-            optax.add_noise(eta=1.0e-2, gamma=0.999, seed=noise_seed),
-        )
+    # params =symmetry_break_dog_worm(params,
+    #                     vocab,
+    #                     dog_word  = "dogs",
+    #                     worm_word = "worms")
 
-    tx = optax.chain(
-        optax.adam(learning_rate=optax.exponential_decay(init_value=1e-3, transition_steps=1000, decay_rate=0.9)),
-    )
+    lr = 0 #1e-4
+    # Deterministic optimiser: Adam only
+    tx = optax.adam(learning_rate=lr)
+
+    # lr_schedule = optax.exponential_decay(
+    #     init_value=1e-4,           # starting LR
+    #     transition_steps=1000,
+    #     decay_rate=0.9,
+    # )
+    # # Langevin–Adam: add Gaussian noise, then apply Adam
+    # tx = optax.chain(
+    #     optax.add_noise(eta=1e-2, gamma=0.999, seed=int(noise_seed)),
+    #     optax.adam(learning_rate=lr_schedule),
+    # )
+
     state = TrainState.create(
         apply_fn=model.apply,
         params=params,
@@ -288,7 +294,7 @@ def parse_args():
     parser.add_argument("--initialize_weights", action="store_true")
     parser.add_argument("--perturb", action="store_true")
     parser.add_argument("--lock_all_weights", action="store_true")
-    parser.add_argument("--noise_variance", type=float, default=0.0)
+    parser.add_argument("--init_weight_noise", type=float, default=0.0)
     parser.add_argument("--perturb_position", type=float, default=None)
     parser.add_argument("--perturb_token", type=float, default=None)
     parser.add_argument("--perturb_attention", type=float, default=None)
@@ -311,25 +317,25 @@ def main():
     # If doing perturbation test, you also need to give it training_text
     if args.initialize_weights:
         assert args.training_text
+    init_weight_noise = args.init_weight_noise
 
-    # Initialize RNG state.
-    np_rng = np.random.default_rng()
     if args.seed:
         seed = args.seed
     else:
+        # Initialize RNG state.
+        np_rng = np.random.default_rng()
         seed = np_rng.integers(0, 2**32 - 1)
-
-    num_epochs = args.num_epochs
-    noise_variance = args.noise_variance
+        print("seed is None &&&&&&&&&&&&&&&&&&&&&&&&&")
 
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
-
     key, subkey = jax.random.split(key)
     noise_seed = jax.random.randint(
         subkey, (1,), jnp.iinfo(jnp.int32).min, jnp.iinfo(jnp.int32).max
     )[0]
-    noise_seed = None  # type: ignore  # To not include noise in the training process.
+    # noise_seed = None  # type: ignore  # To not include noise in the training process.
+
+    num_epochs = args.num_epochs
 
     # Load training data.
     data = InputData(args.training_text, args.prompt_text, print_vals=False)
@@ -383,7 +389,7 @@ def main():
         perturb_attention=args.perturb_attention,
         surgical_perturb=args.surgical_perturb,
         lock_all_weights=args.lock_all_weights,
-        noise_variance=noise_variance,
+        init_weight_noise=init_weight_noise,
         catsanddogs=args.catsanddogs,
     )
 
@@ -401,7 +407,7 @@ def main():
     # Train the model.
     if args.training_text:
         n_epochs = num_epochs
-        batch_size = 10
+        batch_size = 20
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
         print_every = 10
         print(f"Training plan: {n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
@@ -411,7 +417,7 @@ def main():
 
     # Create a folder named {seed}_seed_{n_epochs}_num_epochs if it doesn't exist
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    file_prefix = f"{current_time}_seed_{seed}_num_epochs_{n_epochs}_noise_variance_{noise_variance}_"
+    file_prefix = f"{current_time}_seed_{seed}_num_epochs_{n_epochs}_init_weight_noise_{init_weight_noise}_"
     folder_name = file_prefix
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
