@@ -401,6 +401,7 @@ def main():
 
     # temp: duplicate our training data
     all_t_tensors = jnp.concatenate([all_t_tensors] * 100, axis=0)  # one-hot inputs
+    all_t_tensors = prob_tensors.random_pad_input_tensors(all_t_tensors, min_pad_position=5)
     all_outputs = jnp.concatenate([all_outputs] * 100, axis=0)  # probability output predictions
     print(f"num training examples (padded): {all_t_tensors.shape[0]}")
 

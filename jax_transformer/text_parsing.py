@@ -201,7 +201,6 @@ class ProbTensors:
             # re-normalise so each (layer, position, column) slice is still a valid log-prob distribution
             # input_tensor = input_tensor - logsumexp(input_tensor, axis=2, keepdims=True)
 
-
             if self.print_flag:
                 print(f"format_training_data for window {window}:\n{input_tensor}")
                 print(f"input_tensor.size:\n{input_tensor.size}")
@@ -251,9 +250,115 @@ class ProbTensors:
                 ),
             )
 
-
             inference_data.append(input_tensor)
         return inference_data
+
+    def get_padding_vector(self):
+        # Fill a vector of size vocab_size with improbable values
+        # except for the padding (<PADDING>) token, which should be probable
+        padding_vector = np.full(self.vocab_size, self.improbable)
+        padding_vector[self.data.padding_token] = self.probable
+        return padding_vector
+
+    def mask_input_tensor(self, input_tensor: np.ndarray, position: int):
+        # Mask the input tensor at the given position
+        # input_tensor is of shape (num_layers, num_positions, vocab_size, layer_width)
+        padding_vector = self.get_padding_vector()[:, None]  # shape (vocab_size, 1)
+
+        # Use .at[] syntax instead of direct assignment
+        masked_input_tensor = input_tensor.at[:, position, :, :].set(padding_vector)
+        return masked_input_tensor
+
+    def pad_input_tensor(self, input_tensor: np.ndarray, position: int):
+        # Pad the input tensor with padding vectors
+        # input_tensor is of shape (num_layers, num_positions, vocab_size, layer_width)
+        # The padding is applied to the specified position as well as all the positions after it
+        # The padding is broadcasted to the other dimensions
+        padding_vector = self.get_padding_vector()[:, None]  # shape (vocab_size, 1)
+
+        # Define the body of the loop
+        def body_fun(i, tensor):
+            return tensor.at[:, i, :, :].set(padding_vector)
+
+        # Use fori_loop instead of Python for loop
+        padded_input_tensor = jax.lax.fori_loop(
+            position,                    # start
+            self.num_positions,          # stop
+            body_fun,                    # body function
+            input_tensor                 # initial value
+        )
+
+        return padded_input_tensor
+
+    def random_mask_input_tensors(self, input_tensors: np.ndarray, mask_prob: float = 0.9, seed=None, min_mask_position: int = 0):
+        if isinstance(seed, (int, np.integer)):
+            # If key is an integer (seed), convert it to a PRNG key
+            key = jax.random.PRNGKey(seed)
+        elif seed is None:
+            key = jax.random.PRNGKey(0)
+
+        num_examples = len(input_tensors)
+
+        # Split keys for different random operations
+        key1, key2 = jax.random.split(key)
+        mask_keys = jax.random.split(key1, num_examples)
+        pos_keys = jax.random.split(key2, num_examples)
+
+        # Generate random masks and positions
+        mask_probs = jax.vmap(lambda k: jax.random.uniform(k, ()))(mask_keys)
+        mask_flags = mask_probs < mask_prob
+        random_positions = jax.vmap(lambda k: jax.random.randint(k, (), minval=min_mask_position, maxval=self.num_positions))(pos_keys)
+
+        # Define masking function that uses jax.lax.cond instead of if/else
+        def mask_if_needed(tensor, should_mask, pos):
+            return jax.lax.cond(
+                should_mask,
+                lambda x: self.mask_input_tensor(x, pos),
+                lambda x: x,
+                tensor
+            )
+
+        # Apply masking using vmap
+        masked_tensors = jax.vmap(mask_if_needed)(input_tensors, mask_flags, random_positions)
+
+        return masked_tensors
+
+    def random_pad_input_tensors(self, input_tensors: np.ndarray, pad_prob: float = 0.9, seed=None, min_pad_position: int = 0):
+        if isinstance(seed, (int, np.integer)):
+            # If key is an integer (seed), convert it to a PRNG key
+            key = jax.random.PRNGKey(seed)
+        elif seed is None:
+            key = jax.random.PRNGKey(0)
+
+        num_examples = len(input_tensors)
+        print(f"DEBUG: input_tensors shape: {input_tensors.shape}")
+        print(f"DEBUG: min_pad_position: {min_pad_position}")
+        print(f"DEBUG: self.num_positions: {self.num_positions}")
+        print(f"DEBUG: type of num_positions: {type(self.num_positions)}")
+        print(f"DEBUG: type of min_pad_position: {type(min_pad_position)}")
+
+        # Split keys for different random operations
+        key1, key2 = jax.random.split(key)
+        pad_keys = jax.random.split(key1, num_examples)
+        pos_keys = jax.random.split(key2, num_examples)
+
+        # Generate random pads and positions
+        pad_probs = jax.vmap(lambda k: jax.random.uniform(k, ()))(pad_keys)
+        pad_flags = pad_probs < pad_prob
+        random_positions = jax.vmap(lambda k: jax.random.randint(k, (), minval=min_pad_position, maxval=self.num_positions))(pos_keys)
+
+        def pad_if_needed(tensor, should_pad, pos):
+            return jax.lax.cond(
+                should_pad,
+                lambda x: self.pad_input_tensor(x, pos),
+                lambda x: x,
+                tensor
+            )
+
+        # Apply padding using vmap
+        padded_tensors = jax.vmap(pad_if_needed)(input_tensors, pad_flags, random_positions)
+
+        return padded_tensors
 
 
 def parse_args():
