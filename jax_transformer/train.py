@@ -99,18 +99,9 @@ def create_train_state(
 
     key, subkey = jax.random.split(key)
 
-    lr = 1e-4
-    if noise_seed is None:
-        tx = optax.chain(
-            optax.adam(learning_rate=lr),
-        )
-    else:
-        tx = optax.chain(
-            optax.add_noise(eta=1.0e-2, gamma=0.999, seed=noise_seed),
-        )
-
+    init_lr = 1e-2
     tx = optax.chain(
-        optax.adam(learning_rate=optax.exponential_decay(init_value=1e-3, transition_steps=1000, decay_rate=0.9)),
+        optax.adam(learning_rate=optax.exponential_decay(init_value=init_lr, transition_steps=1000, decay_rate=0.99)),
     )
     state = TrainState.create(
         apply_fn=model.apply,
@@ -120,7 +111,7 @@ def create_train_state(
     )
     num_params = count_params(params)
     print(f"Number of parameters: {num_params}")
-    return state, model, lr
+    return state, model, init_lr
 
 
 # (num_positions, vocab_size)
@@ -401,7 +392,7 @@ def main():
     # Train the model.
     if args.training_text:
         n_epochs = num_epochs
-        batch_size = 10
+        batch_size = 70
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
         print_every = 10
         print(f"Training plan: {n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
@@ -419,9 +410,9 @@ def main():
     epoch = 0
     for epoch in range(n_epochs):
         # Shuffle the data.
-        # shuffle_key = jax.random.fold_in(subkey, epoch)
-        # all_t_tensors = jax.random.permutation(shuffle_key, all_t_tensors)
-        # all_outputs = jax.random.permutation(shuffle_key, all_outputs)
+        shuffle_key = jax.random.fold_in(subkey, epoch)
+        all_t_tensors = jax.random.permutation(shuffle_key, all_t_tensors)
+        all_outputs = jax.random.permutation(shuffle_key, all_outputs)
 
         if epoch % print_every == 0 or epoch == n_epochs - 1:
             print("\nTop:", "↓" * 100)
