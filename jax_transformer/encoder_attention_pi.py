@@ -18,6 +18,7 @@ from jax_transformer.helper_functions import (
     bound_weights
 )
 from jax.nn import logsumexp, log_softmax
+from helper_functions import custom_normalize
 
 
 class EncoderAttentionPi(nn.Module):
@@ -33,10 +34,10 @@ class EncoderAttentionPi(nn.Module):
             "weights", self.weight_init, (self.layer_width, self.layer_width)
         )
 
-        log_weights = log_softmax(weights, axis=0)  # given the same seed, gets to lower loss, faster
-        log_weights = bound_weights(log_weights)
+        #FIXME: removed log softmax
+        # log_weights = log_softmax(weights, axis=0)  # given the same seed, gets to lower loss, faster
+        log_weights = bound_weights(weights)
         # log_weights = log_softmax(weights, axis=1)
-        # log_weights = log_softmax(weights, axis=(0,1)) # the right thing to do if it didn't get stuck in local minima
 
         # prob_weights = nn.relu(weights) + EPSILON
         # prob_weights = custom_normalize(prob_weights, axis=1)
@@ -54,5 +55,6 @@ class EncoderAttentionPi(nn.Module):
         # when it is certain on both values of the layer_width index:
         # y = custom_normalize(y, axis=1)
 
+        # y = log_softmax(y, axis=1)
         y = bound_activations(y)
         return y  # y is categorical

@@ -32,8 +32,9 @@ class EncoderPositionPi(nn.Module):
         weights = self.param(
             "weights", self.weight_init, (self.num_positions, self.layer_width)
         )
-        log_weights = log_softmax(weights, axis=0)
-        log_weights = bound_weights(log_weights)
+        #FIXME: removed log softmax
+        # log_weights = log_softmax(weights, axis=0)
+        log_weights = bound_weights(weights)
 
         # prob_weights = nn.relu(weights) + EPSILON
         # # NOTE: we decided to normalize the weights (it shouldn't matter)

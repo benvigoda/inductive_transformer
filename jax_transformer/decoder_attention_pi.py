@@ -34,6 +34,7 @@ class DecoderAttentionPi(nn.Module):
         )
         # log_weights = log_softmax(weights, axis=1)
         # log_weights = log_softmax(weights, axis=0)
+        #FIXME: removed log softmax
         log_weights = log_softmax(weights, axis=1)
         log_weights = log_softmax(log_weights, axis=0)
         log_weights = bound_weights(log_weights)

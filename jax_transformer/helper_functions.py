@@ -16,7 +16,7 @@ from jax.nn import logsumexp
 
 EPSILON = 1e-20
 IMPROBABLE = -46
-PROBABLE = -1e-9
+PROBABLE = -1e-06
 
 
 def get_num_layers(params: dict) -> int:

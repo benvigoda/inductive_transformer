@@ -31,6 +31,7 @@ class DecoderPositionPi(nn.Module):
             "weights", self.weight_init, (self.num_positions, self.layer_width)
         )
 
+        #FIXME: removed log softmax
         log_weights = log_softmax(weights, axis=0)
         log_weights = bound_weights(log_weights)
 

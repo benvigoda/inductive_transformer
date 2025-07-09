@@ -34,7 +34,7 @@ from jax_transformer.sampling import sample
 from jax_transformer.histogram_generations import (
     histogram_results,
 )
-
+from jax_transformer.helper_functions import bound_weights, bound_activations
 
 class TrainState(train_state.TrainState):
     """A custom TrainState class that includes a `grad_mask` attribute."""
@@ -148,8 +148,11 @@ def apply_model(state, z_in, t_in, truths):
         # Use cross entropy loss
         # loss = optax.safe_softmax_cross_entropy(t_out, jnp.exp(truths)).mean()
         # loss = ((-jnp.sum(jnp.exp(truths) * t_out, axis=-1)) ** 2).mean()
-        loss = ((-jnp.sum(jnp.exp(truths) * t_out, axis=-1))).mean()
         # loss = optax.convex_kl_divergence(t_out_for_loss, truths).mean()
+
+        t_out = bound_activations(t_out)
+        loss = (-jnp.sum(jnp.exp(truths) * t_out, axis=-1)).mean()
+
         # jax.debug.print("t_out\n{}", t_out)
         # jax.debug.print("truths\n{}", truths)
         # jax.debug.print("loss {}\n", loss)
@@ -409,7 +412,7 @@ def main():
         n_epochs = num_epochs
         batch_size = 20
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
-        print_every = 10
+        print_every = 1
         print(f"Training plan: {n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
         key, subkey = jax.random.split(key)
     else:

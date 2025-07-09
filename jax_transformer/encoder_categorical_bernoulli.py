@@ -19,12 +19,12 @@ from jax_transformer.helper_functions import custom_normalize, bound_activations
 class EncoderCategoricalBernoulli:
     layer_width: int
 
-    def __call__(self, categorical, normalize=True):
+    def __call__(self, categorical, normalize=False):
         # categorical is size = (1, layer_width)
         assert categorical.shape == (1, self.layer_width)
 
-        if normalize:
-            categorical = custom_normalize(categorical, axis=1)
+        # if normalize:
+        #     categorical = custom_normalize(categorical, axis=1)
 
         # bernoulli is size (2, layer_width)
         bernoulli_1 = categorical

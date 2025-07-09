@@ -35,8 +35,8 @@ class EncoderTokenPi(nn.Module):
             (self.num_positions, self.vocab_size, self.layer_width),
         )
         # FIXME: we will want to reove this:
-        log_weights = log_softmax(weights, axis=1)
-        log_weights = bound_weights(log_weights)
+        # log_weights = log_softmax(weights, axis=1)
+        log_weights = bound_weights(weights)
 
         # # in the probability domain:
         # element-wise product of weight vector and token vector for each column in the layer
@@ -49,7 +49,8 @@ class EncoderTokenPi(nn.Module):
 
         # after summing it is size = (num_positions, layer_width)
         # normalize rho over the position dimension
-        rho = custom_normalize(rho, axis=0)
+        # rho = custom_normalize(rho, axis=0)
+        # rho = log_softmax(rho, axis=0)
 
         rho = bound_activations(rho)
         return rho  # rho is categorical

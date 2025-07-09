@@ -33,7 +33,7 @@ class DecoderTokenPi(nn.Module):
             self.weight_init,
             (self.num_positions, self.vocab_size, self.layer_width),
         )
-
+        #FIXME: removed log softmax
         log_weights = log_softmax(weights, axis=1)
         log_weights = bound_weights(log_weights)
 
