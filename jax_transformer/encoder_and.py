@@ -32,6 +32,7 @@ class EncoderAnd:
         # the incoming values x[1] and y[1] have been arbitrarily normalized
 
         z = jnp.stack([z_0, z_1])
+
         z = custom_normalize(z, axis=0)
 
         z = bound_activations(z)

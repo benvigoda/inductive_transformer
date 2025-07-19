@@ -27,6 +27,7 @@ class EncoderCategoricalBernoulli:
         #     categorical = custom_normalize(categorical, axis=1)
 
         # bernoulli is size (2, layer_width)
+        bernoulli = bound_activations(categorical)
         bernoulli_1 = categorical
         bernoulli_0 = jnp.log1p(-jnp.exp(categorical))
 

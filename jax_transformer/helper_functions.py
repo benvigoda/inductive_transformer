@@ -14,9 +14,9 @@ import jax  # type: ignore
 import jax.numpy as jnp  # type: ignore
 from jax.nn import logsumexp
 
-EPSILON = 1e-20
-IMPROBABLE = -46
-PROBABLE = -1e-06
+EPSILON = 1e-06
+IMPROBABLE = -13.8
+PROBABLE = -EPSILON
 
 
 def get_num_layers(params: dict) -> int:
@@ -41,14 +41,14 @@ def get_num_layers(params: dict) -> int:
 # we still need masking
 
 
-def bound_weights(tensor: jnp.ndarray, upper_bound= -1e-06, lower_bound=-46):
+def bound_weights(tensor: jnp.ndarray, upper_bound= -EPSILON, lower_bound=-46):
     jax.numpy.nan_to_num(tensor, nan=lower_bound, posinf=upper_bound, neginf=lower_bound)
 
     # https://docs.jax.dev/en/latest/_autosummary/jax.numpy.clip.html
     return jnp.clip(tensor, min=lower_bound, max=upper_bound)
 
 
-def bound_activations(tensor: jnp.ndarray, upper_bound= -1e-06, lower_bound=-46):
+def bound_activations(tensor: jnp.ndarray, upper_bound= -EPSILON, lower_bound=-46):
     jax.numpy.nan_to_num(tensor, nan=lower_bound, posinf=upper_bound, neginf=lower_bound)
 
     # https://docs.jax.dev/en/latest/_autosummary/jax.numpy.clip.html
@@ -76,7 +76,7 @@ def custom_normalize(tensor: jnp.ndarray, axis=0, default_constant=0.5) -> jnp.n
     # Replace -inf sums with zeros to avoid subtracting -infinity and then subtract
     result = tensor - jnp.where(mask, jnp.zeros_like(sum_tensor), sum_tensor)
 
-    # Where the sum was -infinity, replace with the constant -length where length is the length of the axis
+    # FIXME: Where the sum was -infinity, replace with the constant -length where length is the length of the axis
     result = jnp.where(mask, jnp.full_like(result, fill_value=-length), result)
 
     return result
