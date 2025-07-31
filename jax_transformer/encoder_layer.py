@@ -136,6 +136,12 @@ class EncoderLayer(nn.Module):
 
         z_prime = jnp.where(masked, masked_z, z_prime)
 
+        # Do the same thing for x_categorical and x_bernoulli
+        masked_x_categorical = jnp.ones(shape=(1, self.layer_width)) * jnp.log(0.5)
+        masked_x_bernoulli = jnp.ones(shape=(2, self.layer_width)) * jnp.log(0.5)
+        x_categorical = jnp.where(masked, masked_x_categorical, x_categorical)
+        x_bernoulli = jnp.where(masked, masked_x_bernoulli, x_bernoulli)
+
         activations = {
             "z": z,
             "u": u,

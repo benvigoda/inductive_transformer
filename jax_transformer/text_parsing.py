@@ -18,9 +18,7 @@ import pathlib
 import re
 import string
 from typing import List, Dict, Tuple
-from jax.nn import logsumexp
 from jax_transformer.helper_functions import PROBABLE, IMPROBABLE
-
 
 
 class InputData:
@@ -201,7 +199,6 @@ class ProbTensors:
             # re-normalise so each (layer, position, column) slice is still a valid log-prob distribution
             # input_tensor = input_tensor - logsumexp(input_tensor, axis=2, keepdims=True)
 
-
             if self.print_flag:
                 print(f"format_training_data for window {window}:\n{input_tensor}")
                 print(f"input_tensor.size:\n{input_tensor.size}")
@@ -250,7 +247,6 @@ class ProbTensors:
                     self.layer_width,
                 ),
             )
-
 
             inference_data.append(input_tensor)
         return inference_data

@@ -103,7 +103,7 @@ def create_train_state(
     #                     dog_word  = "dogs",
     #                     worm_word = "worms")
 
-    lr = 0 #1e-4
+    lr = 1e-4
     # Deterministic optimiser: Adam only
     tx = optax.adam(learning_rate=lr)
 
