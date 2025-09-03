@@ -140,7 +140,7 @@ def apply_model(state, z_in, t_in, truths):
     """Computes gradients and loss for a single instance (not yet batched)."""
 
     def loss_fn(params):
-        z_out, t_out, encoder_activations, decoder_activations = state.apply_fn(
+        z_out, t_out, encoder_activations, decoder_activations, t_per_branch = state.apply_fn(
             params, z_in, t_in
         )
         assert t_out.shape == truths.shape
@@ -151,7 +151,24 @@ def apply_model(state, z_in, t_in, truths):
         # loss = optax.convex_kl_divergence(t_out_for_loss, truths).mean()
 
         t_out = bound_activations(t_out)
-        loss = (-jnp.sum(jnp.exp(truths) * t_out, axis=-1)).mean()
+        ce_loss = (-jnp.sum(jnp.exp(truths) * t_out, axis=-1)).mean()
+        
+        # Add branch separation penalty
+        # Penalize similarity between branches
+        if t_per_branch.shape[-1] == 2:
+            left_branch = t_per_branch[:, :, :, 0]  # (batch, positions, vocab)
+            right_branch = t_per_branch[:, :, :, 1]
+            
+            # Compute cosine similarity between branches
+            left_norm = left_branch / (jnp.linalg.norm(left_branch, axis=-1, keepdims=True) + 1e-10)
+            right_norm = right_branch / (jnp.linalg.norm(right_branch, axis=-1, keepdims=True) + 1e-10)
+            similarity = jnp.mean(jnp.sum(left_norm * right_norm, axis=-1))
+            
+            # Penalize high similarity (we want branches to be different)
+            separation_penalty = 1.0 * jnp.abs(similarity)
+            loss = ce_loss + separation_penalty
+        else:
+            loss = ce_loss
 
         # jax.debug.print("t_out\n{}", t_out)
         # jax.debug.print("truths\n{}", truths)
@@ -204,7 +221,7 @@ def run_and_print_inference(
         print(prob_tensors.attention_input)
 
     # Run inference.
-    decoder_z, decoder_t, encoder_activations, decoder_activations = state.apply_fn(
+    decoder_z, decoder_t, encoder_activations, decoder_activations, _ = state.apply_fn(
         state.params, prob_tensors.attention_input, prompt_data
     )
 

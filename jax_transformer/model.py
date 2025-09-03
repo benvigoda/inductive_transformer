@@ -133,11 +133,17 @@ class InductiveTransformer(nn.Module):
             self.layer_width,
         )
         # decoder_t = decoder_t.sum(axis=(0, -1))
-        decoder_t = logsumexp(decoder_t, axis=(0, -1))
+        
+        # First aggregate across layers (they should cooperate)
+        decoder_t_per_branch = logsumexp(decoder_t, axis=0)
+        assert decoder_t_per_branch.shape == (self.num_positions, self.vocab_size, self.layer_width)
+        
+        # Then aggregate across layer_width (original behavior)
+        decoder_t_final = logsumexp(decoder_t_per_branch, axis=-1)
+        assert decoder_t_final.shape == (self.num_positions, self.vocab_size)
 
-        assert decoder_t.shape == (self.num_positions, self.vocab_size)
-
-        return decoder_z, decoder_t, encoder_activations, decoder_activations
+        # Return both aggregated and per-branch outputs
+        return decoder_z, decoder_t_final, encoder_activations, decoder_activations, decoder_t_per_branch
 
 
 # JAX vmap takes a function and maps it over an additional axis.
@@ -146,7 +152,7 @@ class InductiveTransformer(nn.Module):
 BatchedInductiveTransformer = nn.vmap(
     InductiveTransformer,
     in_axes=(None, 0),
-    out_axes=(0, 0, 0, 0),
+    out_axes=(0, 0, 0, 0, 0),
     variable_axes={"params": None},
     split_rngs={"params": False},
 )
