@@ -130,6 +130,20 @@ class EncoderLayer(nn.Module):
                 axis=0,
             )
         """
+
+        """
+        August 2025 update:
+        Whenever there is padding, we needed the x_encoder being sent to the decoder_equals to enable it to pass the z_decoder through to y_decoder uninterrupted.
+        That means x_encoder Bernoulli needed to be 50-50.  So now we do that.  Any padding in the prompt results in the x_encoder signal being a 50-50.
+        This works for us where we have one token per layer.
+        In the future, when our attention_pi or token_pi systems become a binary tree (two-hot tree) instead of a one-hot tree, we will have two words per layer and we will be forced to revisit how we do this.
+        In particular, we won't be able to assume a 1:1 correspondence between layers and positions in the text.
+        We shouldn't really be able to assume that now, because in theory any of our layers could learn to output to any position in the text.
+        But forward masking in a vanilla transformer masks that off and enforces this kind of assumption, and so do we.
+        Right now we essentially have a 1x num_layers vector that maps learned positions to layers, or if you prefer we have a num_layers x num_layers permutation matrix doing this mapping with a single 1 per row and column.
+        In the future this will become a full attention matrix representing pair-wise joint attention.  And it will need forward masking.
+        """
+
         # When padding we do not know which word should be activated, so we set all to log(0.5)
         masked_z = jnp.ones(shape=(2, self.layer_width)) * jnp.log(0.5)
         assert masked_z.shape == (2, self.layer_width)
