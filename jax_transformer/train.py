@@ -129,6 +129,19 @@ def create_train_state(
     return state, model, lr
 
 
+def jensen_shannon_loss(truths, t_out):
+    P = jnp.exp(truths)  # true distribution
+    Q = jnp.exp(t_out)   # predicted distribution
+    M = 0.5 * (P + Q)    # mixture distribution
+
+    # KL divergences from mixture
+    kl_p_m = jnp.sum(P * jnp.log(P / (M + 1e-8)), axis=-1)
+    kl_q_m = jnp.sum(Q * jnp.log(Q / (M + 1e-8)), axis=-1)
+
+    js_div = 0.5 * kl_p_m + 0.5 * kl_q_m
+    return js_div.mean()
+
+
 # (num_positions, vocab_size)
 # t_out.shape = (48 or 10, 6, 54)
 # t_out.shape = (num_training_examples initially but batch_size when training, num_layers=num positions, vocab_size)
@@ -151,7 +164,7 @@ def apply_model(state, z_in, t_in, truths):
         # loss = optax.convex_kl_divergence(t_out_for_loss, truths).mean()
 
         t_out = bound_activations(t_out)
-        loss = (-jnp.sum(jnp.exp(truths) * t_out, axis=-1)).mean()
+        loss = jensen_shannon_loss(truths, t_out)
 
         # jax.debug.print("t_out\n{}", t_out)
         # jax.debug.print("truths\n{}", truths)
