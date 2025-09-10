@@ -171,14 +171,14 @@ def apply_model(state, z_in, t_in, truths):
         # loss = optax.convex_kl_divergence(t_out_for_loss, truths).mean()
 
         t_out = bound_activations(t_out)
-        
+
         # Choose which improved loss to use:
         # Option 1: JS loss with branch entropy regularization
-        loss = jensen_shannon_with_branch_entropy(truths, t_out, t_per_branch, entropy_weight=0.5)
-        
+        loss = jensen_shannon_with_branch_entropy(truths, t_out, t_per_branch, entropy_weight=1.0)
+
         # Option 2: JS loss with orthogonality constraint (uncomment to use)
         # loss = jensen_shannon_with_orthogonality(truths, t_out, t_per_branch, ortho_weight=0.5)
-        
+
         # Option 3: Standard JS loss (uncomment to use)
         # loss = jensen_shannon_loss(truths, t_out)
 

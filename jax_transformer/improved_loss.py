@@ -32,6 +32,7 @@ def jensen_shannon_with_branch_entropy(truths, t_out, t_per_branch, entropy_weig
 
         # We want LOW entropy (one branch active), so we ADD entropy as penalty
         entropy_penalty = entropy_weight * entropy.mean()
+        print(f"entropy_penalty: {entropy_penalty}")
 
         total_loss = js_loss + entropy_penalty
     else:
