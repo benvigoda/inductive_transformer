@@ -133,13 +133,13 @@ class InductiveTransformer(nn.Module):
             self.layer_width,
         )
         # decoder_t = decoder_t.sum(axis=(0, -1))
-        
+
         # First aggregate across layers only
         decoder_t_per_branch = logsumexp(decoder_t, axis=0)
         assert decoder_t_per_branch.shape == (self.num_positions, self.vocab_size, self.layer_width)
-        
+
         # Apply temperature scaling for branch competition
-        temperature = 0.1  # Lower = more competition
+        temperature = 0.01  # Lower = more competition
         scaled = decoder_t_per_branch / temperature
         decoder_t_final = logsumexp(scaled, axis=-1) * temperature
 
