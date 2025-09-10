@@ -35,6 +35,7 @@ from jax_transformer.histogram_generations import (
     histogram_results,
 )
 from jax_transformer.helper_functions import bound_weights, bound_activations
+from jax_transformer.improved_loss import jensen_shannon_with_branch_entropy, jensen_shannon_with_orthogonality
 
 class TrainState(train_state.TrainState):
     """A custom TrainState class that includes a `grad_mask` attribute."""
@@ -142,6 +143,12 @@ def jensen_shannon_loss(truths, t_out):
     return js_div.mean()
 
 
+def cross_entropy_symmetric_loss(truths, t_out):
+    A = - jnp.exp(truths) * t_out
+    B = - jnp.exp(t_out) * truths
+    return jnp.sum(A + B, axis=-1).mean()
+
+
 # (num_positions, vocab_size)
 # t_out.shape = (48 or 10, 6, 54)
 # t_out.shape = (num_training_examples initially but batch_size when training, num_layers=num positions, vocab_size)
@@ -153,7 +160,7 @@ def apply_model(state, z_in, t_in, truths):
     """Computes gradients and loss for a single instance (not yet batched)."""
 
     def loss_fn(params):
-        z_out, t_out, encoder_activations, decoder_activations = state.apply_fn(
+        z_out, t_out, encoder_activations, decoder_activations, t_per_branch = state.apply_fn(
             params, z_in, t_in
         )
         assert t_out.shape == truths.shape
@@ -164,7 +171,16 @@ def apply_model(state, z_in, t_in, truths):
         # loss = optax.convex_kl_divergence(t_out_for_loss, truths).mean()
 
         t_out = bound_activations(t_out)
-        loss = jensen_shannon_loss(truths, t_out)
+        
+        # Choose which improved loss to use:
+        # Option 1: JS loss with branch entropy regularization
+        loss = jensen_shannon_with_branch_entropy(truths, t_out, t_per_branch, entropy_weight=0.5)
+        
+        # Option 2: JS loss with orthogonality constraint (uncomment to use)
+        # loss = jensen_shannon_with_orthogonality(truths, t_out, t_per_branch, ortho_weight=0.5)
+        
+        # Option 3: Standard JS loss (uncomment to use)
+        # loss = jensen_shannon_loss(truths, t_out)
 
         # jax.debug.print("t_out\n{}", t_out)
         # jax.debug.print("truths\n{}", truths)
@@ -217,7 +233,7 @@ def run_and_print_inference(
         print(prob_tensors.attention_input)
 
     # Run inference.
-    decoder_z, decoder_t, encoder_activations, decoder_activations = state.apply_fn(
+    decoder_z, decoder_t, encoder_activations, decoder_activations, _ = state.apply_fn(
         state.params, prob_tensors.attention_input, prompt_data
     )
 
