@@ -142,6 +142,14 @@ def jensen_shannon_loss(truths, t_out):
     return js_div.mean()
 
 
+def j_divergence_loss(truths, t_out, eps=1e-8):
+    P = jnp.exp(truths) + eps  # Add epsilon for stability
+    Q = jnp.exp(t_out) + eps
+
+    loss = (P - Q) * (truths - t_out)
+    return jnp.sum(loss, axis=-1).mean()
+
+
 # (num_positions, vocab_size)
 # t_out.shape = (48 or 10, 6, 54)
 # t_out.shape = (num_training_examples initially but batch_size when training, num_layers=num positions, vocab_size)
@@ -164,7 +172,7 @@ def apply_model(state, z_in, t_in, truths):
         # loss = optax.convex_kl_divergence(t_out_for_loss, truths).mean()
 
         t_out = bound_activations(t_out)
-        loss = jensen_shannon_loss(truths, t_out)
+        loss = j_divergence_loss(truths, t_out)
 
         # jax.debug.print("t_out\n{}", t_out)
         # jax.debug.print("truths\n{}", truths)
