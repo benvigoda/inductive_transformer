@@ -104,8 +104,8 @@ def create_train_state(
     #                     dog_word  = "dogs",
     #                     worm_word = "worms")
 
-    # lr_schedule = 1e-5
-    # tx = optax.adam(learning_rate=lr_schedule)
+    lr_schedule = 1e-5
+    tx = optax.adam(learning_rate=lr_schedule)
 
     # lr_schedule = optax.linear_schedule(
     #     init_value = 5e-4,
@@ -114,13 +114,13 @@ def create_train_state(
     #     transition_begin = 0
     # )
     
-    lr_schedule = optax.exponential_decay(
-        init_value=1e-4,           # starting LR
-        transition_steps=1000,
-        decay_rate=0.9,
-    )
+    # lr_schedule = optax.exponential_decay(
+    #     init_value=1e-4,           # starting LR
+    #     transition_steps=1000,
+    #     decay_rate=0.9,
+    # )
 
-    tx = optax.adam(learning_rate=lr_schedule)
+    # tx = optax.adam(learning_rate=lr_schedule)
 
     # # Langevin–Adam: add Gaussian noise, then apply Adam
     # tx = optax.chain(

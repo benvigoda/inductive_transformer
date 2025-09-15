@@ -193,3 +193,4 @@ PYTHONPATH=. python jax_transformer/train.py 48_6_layer_sentences_balanced_dogs_
 
 May 5, 2025
 PYTHONPATH=. python jax_transformer/train.py 48_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_text.txt --num_layer 6 --layer_width 2 --num_samples 10 --num_epochs 200 --silence_print
+
