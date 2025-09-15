@@ -18,8 +18,10 @@ import os
 import jax.numpy as jnp  # type: ignore
 import numpy as np  # type: ignore
 import optax  # type: ignore
+from flax import serialization  # type: ignore
 import pathlib
 import datetime
+import random
 
 
 from experimental_code.datasets.anavan import make_cat_dog_anavan, make_cat_dog_worm_bird_anavan  # type: ignore
@@ -34,7 +36,8 @@ from jax_transformer.sampling import sample
 from jax_transformer.histogram_generations import (
     histogram_results,
 )
-from jax_transformer.helper_functions import bound_weights, bound_activations
+from jax_transformer.helper_functions import bound_activations
+
 
 class TrainState(train_state.TrainState):
     """A custom TrainState class that includes a `grad_mask` attribute."""
@@ -108,7 +111,7 @@ def create_train_state(
     tx = optax.adam(learning_rate=lr)
 
     # lr_schedule = optax.exponential_decay(
-    #     init_value=1e-4,           # starting LR
+    #     init_value=lr,           # starting LR
     #     transition_steps=1000,
     #     decay_rate=0.9,
     # )
@@ -142,12 +145,22 @@ def jensen_shannon_loss(truths, t_out):
     return js_div.mean()
 
 
-def j_divergence_loss(truths, t_out, eps=1e-8):
-    P = jnp.exp(truths) + eps  # Add epsilon for stability
-    Q = jnp.exp(t_out) + eps
+def j_divergence_loss(truths, t_out, alpha=2, eps=1e-12, reduce=True):
+    """
+    L_alpha = D_KL(P||Q) + alpha * D_KL(Q||P)
+    truths, t_out are logits.
+    """
+    logP = truths
+    logQ = t_out
+    logP = jnp.clip(logP, a_min=jnp.log(eps), a_max=0.0)
+    logQ = jnp.clip(logQ, a_min=jnp.log(eps), a_max=0.0)
+    P = jnp.exp(logP)
+    Q = jnp.exp(logQ)
 
-    loss = (P - Q) * (truths - t_out)
-    return jnp.sum(loss, axis=-1).mean()
+    d_pq = jnp.sum(P * (logP - logQ), axis=-1)   # KL(P||Q)
+    d_qp = jnp.sum(Q * (logQ - logP), axis=-1)   # KL(Q||P)
+    loss = d_pq + alpha * d_qp
+    return loss.mean() if reduce else loss
 
 
 # (num_positions, vocab_size)
@@ -246,6 +259,20 @@ def count_params(params):
     return sum(leaf.size for leaf in leaves)
 
 
+def save_model_state(state: TrainState, path: str) -> None:
+    """Serialize and save the full TrainState (params, optimizer, mask)."""
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "wb") as f:
+        f.write(serialization.to_bytes(state))
+
+
+def load_model_state(state: TrainState, path: str) -> TrainState:
+    """Load a TrainState from file into a freshly constructed `state`."""
+    with open(path, "rb") as f:
+        data = f.read()
+    return serialization.from_bytes(state, data)
+
+
 def inference_and_plot(
     state,
     prob_tensors,
@@ -332,6 +359,8 @@ def parse_args():
     parser.add_argument("--catsanddogs", action="store_true")
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--silence_print", action="store_true", default=False)
+    parser.add_argument("--load_model_path", type=pathlib.Path, default=None)
+    parser.add_argument("--save_model_path", type=pathlib.Path, default=None)
     return parser.parse_args()
 
 
@@ -417,6 +446,12 @@ def main():
         catsanddogs=args.catsanddogs,
     )
 
+    # Optionally load an existing model state
+    if args.load_model_path and os.path.exists(os.fspath(args.load_model_path)):
+        load_path = os.fspath(args.load_model_path)
+        print(f"Loading model from {load_path}")
+        state = load_model_state(state, load_path)
+
     # Check the initial loss.
     grads, loss = apply_model(
         state, prob_tensors.attention_input, all_t_tensors, all_outputs
@@ -462,6 +497,11 @@ def main():
             with open(file_path, "w") as f:
                 print("saving weights to", file_path)
                 f.write(printed_weights)
+
+            # Save a checkpoint of the full TrainState for resume or inference
+            checkpoint_path = os.path.join(folder_name, file_prefix + f"{epoch}_state.msgpack")
+            print("saving checkpoint to", checkpoint_path)
+            save_model_state(state, checkpoint_path)
             inference_and_plot(
                 state=state,
                 prob_tensors=prob_tensors,
@@ -527,6 +567,11 @@ def main():
             activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
             folder_name=folder_name,
         )
+    # Save final model state either to user path or to default in run folder
+    default_final_name = file_prefix + "final_state.msgpack"
+    final_path = os.fspath(args.save_model_path) if args.save_model_path else os.path.join(folder_name, default_final_name)
+    print("saving final model to", final_path)
+    save_model_state(state, final_path)
 
     return seed, loss, lr
 
