@@ -104,26 +104,21 @@ def create_train_state(
 
     key, subkey = jax.random.split(key)
 
-    # params =symmetry_break_dog_worm(params,
-    #                     vocab,
-    #                     dog_word  = "dogs",
-    #                     worm_word = "worms")
-
     lr = 1e-4
     # Deterministic optimiser: Adam only
     tx = optax.adam(learning_rate=lr)
 
-    lr_schedule = optax.exponential_decay(
-        init_value=lr,           # starting LR
-        transition_steps=1000,
-        decay_rate=0.9,
-    )
-    noise_seed = 42
-    # Langevin–Adam: add Gaussian noise, then apply Adam
-    tx = optax.chain(
-        optax.add_noise(eta=1e-2, gamma=0.999, seed=int(noise_seed)),
-        optax.adam(learning_rate=lr_schedule),
-    )
+    # lr_schedule = optax.exponential_decay(
+    #     init_value=lr,           # starting LR
+    #     transition_steps=1000,
+    #     decay_rate=0.9,
+    # )
+    # noise_seed = 42
+    # # Langevin–Adam: add Gaussian noise, then apply Adam
+    # tx = optax.chain(
+    #     optax.add_noise(eta=1e-2, gamma=0.999, seed=int(noise_seed)),
+    #     optax.adam(learning_rate=lr_schedule),
+    # )
 
     state = TrainState.create(
         apply_fn=model.apply,
@@ -167,6 +162,7 @@ def j_divergence_loss(truths, t_out, alpha=2, eps=1e-8, reduce=True):
     kl_qp = jnp.sum(q * (log_q - log_p), axis=-1)  # KL(Q||P)
 
     loss = kl_pq + alpha * kl_qp
+
     return loss.mean() if reduce else loss
 
 
