@@ -113,16 +113,17 @@ def create_train_state(
     # Deterministic optimiser: Adam only
     tx = optax.adam(learning_rate=lr)
 
-    # lr_schedule = optax.exponential_decay(
-    #     init_value=lr,           # starting LR
-    #     transition_steps=1000,
-    #     decay_rate=0.9,
-    # )
-    # # Langevin–Adam: add Gaussian noise, then apply Adam
-    # tx = optax.chain(
-    #     optax.add_noise(eta=1e-2, gamma=0.999, seed=int(noise_seed)),
-    #     optax.adam(learning_rate=lr_schedule),
-    # )
+    lr_schedule = optax.exponential_decay(
+        init_value=lr,           # starting LR
+        transition_steps=1000,
+        decay_rate=0.9,
+    )
+    noise_seed = 42
+    # Langevin–Adam: add Gaussian noise, then apply Adam
+    tx = optax.chain(
+        optax.add_noise(eta=1e-2, gamma=0.999, seed=int(noise_seed)),
+        optax.adam(learning_rate=lr_schedule),
+    )
 
     state = TrainState.create(
         apply_fn=model.apply,
@@ -204,9 +205,6 @@ def apply_model(state, z_in, t_in, truths):
         t_out = bound_activations(t_out)
         loss = j_divergence_loss(truths, t_out)
 
-        # jax.debug.print("t_out\n{}", t_out)
-        # jax.debug.print("truths\n{}", truths)
-        # jax.debug.print("loss {}\n", loss)
         return loss
 
     grad_fn = jax.value_and_grad(loss_fn)
@@ -277,17 +275,28 @@ def count_params(params):
 
 
 def save_model_state(state: TrainState, path: str) -> None:
-    """Serialize and save the full TrainState (params, optimizer, mask)."""
+    """Serialize and save only the minimal model state (params, mask, step)."""
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    payload = {
+        "params": state.params,
+        "grad_mask": state.grad_mask,
+        "step": int(state.step),
+    }
     with open(path, "wb") as f:
-        f.write(serialization.to_bytes(state))
+        f.write(serialization.to_bytes(payload))
 
 
 def load_model_state(state: TrainState, path: str) -> TrainState:
-    """Load a TrainState from file into a freshly constructed `state`."""
+    """Load minimal state and rebuild optimizer state."""
     with open(path, "rb") as f:
         data = f.read()
-    return serialization.from_bytes(state, data)
+    payload = serialization.msgpack_restore(data)
+    params = payload["params"]
+    grad_mask = payload.get("grad_mask", None)
+    step = payload.get("step", int(state.step))
+    # Rebuild optimizer state from params
+    opt_state = state.tx.init(params)
+    return state.replace(params=params, grad_mask=grad_mask, step=step, opt_state=opt_state)
 
 
 def inference_and_plot(

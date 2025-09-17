@@ -133,10 +133,13 @@ class InductiveTransformer(nn.Module):
             self.layer_width,
         )
         # decoder_t = decoder_t.sum(axis=(0, -1))
-        decoder_t = logsumexp(decoder_t, axis=0)
-        branch_mass = logsumexp(decoder_t, axis=(0, 1))
-        best_branch = jnp.argmax(branch_mass)
-        decoder_t = decoder_t[:, :, best_branch]
+        # Used to have:
+        decoder_t = logsumexp(decoder_t, axis=(0, -1))
+        # New approach:
+        # decoder_t = logsumexp(decoder_t, axis=0)
+        # branch_mass = logsumexp(decoder_t, axis=(0, 1))
+        # best_branch = jnp.argmax(branch_mass)
+        # decoder_t = decoder_t[:, :, best_branch]
 
         assert decoder_t.shape == (self.num_positions, self.vocab_size)
 
