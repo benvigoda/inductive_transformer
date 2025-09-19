@@ -163,12 +163,17 @@ def add_perturbations(params, noise_value, perturb_indices=None):
 def init_weights(
     params,
     vocab,
-    noise_variance=0.0,
-    perturb_indices=None,
-    catsanddogs=False
+    noise_attention: float = 0.0,
+    noise_position: float = 0.0,
+    noise_token: float = 0.0,
+    catsanddogs: bool = False,
+    rng_key=None,
+    lock_attention: bool = False,
+    lock_position: bool = False,
+    lock_token: bool = False,
 ):
 
-    """Main function to set all weights"""
+    """Main function to set all weights and optionally add Gaussian noise per factor."""
     # Initialize all weights to weak
     p = unfreeze(params)
 
@@ -181,11 +186,51 @@ def init_weights(
     synonyms = Synonyms(vocab, catsanddogs=catsanddogs)
     p = set_token_weights(p, synonyms, vocab)
 
-    # Add perturbations if specified
-    # if noise_variance > 0:
-    #     params = add_perturbations(params, noise_variance, perturb_indices)
+    # Add per-factor perturbations if specified
+    if rng_key is None:
+        rng_key = jax.random.PRNGKey(np.random.default_rng().integers(0, 2**32 - 1))
+
+    num_layers = get_num_layers(p)
+    for factor_name, scale in (
+        ("attention", noise_attention),
+        ("position", noise_position),
+        ("token", noise_token),
+    ):
+        if scale and scale > 0.0:
+            for layer in range(num_layers):
+                for encoder_decoder in ["encoder", "decoder"]:
+                    layer_key = f"{encoder_decoder}s_{layer}"
+                    factor_pi = f"{encoder_decoder}_{factor_name}_pi"
+                    weights = p["params"][layer_key][factor_pi]["weights"]
+                    rng_key, subkey = jax.random.split(rng_key)
+                    noisy = weights + jax.random.normal(subkey, weights.shape) * scale
+                    p["params"][layer_key][factor_pi]["weights"] = noisy
 
     weights_mask = jax.tree_util.tree_map(lambda x: jnp.ones_like(x, dtype=mask_type), params)
 
-    return freeze(p), freeze(weights_mask)
+    # Apply per-factor locking by zeroing the corresponding mask leaves
+    if lock_attention or lock_position or lock_token:
+        num_layers = get_num_layers(p)
+        for layer in range(num_layers):
+            for encoder_decoder in ["encoder", "decoder"]:
+                layer_key = f"{encoder_decoder}s_{layer}"
+                if lock_attention:
+                    factor_pi = f"{encoder_decoder}_attention_pi"
+                    weights = p["params"][layer_key][factor_pi]["weights"]
+                    weights_mask = unfreeze(weights_mask)
+                    weights_mask["params"][layer_key][factor_pi]["weights"] = jnp.zeros_like(weights, dtype=mask_type)
+                    weights_mask = freeze(weights_mask)
+                if lock_position:
+                    factor_pi = f"{encoder_decoder}_position_pi"
+                    weights = p["params"][layer_key][factor_pi]["weights"]
+                    weights_mask = unfreeze(weights_mask)
+                    weights_mask["params"][layer_key][factor_pi]["weights"] = jnp.zeros_like(weights, dtype=mask_type)
+                    weights_mask = freeze(weights_mask)
+                if lock_token:
+                    factor_pi = f"{encoder_decoder}_token_pi"
+                    weights = p["params"][layer_key][factor_pi]["weights"]
+                    weights_mask = unfreeze(weights_mask)
+                    weights_mask["params"][layer_key][factor_pi]["weights"] = jnp.zeros_like(weights, dtype=mask_type)
+                    weights_mask = freeze(weights_mask)
 
+    return freeze(p), freeze(weights_mask)

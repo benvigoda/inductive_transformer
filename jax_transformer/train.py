@@ -18,6 +18,7 @@ import os
 import jax.numpy as jnp  # type: ignore
 import numpy as np  # type: ignore
 import optax  # type: ignore
+from flax import serialization  # type: ignore
 import pathlib
 import datetime
 
@@ -49,16 +50,14 @@ def create_train_state(
     vocab,
     layer_width,
     num_layers,
-    noise_seed=None,
     initialize_weights=False,
-    perturb_flag=False,
-    perturb_position=None,
-    perturb_token=None,
-    perturb_attention=None,
-    surgical_perturb=False,
-    lock_all_weights=False,
-    init_weight_noise=0.0,
     catsanddogs=False,
+    init_noise_attention: float = 0.0,
+    init_noise_position: float = 0.0,
+    init_noise_token: float = 0.0,
+    lock_attention: bool = False,
+    lock_position: bool = False,
+    lock_token: bool = False,
 ):
     """Creates initial `TrainState`."""
     bernoulli_width = 2
@@ -88,24 +87,26 @@ def create_train_state(
     # If initialize_weights is True, we will set weights as defined in weights.py.
     grad_mask = None
     if initialize_weights:
+        key, noise_key = jax.random.split(key)
         params, weight_mask = init_weights(
             params,
             vocab,
-            noise_variance=init_weight_noise,
-            perturb_indices=None,
+            noise_attention=init_noise_attention,
+            noise_position=init_noise_position,
+            noise_token=init_noise_token,
             catsanddogs=catsanddogs,
+            rng_key=noise_key,
+            lock_attention=lock_attention,
+            lock_position=lock_position,
+            lock_token=lock_token,
         )
         grad_mask = weight_mask
 
     key, subkey = jax.random.split(key)
 
-    # params =symmetry_break_dog_worm(params,
-    #                     vocab,
-    #                     dog_word  = "dogs",
-    #                     worm_word = "worms")
-
-    lr_schedule = 1e-5
-    tx = optax.adam(learning_rate=lr_schedule)
+    lr = 1e-4
+    # Deterministic optimiser: Adam only
+    tx = optax.adam(learning_rate=lr)
 
     # lr_schedule = optax.linear_schedule(
     #     init_value = 5e-4,
@@ -115,10 +116,11 @@ def create_train_state(
     # )
     
     # lr_schedule = optax.exponential_decay(
-    #     init_value=1e-4,           # starting LR
+    #     init_value=lr,           # starting LR
     #     transition_steps=1000,
     #     decay_rate=0.9,
     # )
+    # noise_seed = 42
 
     # tx = optax.adam(learning_rate=lr_schedule)
 
@@ -152,16 +154,31 @@ def jensen_shannon_loss(truths, t_out):
     return js_div.mean()
 
 
-# def j_divergence_loss(truths, t_out, eps=1e-8):
-#     P = jnp.exp(truths) + eps  # Add epsilon for stability
-#     Q = jnp.exp(t_out) + eps
-
-#     loss = (P - Q) * (truths - t_out)
-#     return jnp.sum(loss, axis=-1).mean()
-
-def j_divergence_loss(truths, t_out, alpha=1.5, eps=1e-12, reduce=True):
+def j_divergence_loss(truths, t_out, alpha=2, eps=1e-8, reduce=True):
     """
     L_alpha = D_KL(P||Q) + alpha * D_KL(Q||P)
+    truths, t_out are logits.
+    """
+    # Convert logits to log probabilities
+    log_p = jax.nn.log_softmax(truths, axis=-1)
+    log_q = jax.nn.log_softmax(t_out, axis=-1)
+
+    # Convert to probabilities
+    p = jnp.exp(log_p)
+    q = jnp.exp(log_q)
+
+    # Compute KL divergences with numerical stability
+    kl_pq = jnp.sum(p * (log_p - log_q), axis=-1)  # KL(P||Q)
+    kl_qp = jnp.sum(q * (log_q - log_p), axis=-1)  # KL(Q||P)
+
+    loss = kl_pq + alpha * kl_qp
+
+    return loss.mean() if reduce else loss
+
+
+def corrected_cross_entropy_loss(truths, t_out, reduce=True):
+    """
+    Standard cross-entropy that should be 0 when distributions match exactly.
     truths, t_out are logits.
     """
     logP = log_softmax(truths, axis=-1)
@@ -201,9 +218,6 @@ def apply_model(state, z_in, t_in, truths):
         t_out = bound_activations(t_out)
         loss = j_divergence_loss(truths, t_out)
 
-        # jax.debug.print("t_out\n{}", t_out)
-        # jax.debug.print("truths\n{}", truths)
-        # jax.debug.print("loss {}\n", loss)
         return loss
 
     grad_fn = jax.value_and_grad(loss_fn)
@@ -271,6 +285,31 @@ def run_and_print_inference(
 def count_params(params):
     leaves, _ = tree_flatten(params)
     return sum(leaf.size for leaf in leaves)
+
+
+def save_model_state(state: TrainState, path: str) -> None:
+    """Serialize and save only the minimal model state (params, mask, step)."""
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    payload = {
+        "params": state.params,
+        "grad_mask": state.grad_mask,
+        "step": int(state.step),
+    }
+    with open(path, "wb") as f:
+        f.write(serialization.to_bytes(payload))
+
+
+def load_model_state(state: TrainState, path: str) -> TrainState:
+    """Load minimal state and rebuild optimizer state."""
+    with open(path, "rb") as f:
+        data = f.read()
+    payload = serialization.msgpack_restore(data)
+    params = payload["params"]
+    grad_mask = payload.get("grad_mask", None)
+    step = payload.get("step", int(state.step))
+    # Rebuild optimizer state from params
+    opt_state = state.tx.init(params)
+    return state.replace(params=params, grad_mask=grad_mask, step=step, opt_state=opt_state)
 
 
 def inference_and_plot(
@@ -346,10 +385,13 @@ def parse_args():
     parser.add_argument("--perturb", action="store_true")
     parser.add_argument("--lock_all_weights", action="store_true")
     parser.add_argument("--init_weight_noise", type=float, default=0.0)
-    parser.add_argument("--perturb_position", type=float, default=None)
-    parser.add_argument("--perturb_token", type=float, default=None)
-    parser.add_argument("--perturb_attention", type=float, default=None)
-    parser.add_argument("--surgical_perturb", action="store_true", default=False)
+    parser.add_argument("--init_noise_attention", type=float, default=0.0)
+    parser.add_argument("--init_noise_position", type=float, default=0.0)
+    parser.add_argument("--init_noise_token", type=float, default=0.0)
+    # Per-factor locks
+    parser.add_argument("--lock_attention", action="store_true")
+    parser.add_argument("--lock_position", action="store_true")
+    parser.add_argument("--lock_token", action="store_true")
 
     parser.add_argument("--layer_width", type=int, default=2)
     parser.add_argument("--num_layers", type=int, default=2)
@@ -359,6 +401,8 @@ def parse_args():
     parser.add_argument("--catsanddogs", action="store_true")
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--silence_print", action="store_true", default=False)
+    parser.add_argument("--load_model_path", type=pathlib.Path, default=None)
+    parser.add_argument("--save_model_path", type=pathlib.Path, default=None)
     return parser.parse_args()
 
 
@@ -369,6 +413,13 @@ def main():
     if args.initialize_weights:
         assert args.training_text
     init_weight_noise = args.init_weight_noise
+    init_noise_attention = args.init_noise_attention
+    init_noise_position = args.init_noise_position
+    init_noise_token = args.init_noise_token
+    if init_weight_noise > 0.0 and init_noise_attention == 0.0 and init_noise_position == 0.0 and init_noise_token == 0.0:
+        init_noise_attention = init_weight_noise
+        init_noise_position = init_weight_noise
+        init_noise_token = init_weight_noise
 
     if args.seed:
         seed = args.seed
@@ -381,10 +432,6 @@ def main():
     key = jax.random.PRNGKey(seed)
     print(f"seed: {seed}\n")
     key, subkey = jax.random.split(key)
-    noise_seed = jax.random.randint(
-        subkey, (1,), jnp.iinfo(jnp.int32).min, jnp.iinfo(jnp.int32).max
-    )[0]
-    # noise_seed = None  # type: ignore  # To not include noise in the training process.
 
     num_epochs = args.num_epochs
 
@@ -432,17 +479,21 @@ def main():
         num_positions=prob_tensors.num_positions,
         layer_width=args.layer_width,
         num_layers=args.num_layers,
-        noise_seed=noise_seed,
         initialize_weights=args.initialize_weights,
-        perturb_flag=args.perturb,
-        perturb_position=args.perturb_position,
-        perturb_token=args.perturb_token,
-        perturb_attention=args.perturb_attention,
-        surgical_perturb=args.surgical_perturb,
-        lock_all_weights=args.lock_all_weights,
-        init_weight_noise=init_weight_noise,
         catsanddogs=args.catsanddogs,
+        init_noise_attention=init_noise_attention,
+        init_noise_position=init_noise_position,
+        init_noise_token=init_noise_token,
+        lock_attention=args.lock_attention,
+        lock_position=args.lock_position,
+        lock_token=args.lock_token,
     )
+
+    # Optionally load an existing model state
+    if args.load_model_path and os.path.exists(os.fspath(args.load_model_path)):
+        load_path = os.fspath(args.load_model_path)
+        print(f"Loading model from {load_path}")
+        state = load_model_state(state, load_path)
 
     # Check the initial loss.
     grads, loss = apply_model(
@@ -468,7 +519,11 @@ def main():
 
     # Create a folder named {seed}_seed_{n_epochs}_num_epochs if it doesn't exist
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    file_prefix = f"{current_time}_seed_{seed}_num_epochs_{n_epochs}_init_weight_noise_{init_weight_noise}_"
+    file_prefix = (
+        f"{current_time}_seed_{seed}_num_epochs_{n_epochs}"
+        f"_init_noise_att_{init_noise_attention}_pos_{init_noise_position}_tok_{init_noise_token}"
+        f"_lock_att_{int(args.lock_attention)}_lock_pos_{int(args.lock_position)}_lock_tok_{int(args.lock_token)}_"
+    )
     folder_name = file_prefix
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
@@ -489,6 +544,11 @@ def main():
             with open(file_path, "w") as f:
                 print("saving weights to", file_path)
                 f.write(printed_weights)
+
+            # Save a checkpoint of the full TrainState for resume or inference
+            checkpoint_path = os.path.join(folder_name, file_prefix + f"{epoch}_state.msgpack")
+            print("saving checkpoint to", checkpoint_path)
+            save_model_state(state, checkpoint_path)
             inference_and_plot(
                 state=state,
                 prob_tensors=prob_tensors,
@@ -554,6 +614,11 @@ def main():
             activations_file_name=file_prefix + f"{epoch}_epoch_output_activations.txt",
             folder_name=folder_name,
         )
+    # Save final model state either to user path or to default in run folder
+    default_final_name = file_prefix + "final_state.msgpack"
+    final_path = os.fspath(args.save_model_path) if args.save_model_path else os.path.join(folder_name, default_final_name)
+    print("saving final model to", final_path)
+    save_model_state(state, final_path)
 
     return seed, loss, lr_schedule
 

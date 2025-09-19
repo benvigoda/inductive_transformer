@@ -355,8 +355,8 @@ def make_cat_dog_worm_bird_anavan():
 if __name__ == "__main__":
     # synonyms = make_cat_dog_anavan()
     synonyms = make_cat_dog_worm_bird_anavan()
-    # sentences = synonyms.generate(500, side='both', single_synonyms=[0, 4])
-    sentences = synonyms.generate(50000, side='both')
+    sentences = synonyms.generate(500, side='both', single_synonyms=[0, 3, 4])
+    # sentences = synonyms.generate(50000, side='both')
     # sentences = synonyms.generate_all_syns(side='both')
     for sentence in sentences:
         print(sentence.capitalize(), end='. ')
