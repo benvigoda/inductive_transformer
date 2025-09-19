@@ -35,8 +35,8 @@ from jax_transformer.sampling import sample
 from jax_transformer.histogram_generations import (
     histogram_results,
 )
-from jax_transformer.helper_functions import bound_activations
-
+from jax_transformer.helper_functions import bound_weights, bound_activations
+from jax.nn import log_softmax
 
 class TrainState(train_state.TrainState):
     """A custom TrainState class that includes a `grad_mask` attribute."""
@@ -108,12 +108,22 @@ def create_train_state(
     # Deterministic optimiser: Adam only
     tx = optax.adam(learning_rate=lr)
 
+    # lr_schedule = optax.linear_schedule(
+    #     init_value = 5e-4,
+    #     end_value = 1e-4,
+    #     transition_steps = 100, 
+    #     transition_begin = 0
+    # )
+    
     # lr_schedule = optax.exponential_decay(
     #     init_value=lr,           # starting LR
     #     transition_steps=1000,
     #     decay_rate=0.9,
     # )
     # noise_seed = 42
+
+    # tx = optax.adam(learning_rate=lr_schedule)
+
     # # Langevin–Adam: add Gaussian noise, then apply Adam
     # tx = optax.chain(
     #     optax.add_noise(eta=1e-2, gamma=0.999, seed=int(noise_seed)),
@@ -128,7 +138,7 @@ def create_train_state(
     )
     num_params = count_params(params)
     print(f"Number of parameters: {num_params}")
-    return state, model, lr
+    return state, model, lr_schedule
 
 
 def jensen_shannon_loss(truths, t_out):
@@ -171,9 +181,16 @@ def corrected_cross_entropy_loss(truths, t_out, reduce=True):
     Standard cross-entropy that should be 0 when distributions match exactly.
     truths, t_out are logits.
     """
-    log_probs = jax.nn.log_softmax(t_out, axis=-1)
-    truth_probs = jax.nn.softmax(truths, axis=-1)
-    loss = -jnp.sum(truth_probs * log_probs, axis=-1)
+    logP = log_softmax(truths, axis=-1)
+    logQ = log_softmax(t_out, axis=-1)
+    logP = jnp.clip(logP, a_min=jnp.log(eps), a_max=0.0)
+    logQ = jnp.clip(logQ, a_min=jnp.log(eps), a_max=0.0)
+    P = jnp.exp(logP)
+    Q = jnp.exp(logQ)
+
+    d_pq = jnp.sum(P * (logP - logQ), axis=-1)   # KL(P||Q)
+    d_qp = jnp.sum(Q * (logQ - logP), axis=-1)   # KL(Q||P)
+    loss = d_pq + alpha * d_qp
     return loss.mean() if reduce else loss
 
 
@@ -456,7 +473,7 @@ def main():
 
     # Initialize all training state (most importantly, the model parameters and optimizer).
     key, subkey = jax.random.split(key)
-    state, model, lr = create_train_state(
+    state, model, lr_schedule = create_train_state(
         subkey,
         vocab=data.vocab,
         num_positions=prob_tensors.num_positions,
@@ -494,7 +511,7 @@ def main():
         n_epochs = num_epochs
         batch_size = 20
         n_steps_per_epoch = all_t_tensors.shape[0] // batch_size
-        print_every = 1
+        print_every = 30
         print(f"Training plan: {n_epochs} epochs, {n_steps_per_epoch} steps per epoch")
         key, subkey = jax.random.split(key)
     else:
@@ -603,7 +620,7 @@ def main():
     print("saving final model to", final_path)
     save_model_state(state, final_path)
 
-    return seed, loss, lr
+    return seed, loss, lr_schedule
 
 
 if __name__ == "__main__":
