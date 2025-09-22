@@ -1,4 +1,4 @@
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Dict
 from itertools import product
 
 
@@ -170,21 +170,28 @@ class ANAVAN:
 
         return True
 
-    def get_synonyms_of_word(self, word) -> Set:
-        """Get the synonyms for the given word."""
+    def get_synonyms_of_word(
+        self,
+        word,
+        add_words: Set[str]=[],
+        remove_words: Set[str]=[],
+    ) -> Set:
+        """Get the synonyms for the given word.
+        add_words: Set of words to add to the synonym set if the word is found.
+        remove_words: Set of words to remove from the synonym set if the word is found.
+        """
         # Example if word is "cat":
         # return {cats, felines}
         # If word is "small":
         # return {small, little, tiny, micro, mini, pico, femto, diminimus}
-        """Loop through the words in the left and right lists and return the synonyms."""
         for word_list in self.get_valid_left_ordered_words():
             for w in word_list:
                 if w == word:
-                    return word_list
+                    return word_list | add_words - remove_words
         for word_list in self.get_valid_right_ordered_words():
             for w in word_list:
                 if w == word:
-                    return word_list
+                    return word_list | add_words - remove_words
         return {}
 
 

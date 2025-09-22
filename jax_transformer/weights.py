@@ -88,7 +88,7 @@ class Synonyms:
 
         self.synonym_lists = [
             # Left side (layer_width_idx = 0)
-            SynonymList("small",     5, 0, 0, anavan.get_synonyms_of_word("small")),  # noqa: E241
+            SynonymList("small",     5, 0, 0, anavan.get_synonyms_of_word("small", add_words={'wriggly'}, remove_words={'tiny'})),  # noqa: E241
             SynonymList("dogs",      4, 1, 0, anavan.get_synonyms_of_word("dogs")),  # noqa: E241
             SynonymList("often",     3, 2, 0, anavan.get_synonyms_of_word("often")),  # noqa: E241
             SynonymList("fear",      2, 3, 0, anavan.get_synonyms_of_word("fear")),  # noqa: E241
@@ -96,7 +96,7 @@ class Synonyms:
             SynonymList("cats",      0, 5, 0, anavan.get_synonyms_of_word("cats")),  # noqa: E241
 
             # Right side (layer_width_idx = 1)
-            SynonymList("wriggly",   5, 0, 1, anavan.get_synonyms_of_word("wriggly")),  # noqa: E241
+            SynonymList("wriggly",   5, 0, 1, anavan.get_synonyms_of_word("wriggly", add_words={'tiny'}, remove_words={'wriggly'})),  # noqa: E241
             SynonymList("worms",     4, 1, 1, anavan.get_synonyms_of_word("worms")),  # noqa: E241
             SynonymList("sometimes", 3, 2, 1, anavan.get_synonyms_of_word("sometimes")),  # noqa: E241
             SynonymList("chase",     2, 3, 1, anavan.get_synonyms_of_word("chase")),  # noqa: E241
