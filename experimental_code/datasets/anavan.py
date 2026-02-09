@@ -173,8 +173,8 @@ class ANAVAN:
     def get_synonyms_of_word(
         self,
         word,
-        add_words: Set[str]=[],
-        remove_words: Set[str]=[],
+        add_words: Set[str]=set(),
+        remove_words: Set[str]=set(),
     ) -> Set:
         """Get the synonyms for the given word.
         add_words: Set of words to add to the synonym set if the word is found.
@@ -187,12 +187,12 @@ class ANAVAN:
         for word_list in self.get_valid_left_ordered_words():
             for w in word_list:
                 if w == word:
-                    return word_list | add_words - remove_words
+                    return set(word_list) | add_words - remove_words
         for word_list in self.get_valid_right_ordered_words():
             for w in word_list:
                 if w == word:
-                    return word_list | add_words - remove_words
-        return {}
+                    return set(word_list) | add_words - remove_words
+        return set()
 
 
 def make_cat_dog_anavan():

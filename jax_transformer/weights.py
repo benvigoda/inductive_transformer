@@ -80,30 +80,74 @@ class SynonymList:
 
 
 class Synonyms:
-    def __init__(self, vocab, catsanddogs=False):
+    def __init__(self, vocab, catsanddogs=False, move=False):
         if catsanddogs:
             anavan = make_cat_dog_anavan()
         else:
             anavan = make_cat_dog_worm_bird_anavan()
 
+       
         self.synonym_lists = [
-            # Left side (layer_width_idx = 0)
-            SynonymList("small",     5, 0, 0, anavan.get_synonyms_of_word("small", add_words={'wriggly'}, remove_words={'tiny'})),  # noqa: E241
-            SynonymList("dogs",      4, 1, 0, anavan.get_synonyms_of_word("dogs")),  # noqa: E241
-            SynonymList("often",     3, 2, 0, anavan.get_synonyms_of_word("often")),  # noqa: E241
-            SynonymList("fear",      2, 3, 0, anavan.get_synonyms_of_word("fear")),  # noqa: E241
-            SynonymList("large",     1, 4, 0, anavan.get_synonyms_of_word("large")),  # noqa: E241
-            SynonymList("cats",      0, 5, 0, anavan.get_synonyms_of_word("cats")),  # noqa: E241
+             # Left side (layer_width_idx = 0)    
+            SynonymList("small",     5, 0, 0, {'small'}),
+            SynonymList("dogs",      4, 1, 0, {'dogs'}),
+            SynonymList("often",     3, 2, 0, {'often'}),
+            SynonymList("fear",      2, 3, 0, {'fear'}),
+            SynonymList("large",     1, 4, 0, {'large'}),
+            SynonymList("cats",      0, 5, 0, {'cats'}),
 
             # Right side (layer_width_idx = 1)
-            SynonymList("wriggly",   5, 0, 1, anavan.get_synonyms_of_word("wriggly", add_words={'tiny'}, remove_words={'wriggly'})),  # noqa: E241
-            SynonymList("worms",     4, 1, 1, anavan.get_synonyms_of_word("worms")),  # noqa: E241
-            SynonymList("sometimes", 3, 2, 1, anavan.get_synonyms_of_word("sometimes")),  # noqa: E241
-            SynonymList("chase",     2, 3, 1, anavan.get_synonyms_of_word("chase")),  # noqa: E241
-            SynonymList("angry",     1, 4, 1, anavan.get_synonyms_of_word("angry")),  # noqa: E241
-            SynonymList("birds",     0, 5, 1, anavan.get_synonyms_of_word("birds"))  # noqa: E241
+            SynonymList("wriggly",   5, 0, 1, {}),
+            SynonymList("worms",     4, 1, 1, {}),
+            SynonymList("sometimes", 3, 2, 1, {}),
+            SynonymList("chase",     2, 3, 1, {}),
+            SynonymList("angry",     1, 4, 1, {}),
+            SynonymList("birds",     0, 5, 1, {}),
         ]
+        
+        '''
+        if move:
+            self.synonym_lists = [
+                # Left side (layer_width_idx = 0)                
+                SynonymList("small",     5, 0, 0, anavan.get_synonyms_of_word("small", add_words={'wriggly'})),  # noqa: E241
+                # SynonymList("small",     5, 0, 0, anavan.get_synonyms_of_word("small", add_words={'wriggly'}, remove_words={'tiny'})),  # noqa: E241
+                SynonymList("dogs",      4, 1, 0, anavan.get_synonyms_of_word("dogs")),  # noqa: E241
+                SynonymList("often",     3, 2, 0, anavan.get_synonyms_of_word("often")),  # noqa: E241
+                SynonymList("fear",      2, 3, 0, anavan.get_synonyms_of_word("fear")),  # noqa: E241
+                SynonymList("large",     1, 4, 0, anavan.get_synonyms_of_word("large")),  # noqa: E241
+                SynonymList("cats",      0, 5, 0, anavan.get_synonyms_of_word("cats")),  # noqa: E241
 
+                # Right side (layer_width_idx = 1)
+                SynonymList("wriggly",   5, 0, 1, anavan.get_synonyms_of_word("wriggly", remove_words={'wriggly'})),  # noqa: E241
+                # SynonymList("wriggly",   5, 0, 1, anavan.get_synonyms_of_word("wriggly", add_words={'tiny'}, remove_words={'wriggly'})),  # noqa: E241
+                SynonymList("worms",     4, 1, 1, anavan.get_synonyms_of_word("worms")),  # noqa: E241
+                SynonymList("sometimes", 3, 2, 1, anavan.get_synonyms_of_word("sometimes")),  # noqa: E241
+                SynonymList("chase",     2, 3, 1, anavan.get_synonyms_of_word("chase")),  # noqa: E241
+                SynonymList("angry",     1, 4, 1, anavan.get_synonyms_of_word("angry")),  # noqa: E241
+                SynonymList("birds",     0, 5, 1, anavan.get_synonyms_of_word("birds"))  # noqa: E241
+            ]
+
+
+        else:
+            self.synonym_lists = [
+                # Left side (layer_width_idx = 0)
+                SynonymList("small",     5, 0, 0, anavan.get_synonyms_of_word("small")),
+                SynonymList("dogs",      4, 1, 0, anavan.get_synonyms_of_word("dogs")),  # noqa: E241
+                SynonymList("often",     3, 2, 0, anavan.get_synonyms_of_word("often")),  # noqa: E241
+                SynonymList("fear",      2, 3, 0, anavan.get_synonyms_of_word("fear")),  # noqa: E241
+                SynonymList("large",     1, 4, 0, anavan.get_synonyms_of_word("large")),  # noqa: E241
+                SynonymList("cats",      0, 5, 0, anavan.get_synonyms_of_word("cats")),  # noqa: E241
+
+                # Right side (layer_width_idx = 1)
+                SynonymList("wriggly",   5, 0, 1, anavan.get_synonyms_of_word("wriggly")),
+                SynonymList("worms",     4, 1, 1, anavan.get_synonyms_of_word("worms")),  # noqa: E241
+                SynonymList("sometimes", 3, 2, 1, anavan.get_synonyms_of_word("sometimes")),  # noqa: E241
+                SynonymList("chase",     2, 3, 1, anavan.get_synonyms_of_word("chase")),  # noqa: E241
+                SynonymList("angry",     1, 4, 1, anavan.get_synonyms_of_word("angry")),  # noqa: E241
+                SynonymList("birds",     0, 5, 1, anavan.get_synonyms_of_word("birds"))  # noqa: E241
+            ]
+
+        '''
 
 def set_token_weights(params, synonyms, vocab):
     """Set token weights based on synonym lists"""
@@ -171,6 +215,7 @@ def init_weights(
     lock_attention: bool = False,
     lock_position: bool = False,
     lock_token: bool = False,
+    move: bool = False,
 ):
 
     """Main function to set all weights and optionally add Gaussian noise per factor."""
@@ -183,7 +228,7 @@ def init_weights(
     p = set_attention_weights(p)
     p = set_position_weights(p)
 
-    synonyms = Synonyms(vocab, catsanddogs=catsanddogs)
+    synonyms = Synonyms(vocab, catsanddogs=catsanddogs, move=move)
     p = set_token_weights(p, synonyms, vocab)
 
     # Add per-factor perturbations if specified

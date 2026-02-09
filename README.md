@@ -24,3 +24,4 @@ time PYTHONPATH=. python jax_transformer/train.py training_data/48_6_layer_sente
 time PYTHONPATH=. python jax_transformer/train.py training_data/366_6_layer_sentences_dogs_worms.txt --prompt_text inference_data/inference_text_6_and_2_words_sentences.txt --num_layer 6 --layer_width 2 --num_samples 12 --num_epochs 5000 --silence_print
 
 
+time PYTHONPATH=. python jax_transformer/train.py training_data/128_6_layer_sentences_dogs_worms.txt --prompt_text inference_data/inference_text_dog_worm.txt --num_layer 6 --layer_width 2 --num_samples 12 --num_epochs 500 --silence_print --initialize_weights

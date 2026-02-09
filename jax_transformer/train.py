@@ -58,6 +58,7 @@ def create_train_state(
     lock_attention: bool = False,
     lock_position: bool = False,
     lock_token: bool = False,
+    move: bool = False,
 ):
     """Creates initial `TrainState`."""
     bernoulli_width = 2
@@ -99,6 +100,7 @@ def create_train_state(
             lock_attention=lock_attention,
             lock_position=lock_position,
             lock_token=lock_token,
+            move=move,
         )
         grad_mask = weight_mask
 
@@ -138,7 +140,7 @@ def create_train_state(
     )
     num_params = count_params(params)
     print(f"Number of parameters: {num_params}")
-    return state, model, lr_schedule
+    return state, model, lr
 
 
 def jensen_shannon_loss(truths, t_out):
@@ -154,7 +156,10 @@ def jensen_shannon_loss(truths, t_out):
     return js_div.mean()
 
 
-def j_divergence_loss(truths, t_out, alpha=2, eps=1e-8, reduce=True):
+def j_divergence_loss(truths, t_out, alpha=0.0, eps=1e-8, reduce=True):
+    alpha = 1.0
+    beta = 10.0
+    
     """
     L_alpha = D_KL(P||Q) + alpha * D_KL(Q||P)
     truths, t_out are logits.
@@ -171,7 +176,7 @@ def j_divergence_loss(truths, t_out, alpha=2, eps=1e-8, reduce=True):
     kl_pq = jnp.sum(p * (log_p - log_q), axis=-1)  # KL(P||Q)
     kl_qp = jnp.sum(q * (log_q - log_p), axis=-1)  # KL(Q||P)
 
-    loss = kl_pq + alpha * kl_qp
+    loss = beta * kl_pq + alpha * kl_qp
 
     return loss.mean() if reduce else loss
 
@@ -392,7 +397,7 @@ def parse_args():
     parser.add_argument("--lock_attention", action="store_true")
     parser.add_argument("--lock_position", action="store_true")
     parser.add_argument("--lock_token", action="store_true")
-
+    parser.add_argument("--move", action="store_true")
     parser.add_argument("--layer_width", type=int, default=2)
     parser.add_argument("--num_layers", type=int, default=2)
     parser.add_argument("--num_epochs", type=int, default=100)
@@ -473,7 +478,7 @@ def main():
 
     # Initialize all training state (most importantly, the model parameters and optimizer).
     key, subkey = jax.random.split(key)
-    state, model, lr_schedule = create_train_state(
+    state, model, lr = create_train_state(
         subkey,
         vocab=data.vocab,
         num_positions=prob_tensors.num_positions,
@@ -487,6 +492,7 @@ def main():
         lock_attention=args.lock_attention,
         lock_position=args.lock_position,
         lock_token=args.lock_token,
+        move=args.move,
     )
 
     # Optionally load an existing model state
@@ -620,7 +626,7 @@ def main():
     print("saving final model to", final_path)
     save_model_state(state, final_path)
 
-    return seed, loss, lr_schedule
+    return seed, loss, lr
 
 
 if __name__ == "__main__":
