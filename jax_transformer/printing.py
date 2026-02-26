@@ -45,7 +45,7 @@ def print_params(state, vocab, silence_print=False):
                 ):
                     text += f"-- position {position}\n"
                     for token_num, token_weights in enumerate(position_weights):
-                        if any(token_weights > 0.1):
+                        if any(token_weights > -1):
                             # text += f"{np.round(nn.relu(token_weights) * 1000).astype(int) / 1000} -- {vocab[token_num]}\n"
                             text += f"{token_weights} -- {vocab[token_num]}\n"
                         else:

@@ -157,8 +157,8 @@ def jensen_shannon_loss(truths, t_out):
 
 
 def j_divergence_loss(truths, t_out, alpha=0.0, eps=1e-8, reduce=True):
-    alpha = 1.0
-    beta = 10.0
+    alpha = 10.0
+    beta = 0.0
     
     """
     L_alpha = D_KL(P||Q) + alpha * D_KL(Q||P)
@@ -173,7 +173,12 @@ def j_divergence_loss(truths, t_out, alpha=0.0, eps=1e-8, reduce=True):
     q = jnp.exp(log_q)
 
     # Compute KL divergences with numerical stability
+
+    # Positive penalty for targets bigger than activations.
+    # You are not outputting things that should be output. 
     kl_pq = jnp.sum(p * (log_p - log_q), axis=-1)  # KL(P||Q)
+    # Positive penalty for activations bigger than targets.
+    # You ARE outputting things that should NOT output
     kl_qp = jnp.sum(q * (log_q - log_p), axis=-1)  # KL(Q||P)
 
     loss = beta * kl_pq + alpha * kl_qp
