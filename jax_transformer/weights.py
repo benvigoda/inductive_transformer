@@ -78,7 +78,6 @@ class SynonymList:
         self.layer_width_idx = layer_width_idx
         self.token_list = token_list
 
-
 class Synonyms:
     def __init__(self, vocab, catsanddogs=False, move=False):
         if catsanddogs:
@@ -87,26 +86,29 @@ class Synonyms:
             anavan = make_cat_dog_worm_bird_anavan()
 
        
-        self.synonym_lists = [
-             # Left side (layer_width_idx = 0)    
-            SynonymList("small",     5, 0, 0, {'small'}),
-            SynonymList("dogs",      4, 1, 0, {'dogs'}),
-            SynonymList("often",     3, 2, 0, {'often'}),
-            SynonymList("fear",      2, 3, 0, {'fear'}),
-            SynonymList("large",     1, 4, 0, {'large'}),
-            SynonymList("cats",      0, 5, 0, {'cats'}),
+        # self.synonym_lists = [
+        #      # Left side (layer_width_idx = 0)    
+        #     SynonymList("small",     5, 0, 0, {'small'}),
+        #     SynonymList("dogs",      4, 1, 0, {'dogs'}),
+        #     SynonymList("often",     3, 2, 0, {'often'}),
+        #     SynonymList("fear",      2, 3, 0, {'fear'}),
+        #     SynonymList("large",     1, 4, 0, {'large'}),
+        #     SynonymList("cats",      0, 5, 0, {'cats'}),
 
-            # Right side (layer_width_idx = 1)
-            SynonymList("wriggly",   5, 0, 1, {}),
-            SynonymList("worms",     4, 1, 1, {}),
-            SynonymList("sometimes", 3, 2, 1, {}),
-            SynonymList("chase",     2, 3, 1, {}),
-            SynonymList("angry",     1, 4, 1, {}),
-            SynonymList("birds",     0, 5, 1, {}),
-        ]
+        #     # Right side (layer_width_idx = 1)
+        #     SynonymList("wriggly",   5, 0, 1, {}),
+        #     SynonymList("worms",     4, 1, 1, {}),
+        #     SynonymList("sometimes", 3, 2, 1, {}),
+        #     SynonymList("chase",     2, 3, 1, {}),
+        #     SynonymList("angry",     1, 4, 1, {}),
+        #     SynonymList("birds",     0, 5, 1, {}),
+        # ]
         
-        '''
+        
         if move:
+            # wriggly_synonyms = anavan.get_synonyms_of_word("wriggly", remove_words={'wriggly'})
+            # print('Is juicy in wordlist?')
+            # print( 'juicy' in wriggly_synonyms)
             self.synonym_lists = [
                 # Left side (layer_width_idx = 0)                
                 SynonymList("small",     5, 0, 0, anavan.get_synonyms_of_word("small", add_words={'wriggly'})),  # noqa: E241
@@ -147,7 +149,7 @@ class Synonyms:
                 SynonymList("birds",     0, 5, 1, anavan.get_synonyms_of_word("birds"))  # noqa: E241
             ]
 
-        '''
+        
 
 def set_token_weights(params, synonyms, vocab):
     """Set token weights based on synonym lists"""

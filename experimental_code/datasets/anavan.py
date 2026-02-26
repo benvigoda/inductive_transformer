@@ -187,11 +187,11 @@ class ANAVAN:
         for word_list in self.get_valid_left_ordered_words():
             for w in word_list:
                 if w == word:
-                    return set(word_list) | add_words - remove_words
+                    return (set(word_list) | add_words) - remove_words
         for word_list in self.get_valid_right_ordered_words():
             for w in word_list:
                 if w == word:
-                    return set(word_list) | add_words - remove_words
+                    return (set(word_list) | add_words) - remove_words
         return set()
 
 

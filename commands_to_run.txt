@@ -202,3 +202,7 @@ time PYTHONPATH=. python jax_transformer/train.py training_data/1_6_layer_senten
 Feb 9, 2026
 
 time PYTHONPATH=. python jax_transformer/train.py training_data/48_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_data/inference_text_6_words_sentence.txt --num_layer 6 --layer_width 2 --num_samples 10 --num_epochs 100 --silence_print --initialize_weights --move True
+
+with Jack
+
+time PYTHONPATH=. python jax_transformer/train.py training_data/48_6_layer_sentences_balanced_dogs_birds_all_synonyms.txt --prompt_text inference_data/inference_text.txt --num_layer 6 --layer_width 2 --num_samples 10 --num_epochs 0 --silence_print --initialize_weights
