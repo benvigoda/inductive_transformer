@@ -59,6 +59,7 @@ def create_train_state(
     lock_position: bool = False,
     lock_token: bool = False,
     move: bool = False,
+    synonym_config=None,
 ):
     """Creates initial `TrainState`."""
     bernoulli_width = 2
@@ -101,6 +102,7 @@ def create_train_state(
             lock_position=lock_position,
             lock_token=lock_token,
             move=move,
+            synonym_config=synonym_config,
         )
         grad_mask = weight_mask
 
@@ -403,6 +405,7 @@ def parse_args():
     parser.add_argument("--lock_position", action="store_true")
     parser.add_argument("--lock_token", action="store_true")
     parser.add_argument("--move", action="store_true")
+    parser.add_argument("--synonym_config", type=pathlib.Path, default=None)
     parser.add_argument("--layer_width", type=int, default=2)
     parser.add_argument("--num_layers", type=int, default=2)
     parser.add_argument("--num_epochs", type=int, default=100)
@@ -481,6 +484,13 @@ def main():
     print(f"vocab: {data.vocab}")
     print(f"num training examples: {all_t_tensors.shape[0]}")
 
+    # Load synonym config if provided
+    synonym_config = None
+    if args.synonym_config:
+        import json
+        with open(args.synonym_config) as f:
+            synonym_config = json.load(f)
+
     # Initialize all training state (most importantly, the model parameters and optimizer).
     key, subkey = jax.random.split(key)
     state, model, lr = create_train_state(
@@ -498,6 +508,7 @@ def main():
         lock_position=args.lock_position,
         lock_token=args.lock_token,
         move=args.move,
+        synonym_config=synonym_config,
     )
 
     # Optionally load an existing model state

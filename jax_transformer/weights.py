@@ -79,7 +79,20 @@ class SynonymList:
         self.token_list = token_list
 
 class Synonyms:
-    def __init__(self, vocab, catsanddogs=False, move=False):
+    def __init__(self, vocab, catsanddogs=False, move=False, synonym_config=None):
+        if synonym_config is not None:
+            self.synonym_lists = [
+                SynonymList(
+                    name=entry["name"],
+                    layer=entry["layer"],
+                    position=entry["position"],
+                    layer_width_idx=entry["layer_width_idx"],
+                    token_list=set(entry["token_list"]),
+                )
+                for entry in synonym_config
+            ]
+            return
+
         if catsanddogs:
             anavan = make_cat_dog_anavan()
         else:
@@ -224,6 +237,7 @@ def init_weights(
     lock_position: bool = False,
     lock_token: bool = False,
     move: bool = False,
+    synonym_config=None,
 ):
 
     """Main function to set all weights and optionally add Gaussian noise per factor."""
@@ -236,7 +250,7 @@ def init_weights(
     p = set_attention_weights(p)
     p = set_position_weights(p)
 
-    synonyms = Synonyms(vocab, catsanddogs=catsanddogs, move=move)
+    synonyms = Synonyms(vocab, catsanddogs=catsanddogs, move=move, synonym_config=synonym_config)
     p = set_token_weights(p, synonyms, vocab)
 
     # Add per-factor perturbations if specified
