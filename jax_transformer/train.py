@@ -159,8 +159,8 @@ def jensen_shannon_loss(truths, t_out):
 
 
 def j_divergence_loss(truths, t_out, alpha=0.0, eps=1e-8, reduce=True):
-    alpha = 10.0
-    beta = 0.0
+    alpha = 0.0
+    beta = 10.0
     
     """
     L_alpha = D_KL(P||Q) + alpha * D_KL(Q||P)
